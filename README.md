@@ -1,2 +1,3 @@
-# helios_dac
-Helios Laser DAC
+# Helios Laser DAC
+
+Open source, low cost USB DAC for the ISP-DB25 laser protocol.
