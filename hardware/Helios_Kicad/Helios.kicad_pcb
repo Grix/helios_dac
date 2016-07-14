@@ -1,4 +1,4 @@
-(kicad_pcb (version 4) (host pcbnew 4.0.2-stable)
+(kicad_pcb (version 4) (host pcbnew 4.0.1-stable)
 
   (general
     (links 218)
@@ -37,7 +37,7 @@
   )
 
   (setup
-    (last_trace_width 0.5)
+    (last_trace_width 0.35)
     (user_trace_width 0.25)
     (user_trace_width 0.35)
     (user_trace_width 0.5)
@@ -3255,12 +3255,12 @@
       (solder_mask_margin 0.77) (clearance 0.77))
   )
 
-  (gr_line (start 101.1 117.5) (end 100.9 117.5) (angle 90) (layer F.SilkS) (width 0.2))
-  (gr_line (start 108.5 117.5) (end 101.1 117.5) (angle 90) (layer F.SilkS) (width 0.2))
-  (gr_line (start 108.5 123.3) (end 108.5 117.5) (angle 90) (layer F.SilkS) (width 0.2))
+  (gr_line (start 107 117.6) (end 107 118.2) (angle 90) (layer F.SilkS) (width 0.2))
+  (gr_line (start 107 117.6) (end 101 117.6) (angle 90) (layer F.SilkS) (width 0.2))
+  (gr_line (start 106.976 123.808) (end 106.976 118.008) (angle 90) (layer F.SilkS) (width 0.2))
   (gr_line (start 106.5 145.5) (end 106.5 139.4) (angle 90) (layer F.SilkS) (width 0.2))
   (gr_line (start 101 145.5) (end 106.5 145.5) (angle 90) (layer F.SilkS) (width 0.2))
-  (gr_text LASER (at 104.4 119.3) (layer F.SilkS)
+  (gr_text EMIT (at 103.6 119.4) (layer F.SilkS)
     (effects (font (size 1.5 1.5) (thickness 0.3)))
   )
   (gr_line (start 109.3 145.9) (end 109.3 145.8) (angle 90) (layer F.SilkS) (width 0.2))
@@ -3486,8 +3486,8 @@
   (segment (start 116.1 114.6) (end 116.4 114.9) (width 0.6) (layer F.Cu) (net 4) (tstamp 575EBDA2))
   (segment (start 123.6 111.2) (end 127.96 111.2) (width 0.6) (layer F.Cu) (net 4))
   (segment (start 127.96 111.2) (end 128.04 111.28) (width 0.6) (layer F.Cu) (net 4) (tstamp 575E7456))
-  (segment (start 118.6 112.3) (end 122.3 112.3) (width 0.6) (layer F.Cu) (net 4))
-  (segment (start 122.3 112.3) (end 123.4 111.2) (width 0.6) (layer F.Cu) (net 4) (tstamp 575E7451))
+  (segment (start 118.6 112.3) (end 122.3 112.3) (width 0.5) (layer F.Cu) (net 4))
+  (segment (start 122.3 112.3) (end 123.4 111.2) (width 0.5) (layer F.Cu) (net 4) (tstamp 575E7451))
   (segment (start 123.4 111.2) (end 123.6 111.2) (width 0.6) (layer F.Cu) (net 4) (tstamp 575E7453))
   (segment (start 118.6 111) (end 118.6 112.3) (width 0.6) (layer F.Cu) (net 4))
   (segment (start 118.6 112.3) (end 118.6 114.012) (width 0.6) (layer F.Cu) (net 4) (tstamp 575E744F))

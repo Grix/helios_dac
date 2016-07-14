@@ -1,0 +1,23 @@
+﻿Build started 2016-07-12 11:01:09.
+     1>Project "C:\GitHub\helios_dac\drivers\helios_driver_win32\helios_driver_win32\helios_driver_win32.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _WINDOWS /D _USRDLL /D HELIOS_DRIVER_WIN32_EXPORTS /D _WINDLL /D _UNICODE /D UNICODE /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt main.cpp
+         main.cpp
+     1>c:\github\helios_dac\drivers\helios_driver_win32\helios_driver_win32\libusb.h(738): warning C4200: nonstandard extension used : zero-sized array in struct/union
+                 Cannot generate copy-ctor or copy-assignment operator when UDT contains a zero-sized array
+     1>c:\github\helios_dac\drivers\helios_driver_win32\helios_driver_win32\libusb.h(769): warning C4200: nonstandard extension used : zero-sized array in struct/union
+                 Cannot generate copy-ctor or copy-assignment operator when UDT contains a zero-sized array
+     1>c:\github\helios_dac\drivers\helios_driver_win32\helios_driver_win32\libusb.h(1262): warning C4200: nonstandard extension used : zero-sized array in struct/union
+                 Cannot generate copy-ctor or copy-assignment operator when UDT contains a zero-sized array
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\GitHub\helios_dac\drivers\helios_driver_win32\Release\HeliosLaserDAC.dll" /INCREMENTAL:NO /NOLOGO "libusb-1.0.lib" kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\GitHub\helios_dac\drivers\helios_driver_win32\Release\HeliosLaserDAC.pdb" /SUBSYSTEM:WINDOWS /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\GitHub\helios_dac\drivers\helios_driver_win32\Release\HeliosLaserDAC.lib" /MACHINE:X86 /SAFESEH /DLL Release\HeliosDac.obj
+         Release\main.obj
+            Creating library C:\GitHub\helios_dac\drivers\helios_driver_win32\Release\HeliosLaserDAC.lib and object C:\GitHub\helios_dac\drivers\helios_driver_win32\Release\HeliosLaserDAC.exp
+         Generating code
+         Finished generating code
+         helios_driver_win32.vcxproj -> C:\GitHub\helios_dac\drivers\helios_driver_win32\Release\HeliosLaserDAC.dll
+     1>Done Building Project "C:\GitHub\helios_dac\drivers\helios_driver_win32\helios_driver_win32\helios_driver_win32.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:04.03

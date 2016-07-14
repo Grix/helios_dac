@@ -78,7 +78,7 @@
 // ===== PLL1 (B) Options   (Fpll = (Fclk * PLL_mul) / PLL_div)
 // Use mul and div effective values here.
 #define CONFIG_PLL1_SOURCE          PLL_SRC_MAINCK_XTAL
-#define CONFIG_PLL1_MUL             1 //DISABLED, not used
+#define CONFIG_PLL1_MUL             0 //DISABLED, not used
 #define CONFIG_PLL1_DIV             1
 
 // ===== USB Clock Source Options   (Fusb = FpllX / USB_div)
@@ -87,7 +87,7 @@
 #define CONFIG_USBCLK_DIV           1
 
 // ===== Target frequency (System clock)
-// - XTAL frequency: 12MHz
+// - XTAL frequency: 16MHz
 // - System clock source: PLLA
 // - System clock prescaler: 1 (divided by 1)
 // - PLLA source: XTAL

@@ -1,12 +1,13 @@
 /*
-Helios Laser DAC main prosjekt (for SAM4S2B board)
+Helios Laser DAC main AS project (for SAM4S2B board)
+By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
 
 Required Atmel Software Framework modules:
 	DACC - Digital-to-Analog Converter
+	Flash
 	Generic Board Support (ATSAM4S2B)
 	GPIO
 	IOPORT
-	PIO
 	SPI - Serial Peripheral Interface
 	USB Device Vendor Class
 	WDT - Watchdog Timer
@@ -19,8 +20,8 @@ Required Atmel Software Framework modules:
 int main (void)
 {
 	//allocate memory to buffers
-	frameAddress = malloc(MAXFRAMESIZE * 7);
-	newFrameAddress = malloc(MAXFRAMESIZE * 7);
+	frameAddress = malloc(MAXFRAMESIZE * 7 + 5);
+	newFrameAddress = malloc(MAXFRAMESIZE * 7 + 5);
 	usbInterruptBufferAddress = malloc(7);
 	
 	//start modules
@@ -147,11 +148,11 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 
 void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep)
 {
-	//	Byte 0: Command
-	//	Byte 1-2: Data (little endian)
+	//LSB: Command
+	//MSB: Data
 	
 	UNUSED(ep);
-	if ( (status == UDD_EP_TRANSFER_OK) && (length == 3) )
+	if ( (status == UDD_EP_TRANSFER_OK) && (length == 2) )
 	{	
 		if (usbInterruptBufferAddress[0] == 0x01)		//STOP
 		{
@@ -163,9 +164,10 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 		{
 			shutter_set( (usbInterruptBufferAddress[1] && true) );
 		}
-		else if (usbInterruptBufferAddress[0] == 0x03)	//STATUS_REQUEST
+		else if (usbInterruptBufferAddress[0] == 0x03)	//STATUS REQUEST
 		{
-			//TODO
+			uint8_t statusTransfer[2] = {0x83, !newFrameReady};
+			udi_vendor_interrupt_in_run(&statusTransfer[0], 2, NULL);
 		}
 		else if (usbInterruptBufferAddress[0] == 0xDE)	//ERASE GPNVM BIT, BOOT TO FIRMWARE UPDATE BOOTLOADER
 		{
@@ -239,7 +241,7 @@ int callback_vendor_enable(void) //usb connection opened, preparing for activity
 	sleepmgr_lock_mode(SLEEPMGR_ACTIVE);
 	
 	udi_vendor_bulk_out_run(usbBulkBufferAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
-	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 3, usb_interrupt_out_callback);
+	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 2, usb_interrupt_out_callback);
 	
 	return 1;
 }

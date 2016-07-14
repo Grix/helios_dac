@@ -1,4 +1,17 @@
-//lasdac: main.h
+/*
+Helios Laser DAC main AS project (for SAM4S2B board)
+By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
+
+Required Atmel Software Framework modules:
+	DACC - Digital-to-Analog Converter
+	Flash
+	Generic Board Support (ATSAM4S2B)
+	GPIO
+	IOPORT
+	SPI - Serial Peripheral Interface
+	USB Device Vendor Class
+	WDT - Watchdog Timer
+*/
 
 #ifndef MAIN_H_
 #define MAIN_H_
@@ -6,9 +19,9 @@
 #include "asf.h"
 
 //macros
-#define MAXSPEED 50000 //in pps
-#define MINSPEED 6 //in pps
-#define MAXFRAMESIZE 2001 //in points
+#define MAXSPEED 0xFFFF		//in pps	(65535)
+#define MINSPEED 3			//in pps
+#define MAXFRAMESIZE 0x1000	//in points (4096)
 
 //global variables
 uint16_t frameSize = 0;					//size of frame buffer in points
