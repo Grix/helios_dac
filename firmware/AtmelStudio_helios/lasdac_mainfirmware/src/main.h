@@ -17,6 +17,7 @@ Required Atmel Software Framework modules:
 #define MAIN_H_
 
 #include "asf.h"
+#include <malloc.h>
 
 //macros
 #define MAXSPEED 0xFFFF		//in pps	(65535)

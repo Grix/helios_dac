@@ -55,11 +55,11 @@
  */
 
 //! Device definition (mandatory)
-#define  USB_DEVICE_VENDOR_ID             USB_VID_ATMEL
-#define  USB_DEVICE_PRODUCT_ID            USB_PID_ATMEL_ASF_VENDOR_CLASS
-#define  USB_DEVICE_MAJOR_VERSION         1
+#define  USB_DEVICE_VENDOR_ID             0x1209
+#define  USB_DEVICE_PRODUCT_ID            0xE500	//PID from http://pid.codes
+#define  USB_DEVICE_MAJOR_VERSION         2
 #define  USB_DEVICE_MINOR_VERSION         0
-#define  USB_DEVICE_POWER                 200 // Consumption on VBUS line (mA)
+#define  USB_DEVICE_POWER                 150	//Max consumption on VBUS line (mA)
 #define  USB_DEVICE_ATTR                  (USB_CONFIG_ATTR_BUS_POWERED)
 	//(USB_CONFIG_ATTR_SELF_POWERED)
 // (USB_CONFIG_ATTR_BUS_POWERED)
@@ -67,9 +67,9 @@
 //	(USB_CONFIG_ATTR_REMOTE_WAKEUP|USB_CONFIG_ATTR_BUS_POWERED)
 
 //! USB Device string definitions (Optional)
- #define  USB_DEVICE_MANUFACTURE_NAME      "HIB"
- #define  USB_DEVICE_PRODUCT_NAME          "LASDAC"
- #define  USB_DEVICE_SERIAL_NAME           "00001"
+ #define  USB_DEVICE_MANUFACTURE_NAME      "Mikkelsen Electronics"
+ #define  USB_DEVICE_PRODUCT_NAME          "Helios Laser DAC"
+ //#define  USB_DEVICE_SERIAL_NAME           "00001"
 
 //sleep manager
 //#define UDD_NO_SLEEP_MGR
@@ -105,7 +105,7 @@
 // extern void user_callback_remotewakeup_disable(void);
 //! When a extra string descriptor must be supported
 //! other than manufacturer, product and serial string
-// #define  UDC_GET_EXTRA_STRING()
+//#define  UDC_GET_EXTRA_STRING()	TODO this
 //@}
 
 //@}
@@ -138,13 +138,12 @@ extern void callback_vendor_disable(void);
  */
 
 //! endpoints size for full speed
-//! Note: Disable the endpoints of a type, if size equal 0
-#define  UDI_VENDOR_EPS_SIZE_INT_FS		8
+#define  UDI_VENDOR_EPS_SIZE_INT_FS		2
 #define  UDI_VENDOR_EPS_SIZE_BULK_FS	64
 #define  UDI_VENDOR_EPS_SIZE_ISO_FS		1
 
 //for high speed (not used)
-#define  UDI_VENDOR_EPS_SIZE_INT_HS		8
+#define  UDI_VENDOR_EPS_SIZE_INT_HS		2
 #define  UDI_VENDOR_EPS_SIZE_BULK_HS	512
 #define  UDI_VENDOR_EPS_SIZE_ISO_HS		1
 

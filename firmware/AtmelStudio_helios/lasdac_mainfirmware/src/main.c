@@ -14,7 +14,6 @@ Required Atmel Software Framework modules:
 */
 
 #include "main.h"
-#include <malloc.h>
 
 //ENTRY
 int main (void)
@@ -22,7 +21,7 @@ int main (void)
 	//allocate memory to buffers
 	frameAddress = malloc(MAXFRAMESIZE * 7 + 5);
 	newFrameAddress = malloc(MAXFRAMESIZE * 7 + 5);
-	usbInterruptBufferAddress = malloc(7);
+	usbInterruptBufferAddress = malloc(2);
 	
 	//start modules
 	sysclk_init();
@@ -44,6 +43,7 @@ int main (void)
 	//default output
 	shutter_set(LOW);
 	statusled_set(LOW);
+	ioport_set_pin_level(PIN_POWERLED, HIGH);
 	blank_and_center();
 	
 	sleepmgr_lock_mode(SLEEPMGR_WAIT_FAST);
@@ -174,10 +174,12 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 			playing = false;
 			blank_and_center();
 			flash_clear_gpnvm(1);
+			wdt_restart(WDT);
+			while (1); //MCU will restart into SAM-BA
 		}
 	}
 	
-	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 3, usb_interrupt_out_callback);
+	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 2, usb_interrupt_out_callback);
 }
 
 
@@ -273,6 +275,7 @@ void iopins_init(void) //setup io pins config
 {
 	ioport_set_pin_dir(PIN_SHUTTER, IOPORT_DIR_OUTPUT);
 	ioport_set_pin_dir(PIN_STATUSLED, IOPORT_DIR_OUTPUT);
+	ioport_set_pin_dir(PIN_POWERLED, IOPORT_DIR_OUTPUT);
 }
 
 void spi_init(void) //setup SPI for DAC084S085
