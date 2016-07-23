@@ -44,7 +44,7 @@ int main (void)
 	shutter_set(LOW);
 	statusled_set(LOW);
 	ioport_set_pin_level(PIN_POWERLED, HIGH);
-	blank_and_center();
+	stop();
 	
 	sleepmgr_lock_mode(SLEEPMGR_WAIT_FAST);
 	
@@ -84,9 +84,7 @@ void SysTick_Handler(void) //systick timer ISR, called for each point
 				}
 				else
 				{
-					framePos = 0;
-					playing = false;
-					blank_and_center();
+					stop();
 				}
 				
 			}
@@ -104,23 +102,22 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 {
 	UNUSED(ep);
 	
-	//multi-byte values are little endian
-	//0-n:	frame data, point is 16bit X, 16bit Y, 8bit R, 8bit G, 8bit B, 8bit I
-	//n:	output rate 16bit
-	//n+2:	frame size in points 16bit
+	//0-n:	frame data, each point is 12-bit X+Y packed into 24-bit, 8bit R, 8bit G, 8bit B, 8bit I
+	//n:	output rate 16bit little endian
+	//n+2:	frame size in points 16bit little endian
 	//n+4:	flags
 	
 	if ( (status == UDD_EP_TRANSFER_OK) && (length <= MAXFRAMESIZE * 7 + 5) ) //if not invalid
 	{
 		uint16_t numOfPointBytes = length - 5; //from length of received data
-		uint16_t numOfPointBytes2 = ((usbBulkBufferAddress[numOfPointBytes + 3] << 8) + usbBulkBufferAddress[numOfPointBytes + 2]) * 8; //from control bytes
+		uint16_t numOfPointBytes2 = ((newFrameAddress[numOfPointBytes + 3] << 8) | newFrameAddress[numOfPointBytes + 2]) * 7; //from control bytes
 		
 		if (numOfPointBytes == numOfPointBytes2) //sanity check, skip frame if conflicting frame size information
 		{
 			cpu_irq_enter_critical();
-				uint8_t flags = usbBulkBufferAddress[numOfPointBytes + 4];
+				uint8_t flags = newFrameAddress[numOfPointBytes + 4];
 				newNotRepeat = (flags & (1 << 1));
-				outputSpeed = (usbBulkBufferAddress[numOfPointBytes + 1] << 8) + usbBulkBufferAddress[numOfPointBytes + 0];			
+				outputSpeed = (newFrameAddress[numOfPointBytes + 1] << 8) | newFrameAddress[numOfPointBytes + 0];			
 			
 				if ( (!playing) || (flags & (1 << 0)) ) //if frame is to start playing immediately
 				{
@@ -142,8 +139,6 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 			cpu_irq_leave_critical();
 		}
 	}
-	
-	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 }
 
 void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep)
@@ -156,9 +151,7 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 	{	
 		if (usbInterruptBufferAddress[0] == 0x01)		//STOP
 		{
-			playing = false;
-			framePos = 0;
-			blank_and_center();
+			stop();
 		}
 		else if (usbInterruptBufferAddress[0] == 0x02)	//SHUTTER
 		{
@@ -167,21 +160,23 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 		else if (usbInterruptBufferAddress[0] == 0x03)	//STATUS REQUEST
 		{
 			uint8_t statusTransfer[2] = {0x83, !newFrameReady};
+				
+			if (!newFrameReady)
+				udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+				
 			udi_vendor_interrupt_in_run(&statusTransfer[0], 2, NULL);
 		}
 		else if (usbInterruptBufferAddress[0] == 0xDE)	//ERASE GPNVM BIT, BOOT TO FIRMWARE UPDATE BOOTLOADER
 		{
-			playing = false;
-			blank_and_center();
+			stop();
 			flash_clear_gpnvm(1);
-			wdt_restart(WDT);
+			wdt_init(WDT, 0, 1, 0);
 			while (1); //MCU will restart into SAM-BA
 		}
 	}
 	
 	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 2, usb_interrupt_out_callback);
 }
-
 
 
 inline void point_output(void) //sends point data to the DACs, data is point number "framePos" in buffer "frameAddress".
@@ -191,25 +186,27 @@ inline void point_output(void) //sends point data to the DACs, data is point num
 	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
 	{
 		dacc_set_channel_selection(DACC, 0);
-		dacc_write_conversion_data(DACC, (currentPoint[0] << 4) + (currentPoint[1] & 0xFF) ); //X
+		dacc_write_conversion_data(DACC, (currentPoint[0] << 4) | (currentPoint[1] >> 4) ); //X
 	}
 	
-	spi_write(SPI, (currentPoint[4] << 4) + (0b0001 << 12), 0, 0); //G
-	spi_write(SPI, (currentPoint[5] << 4) + (0b0101 << 12), 0, 0); //B
-	spi_write(SPI, (currentPoint[6] << 4) + (0b1001 << 12), 0, 0); //I
-	spi_write(SPI, (currentPoint[3] << 4) + (0b1101 << 12), 0, 0); //R
+	spi_write(SPI, (currentPoint[4] << 4) | (0b0001 << 12), 0, 0); //G
+	spi_write(SPI, (currentPoint[5] << 4) | (0b0101 << 12), 0, 0); //B
+	spi_write(SPI, (currentPoint[6] << 4) | (0b1001 << 12), 0, 0); //I
+	spi_write(SPI, (currentPoint[3] << 4) | (0b1101 << 12), 0, 0); //R
 	
 	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
 	{
 		dacc_set_channel_selection(DACC, 1);
-		dacc_write_conversion_data(DACC, ((currentPoint[1] & 0xFF00) << 8) + currentPoint[2]); //Y
+		dacc_write_conversion_data(DACC, ((currentPoint[1] & 0x0F) << 8) | currentPoint[2]); //Y
 	}
 	
-	statusled_set( (currentPoint[4] || currentPoint[5] || currentPoint[6] || currentPoint[7]) ); //turn on status led if not blanked
+	statusled_set( (currentPoint[6] != 0) ); //turn on status led if not blanked
 }
 
-inline void blank_and_center(void) //outputs a blanked and centered point
+inline void stop(void) //outputs a blanked and centered point and stops playback
 {
+	playing = false;
+		
 	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
 	{
 		dacc_set_channel_selection(DACC, 0 );
@@ -218,42 +215,43 @@ inline void blank_and_center(void) //outputs a blanked and centered point
 	
 	spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
 	
+	framePos = 0;
+	newFrameReady = false;
+	statusled_set(LOW);
+	
 	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
 	{
 		dacc_set_channel_selection(DACC, 1 );
 		dacc_write_conversion_data(DACC, 0x800 ); //Y
 	}
-	
-	statusled_set(LOW);
 }
 
 inline void speed_set(uint32_t rate) //set the output speed in points per second
 {
 	if (rate > MAXSPEED)
-	rate = MAXSPEED;
+		rate = MAXSPEED;
 	else if (rate < MINSPEED)
-	rate = MINSPEED;
+		rate = MINSPEED;
 	outputSpeed = rate;
 	SysTick_Config( (sysclk_get_cpu_hz() / rate) + 1);
 }
 
 int callback_vendor_enable(void) //usb connection opened, preparing for activity
-{
+{	
+	stop();
+	
 	sleepmgr_unlock_mode(SLEEPMGR_WAIT_FAST);
 	sleepmgr_lock_mode(SLEEPMGR_ACTIVE);
 	
-	udi_vendor_bulk_out_run(usbBulkBufferAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 2, usb_interrupt_out_callback);
+	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 	
 	return 1;
 }
 
 void callback_vendor_disable(void) //usb connection closed, sleeping to save power
 {
-	playing = false;
-	framePos = 0;
-	blank_and_center();
-	statusled_set(LOW);
+	stop();
 	
 	sleepmgr_unlock_mode(SLEEPMGR_ACTIVE);
 	sleepmgr_lock_mode(SLEEPMGR_WAIT_FAST);

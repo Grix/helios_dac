@@ -35,8 +35,7 @@ bool notRepeat = true;					//signals that current frame should be only be played
 bool newNotRepeat = true;				//notRepeat value for pending frame
 
 uint8_t* frameAddress;				//frame currently being played
-uint8_t* newFrameAddress;			//pending frame waiting to be played
-uint8_t* usbBulkBufferAddress;		//usb bulk transfer buffer
+uint8_t* newFrameAddress;			//buffer to receive usb transfer with frame
 uint8_t* usbInterruptBufferAddress;	//usb interrupt transfer buffer
 
 //functions
@@ -44,7 +43,7 @@ void speed_set(uint32_t rate);		//sets up the systick interrupt to match the pla
 void shutter_set(bool level);		//sets the shutter level
 void statusled_set(bool level);		//sets the status LED level
 void point_output(void);			//outputs current point (controlled by framePos and frameAddress variables)
-void blank_and_center(void);		//blanks and centers output
+void stop(void);					//blanks and centers output and stops playback
 void spi_init(void);				//sets up SPI module
 void dac_init(void);				//sets up DACC module
 void iopins_init(void);				//sets up IO module and pins

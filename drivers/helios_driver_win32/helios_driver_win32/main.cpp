@@ -10,8 +10,6 @@ HeliosDAC class (part of this driver)
 #include "main.h"
 
 
-//initializes drivers, opens connection to all devices. 
-//Returns number of available devices.
 int OpenDevices()
 {
 	CloseDevices();
@@ -32,16 +30,6 @@ int OpenDevices()
 }
 
 
-//writes and outputs a frame to the speficied dac
-//dacNum: dac number (0 to n where n+1 is the return value from OpenDevices() )
-//pps: rate of output in points per second
-//flags: (default is 0)
-//	Bit 0 (LSB) = if true, start output immediately, instead of waiting for current frame (if there is one) to finish playing
-//	Bit 1 = if true, play frame only once, instead of repeating until another frame is written
-//	Bit 2-7 = reserved
-//points: pointer to point data. See point structure documentation in main.h
-//numOfPoints: number of points in the frame
-//returns 1 if successful
 int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numOfPoints)
 {
 	if ((!inited) || (points == NULL))
@@ -54,26 +42,24 @@ int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numO
 	for (int i = 0; i < numOfPoints; i++)
 	{
 		frameBuffer[bufPos++] = (points[i].x >> 4);
-		frameBuffer[bufPos++] = ((points[i].x & 0xF) << 4) + (points[i].y >> 8);
+		frameBuffer[bufPos++] = ((points[i].x & 0x0F) << 4) | (points[i].y >> 8);
 		frameBuffer[bufPos++] = (points[i].y & 0xFF);
 		frameBuffer[bufPos++] = points[i].r;
 		frameBuffer[bufPos++] = points[i].g;
 		frameBuffer[bufPos++] = points[i].b;
 		frameBuffer[bufPos++] = points[i].i;
 	}
-	frameBuffer[bufPos++] = (pps >> 8);
 	frameBuffer[bufPos++] = (pps & 0xFF);
-	frameBuffer[bufPos++] = (numOfPoints >> 8);
+	frameBuffer[bufPos++] = (pps >> 8);
 	frameBuffer[bufPos++] = (numOfPoints & 0xFF);
+	frameBuffer[bufPos++] = (numOfPoints >> 8);
 	frameBuffer[bufPos++] = flags;
 
 	//send frame to dac
-	return dacController->SendFrame(dacNum, frameBuffer, numOfPoints * 7 + 5);
+	return dacController->SendFrame(dacNum, frameBuffer, bufPos);
 }
 
 
-//stops, blanks and centers output on the specified dac
-//returns 1 if successful
 int Stop(int dacNum)
 {
 	if (!inited)
@@ -83,16 +69,20 @@ int Stop(int dacNum)
 	return dacController->SendControl(dacNum, &ctrlBuffer[0], false);
 }
 
-//gets a descriptive name of the specified dac
-//name is max 32 bytes long
-//returns 1 if successful
+
 int GetName(int dacNum, char* name)
 {
-	//todo get an actual unique name from the DAC itself
 	if (!inited)
 		return 0;
 
-	name = "Helios ";
+	//todo: something better than this horseshit
+	name[0] = 'H';
+	name[1] = 'e';
+	name[2] = 'l';
+	name[3] = 'i';
+	name[4] = 'o';
+	name[5] = 's';
+	name[6] = ' ';
 	name[7] = (char)((int)(dacNum >= 10) + 48);
 	name[8] = (char)((int)(dacNum % 10) + 48);
 	name[9] = '\0';
@@ -101,32 +91,26 @@ int GetName(int dacNum, char* name)
 }
 
 
-//Gets status from the specified dac. 
-//Byte 0 (LSB): True if DAC is ready to receive new frame, false otherwise
-//Byte 1-6: reserved
-//Byte 7 (MSB): True if function succeeded, false if status could not be retrived
-uint8_t GetStatus(int dacNum)
+int GetStatus(int dacNum)
 {
 	if (!inited)
-		return 0;
+		return -1;
 
 	uint8_t ctrlBuffer[2] = { 0x03, 0 };
 	uint16_t result = dacController->SendControl(dacNum, &ctrlBuffer[0], true);
 
-	uint8_t returnVal = 0;
-
 	if ((result >> 8) == 0x83) //if received control byte is as expected
 	{
-		returnVal |= (1 << 7); //set function success bit
 		if (result & 1) //if dac is ready
-			returnVal |= 1; //set ready bit
+			return 1;
+		else
+			return 0;
 	}
-	return returnVal;
+	else
+		return -1;
 }
 
-//sets the shutter of the specified dac. 
-//value 1 = shutter on, value 0 = shutter off
-//returns 1 if successful
+
 int SetShutter(int dacNum, bool value)
 {
 	if (!inited)
@@ -137,7 +121,6 @@ int SetShutter(int dacNum, bool value)
 }
 
 
-//closes connection to all dacs and frees resources
 int CloseDevices()
 {
 	if (inited)
@@ -237,7 +220,7 @@ int WINAPI OLSC_WriteFrame(int device_number, OLSC_Frame frame)
 	if ((frame.point_count > dacController->maxPoints) || (frame.display_speed > dacController->maxRate))
 		return 0;
 
-	//prepare frame buffer
+	//prepare frame buffer, 16-bit values are explicitly split into 8-bit to avoid endianness-problems across any architecture
 	int bufPos = 0;
 	for (int i = 0; i < frame.point_count; i++)
 	{
