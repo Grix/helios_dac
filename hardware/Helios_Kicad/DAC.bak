@@ -65,7 +65,7 @@ Text HLabel 5900 4450 2    60   Input ~ 0
 Din
 Text HLabel 4550 4650 0    60   Output ~ 0
 R
-Text HLabel 4550 4350 0    60   Output ~ 0
+Text HLabel 4550 4550 0    60   Output ~ 0
 G
 Text HLabel 4550 4450 0    60   Output ~ 0
 B
@@ -116,7 +116,7 @@ F 3 "" H 4600 3250 50  0000 C CNN
 $EndComp
 Wire Wire Line
 	4600 3250 4600 3450
-Text HLabel 4550 4550 0    60   Output ~ 0
+Text HLabel 4550 4350 0    60   Output ~ 0
 Intensity
 Wire Wire Line
 	4550 4650 4650 4650
@@ -126,7 +126,7 @@ U 1 1 573A519D
 P 4900 3600
 F 0 "C11" H 4925 3700 50  0000 L CNN
 F 1 "4.7uF" H 4925 3500 50  0000 L CNN
-F 2 "Capacitors_SMD:C_0603" H 4938 3450 50  0001 C CNN
+F 2 "Capacitors_SMD:c_elec_4x5.3" H 4938 3450 50  0001 C CNN
 F 3 "" H 4900 3600 50  0000 C CNN
 	1    4900 3600
 	-1   0    0    1   
