@@ -4,7 +4,7 @@
 #include "libusb.h"
 
 #define HELIOS_MAX_DEVICES	16
-#define HELIOS_MAX_POINTS	3000
+#define HELIOS_MAX_POINTS	0x1000
 #define HELIOS_MAX_RATE		0xFFFF
 
 //usb properties
@@ -27,8 +27,6 @@ public:
 	int SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize);
 
 	int numOfDevices = 0;
-	const int maxPoints = HELIOS_MAX_POINTS;
-	const int maxRate = HELIOS_MAX_RATE;
 
 private:
 

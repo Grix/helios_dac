@@ -23,7 +23,10 @@ int OpenDevices()
 	else
 	{
 		inited = true;
-		frameBuffer = new uint8_t[dacController->maxPoints * 7 + 5];
+
+		/*frameMutex = new std::mutex*[dacController->numOfDevices * 2];
+		for (int i = 0; i < dacController->numOfDevices*2; i++)
+			frameMutex[i] = new std::mutex;*/
 	}
 
 	return result;
@@ -34,10 +37,21 @@ int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numO
 {
 	if ((!inited) || (points == NULL))
 		return 0;
-	if ((numOfPoints > dacController->maxPoints) || (pps > dacController->maxRate))
+	if ((numOfPoints > HELIOS_MAX_POINTS) || (pps > HELIOS_MAX_RATE))
 		return 0;
+	
+	/*int thisFrameNum = ++frameNum[dacNum];*/
+
+	//lock frame buffer
+	//std::lock_guard<std::mutex> lock(*frameMutex[dacNum * 2 + frameBufferIndex[dacNum]]);
+	//frameMutex[dacNum * 2 + frameBufferIndex[dacNum]]->lock();
+	//std::lock_guard<std::mutex> lock(testMutex);
+
+	//if (frameNum[dacNum] > thisFrameNum+1) //if newer frame is waiting to be transfered, cancel this one
+	//	return 0;
 
 	//prepare frame buffer
+	uint8_t frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
 	int bufPos = 0;
 	for (int i = 0; i < numOfPoints; i++)
 	{
@@ -55,8 +69,23 @@ int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numO
 	frameBuffer[bufPos++] = (numOfPoints >> 8);
 	frameBuffer[bufPos++] = flags;
 
-	//send frame to dac
-	return dacController->SendFrame(dacNum, frameBuffer, bufPos);
+	//if ((flags & (1 << 2)) == 0)
+	//{
+	//	for (int i = 0; i < 16; i++)
+	//	{
+	//		if (frameNum[dacNum] > thisFrameNum) //if newer frame is waiting to be transfered, cancel this one
+	//			break;
+	//		if (GetStatus(dacNum) == 1)
+	//		{
+	//			return (dacController->SendFrame(dacNum, frameBuffer + startPos, bufPos - startPos) == 1);
+	//		}
+	//	}
+
+	//	return 0;
+	//}
+	//else
+		return dacController->SendFrame(dacNum, &frameBuffer[0], bufPos);
+
 }
 
 
@@ -125,9 +154,11 @@ int CloseDevices()
 {
 	if (inited)
 	{
-		delete dacController;
-		delete frameBuffer;
 		inited = false;
+		//for (int i = 0; i < dacController->numOfDevices * 2; i++)
+		//	delete frameMutex[i];
+		//delete frameMutex;
+		delete dacController;
 		return 1;
 	}
 	else
@@ -179,8 +210,8 @@ int WINAPI OLSC_GetDeviceCapabilities(int device_number, OLSC_DeviceCapabilites&
 	device_capabilities.has_dmx_out = false;
 	device_capabilities.has_ttl_in = false;
 	device_capabilities.has_ttl_out = false;
-	device_capabilities.max_frame_size = dacController->maxPoints;
-	device_capabilities.max_speed = dacController->maxRate;
+	device_capabilities.max_frame_size = HELIOS_MAX_POINTS;
+	device_capabilities.max_speed = HELIOS_MAX_RATE;
 	device_capabilities.min_frame_size = 1;
 	device_capabilities.min_speed = 6;
 	GetName(device_number, device_capabilities.name);
@@ -217,10 +248,11 @@ int WINAPI OLSC_WriteFrame(int device_number, OLSC_Frame frame)
 {
 	if (!inited)
 		return 0;
-	if ((frame.point_count > dacController->maxPoints) || (frame.display_speed > dacController->maxRate))
+	if ((frame.point_count > HELIOS_MAX_POINTS) || (frame.display_speed > HELIOS_MAX_RATE))
 		return 0;
 
 	//prepare frame buffer, 16-bit values are explicitly split into 8-bit to avoid endianness-problems across any architecture
+	uint8_t frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
 	int bufPos = 0;
 	for (int i = 0; i < frame.point_count; i++)
 	{
@@ -239,7 +271,7 @@ int WINAPI OLSC_WriteFrame(int device_number, OLSC_Frame frame)
 	frameBuffer[bufPos++] = 0;
 
 	//send frame to dac
-	return dacController->SendFrame(device_number, frameBuffer, frame.point_count * 7 + 5);
+	return dacController->SendFrame(device_number, &frameBuffer[0], bufPos);
 }
 
 int WINAPI OLSC_GetStatus(int device_number, DWORD& status)

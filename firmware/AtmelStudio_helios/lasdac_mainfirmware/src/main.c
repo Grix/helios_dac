@@ -102,7 +102,7 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 {
 	UNUSED(ep);
 	
-	//0-n:	frame data, each point is 12-bit X+Y packed into 24-bit, 8bit R, 8bit G, 8bit B, 8bit I
+	//0-n:	frame data, each point is 12-bit X+Y packed into 24-bit big-endian, 8bit R, 8bit G, 8bit B, 8bit I
 	//n:	output rate 16bit little endian
 	//n+2:	frame size in points 16bit little endian
 	//n+4:	flags
@@ -165,6 +165,10 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 				udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 				
 			udi_vendor_interrupt_in_run(&statusTransfer[0], 2, NULL);
+			
+			//ioport_toggle_pin_level(PIN_DEBUG1); //debug
+			//ioport_set_pin_level(PIN_DEBUG1, HIGH);
+			//ioport_set_pin_level(PIN_DEBUG2, HIGH);
 		}
 		else if (usbInterruptBufferAddress[0] == 0xDE)	//ERASE GPNVM BIT, BOOT TO FIRMWARE UPDATE BOOTLOADER
 		{
@@ -244,7 +248,6 @@ int callback_vendor_enable(void) //usb connection opened, preparing for activity
 	sleepmgr_lock_mode(SLEEPMGR_ACTIVE);
 	
 	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 2, usb_interrupt_out_callback);
-	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 	
 	return 1;
 }
@@ -274,6 +277,11 @@ void iopins_init(void) //setup io pins config
 	ioport_set_pin_dir(PIN_SHUTTER, IOPORT_DIR_OUTPUT);
 	ioport_set_pin_dir(PIN_STATUSLED, IOPORT_DIR_OUTPUT);
 	ioport_set_pin_dir(PIN_POWERLED, IOPORT_DIR_OUTPUT);
+	
+	ioport_set_pin_dir(PIN_DEBUG1, IOPORT_DIR_OUTPUT);
+	ioport_set_pin_level(PIN_DEBUG1, LOW);
+	ioport_set_pin_dir(PIN_DEBUG2, IOPORT_DIR_OUTPUT);
+	ioport_set_pin_level(PIN_DEBUG2, LOW);
 }
 
 void spi_init(void) //setup SPI for DAC084S085

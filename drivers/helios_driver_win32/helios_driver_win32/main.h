@@ -12,13 +12,18 @@ HeliosDAC class (part of this driver)
 #include "libusb.h"
 #include "stdio.h"
 #include "HeliosDac.h"
+#include <mutex>
 
 #define HELIOS_EXPORT extern "C" __declspec (dllexport)
 #define OLSC_EXPORT extern "C" __declspec(dllexport)
 
 bool inited = false;
 HeliosDac* dacController;
-uint8_t* frameBuffer;
+//uint8_t* frameBuffer;
+//bool* frameBufferIndex;
+//int* frameNum;
+std::mutex frameMutex;
+//std::mutex testMutex;
 
 //point data structure
 typedef struct 
@@ -45,7 +50,8 @@ HELIOS_EXPORT int GetStatus(int dacNum);
 //flags: (default is 0)
 //	Bit 0 (LSB) = if true, start output immediately, instead of waiting for current frame (if there is one) to finish playing
 //	Bit 1 = if true, play frame only once, instead of repeating until another frame is written
-//	Bit 2-7 = reserved
+//	Bit 2 = if true, do NOT check if DAC is ready before sending a frame (must be done manually using GetStatus instead otherwise the write will fail)
+//	Bit 3-7 = reserved
 //points: pointer to point data. See point structure documentation in main.h
 //numOfPoints: number of points in the frame
 //returns 1 if successful
@@ -66,6 +72,7 @@ HELIOS_EXPORT int GetName(int dacNum, char* name);
 HELIOS_EXPORT int Stop(int dacNum);
 
 //closes connection to all dacs and frees resources
+//should be called when library is no longer needed (program exit for example)
 HELIOS_EXPORT int CloseDevices();
 
 //-------------------------------------------

@@ -1287,29 +1287,29 @@ LOAD c:/program files (x86)/atmel studio/7.0/toolchain/arm/arm-gnu-toolchain/bin
                 0x004029bc       0xc0 src/main.o
                 0x004029bc                usb_bulk_out_callback
  .text.callback_vendor_enable
-                0x00402a7c       0x54 src/main.o
+                0x00402a7c       0x3c src/main.o
                 0x00402a7c                callback_vendor_enable
  .text.callback_vendor_disable
-                0x00402ad0       0x20 src/main.o
-                0x00402ad0                callback_vendor_disable
+                0x00402ab8       0x20 src/main.o
+                0x00402ab8                callback_vendor_disable
  .text.shutter_set
-                0x00402af0       0x14 src/main.o
-                0x00402af0                shutter_set
+                0x00402ad8       0x14 src/main.o
+                0x00402ad8                shutter_set
  .text.usb_interrupt_out_callback
-                0x00402b04       0xc0 src/main.o
-                0x00402b04                usb_interrupt_out_callback
+                0x00402aec       0xc0 src/main.o
+                0x00402aec                usb_interrupt_out_callback
  .text.statusled_set
-                0x00402bc4       0x14 src/main.o
-                0x00402bc4                statusled_set
+                0x00402bac       0x14 src/main.o
+                0x00402bac                statusled_set
  .text.point_output
-                0x00402bd8       0xc8 src/main.o
-                0x00402bd8                point_output
+                0x00402bc0       0xc8 src/main.o
+                0x00402bc0                point_output
  .text.SysTick_Handler
-                0x00402ca0       0xa0 src/main.o
-                0x00402ca0                SysTick_Handler
+                0x00402c88       0xa0 src/main.o
+                0x00402c88                SysTick_Handler
  .text.iopins_init
-                0x00402d40       0x28 src/main.o
-                0x00402d40                iopins_init
+                0x00402d28       0x40 src/main.o
+                0x00402d28                iopins_init
  .text.spi_init
                 0x00402d68       0xcc src/main.o
                 0x00402d68                spi_init

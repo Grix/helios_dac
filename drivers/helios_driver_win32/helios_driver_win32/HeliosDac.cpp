@@ -82,7 +82,7 @@ int HeliosDac::SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize)
 
 	int actualLength = 0;
 
-	int transferResult = libusb_bulk_transfer(deviceList[devNum], EP_BULK_OUT, bufferAddress, bufferSize, &actualLength, 1000);
+	int transferResult = libusb_bulk_transfer(deviceList[devNum], EP_BULK_OUT, bufferAddress, bufferSize, &actualLength, 500);
 
 	return ((transferResult == 0) && (actualLength == bufferSize));
 }
@@ -96,7 +96,7 @@ uint16_t HeliosDac::SendControl(int devNum, uint8_t* bufferAddress, bool getResp
 		return 0;
 
 	int actualLength = 0;
-	int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_OUT, bufferAddress, 2, &actualLength, 1000);
+	int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_OUT, bufferAddress, 2, &actualLength, 100);
 
 	if (getResponse)
 	{
@@ -105,7 +105,7 @@ uint16_t HeliosDac::SendControl(int devNum, uint8_t* bufferAddress, bool getResp
 
 		uint8_t data[2] = { 0, 0 }; 
 		actualLength = 0;
-		transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], 2, &actualLength, 1000);
+		transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], 2, &actualLength, 200);
 
 		if ((transferResult < 0) || (actualLength != 2))
 			return 0;
