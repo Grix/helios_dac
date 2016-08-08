@@ -19,11 +19,8 @@ HeliosDAC class (part of this driver)
 
 bool inited = false;
 HeliosDac* dacController;
-//uint8_t* frameBuffer;
-//bool* frameBufferIndex;
-//int* frameNum;
-std::mutex frameMutex;
-//std::mutex testMutex;
+int frameNum[HELIOS_MAX_DEVICES];
+std::mutex frameMutex[HELIOS_MAX_DEVICES];
 
 //point data structure
 typedef struct 

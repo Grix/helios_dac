@@ -39,16 +39,6 @@ int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numO
 		return 0;
 	if ((numOfPoints > HELIOS_MAX_POINTS) || (pps > HELIOS_MAX_RATE))
 		return 0;
-	
-	/*int thisFrameNum = ++frameNum[dacNum];*/
-
-	//lock frame buffer
-	//std::lock_guard<std::mutex> lock(*frameMutex[dacNum * 2 + frameBufferIndex[dacNum]]);
-	//frameMutex[dacNum * 2 + frameBufferIndex[dacNum]]->lock();
-	//std::lock_guard<std::mutex> lock(testMutex);
-
-	//if (frameNum[dacNum] > thisFrameNum+1) //if newer frame is waiting to be transfered, cancel this one
-	//	return 0;
 
 	//prepare frame buffer
 	uint8_t frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
@@ -69,23 +59,7 @@ int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numO
 	frameBuffer[bufPos++] = (numOfPoints >> 8);
 	frameBuffer[bufPos++] = flags;
 
-	//if ((flags & (1 << 2)) == 0)
-	//{
-	//	for (int i = 0; i < 16; i++)
-	//	{
-	//		if (frameNum[dacNum] > thisFrameNum) //if newer frame is waiting to be transfered, cancel this one
-	//			break;
-	//		if (GetStatus(dacNum) == 1)
-	//		{
-	//			return (dacController->SendFrame(dacNum, frameBuffer + startPos, bufPos - startPos) == 1);
-	//		}
-	//	}
-
-	//	return 0;
-	//}
-	//else
-		return dacController->SendFrame(dacNum, &frameBuffer[0], bufPos);
-
+	return dacController->SendFrame(dacNum, &frameBuffer[0], bufPos);
 }
 
 
