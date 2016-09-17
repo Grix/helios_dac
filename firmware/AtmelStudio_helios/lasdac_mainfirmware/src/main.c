@@ -165,10 +165,6 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 				udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 				
 			udi_vendor_interrupt_in_run(&statusTransfer[0], 2, NULL);
-			
-			//ioport_toggle_pin_level(PIN_DEBUG1); //debug
-			//ioport_set_pin_level(PIN_DEBUG1, HIGH);
-			//ioport_set_pin_level(PIN_DEBUG2, HIGH);
 		}
 		else if (usbInterruptBufferAddress[0] == 0xDE)	//ERASE GPNVM BIT, BOOT TO FIRMWARE UPDATE BOOTLOADER
 		{
@@ -193,9 +189,9 @@ inline void point_output(void) //sends point data to the DACs, data is point num
 		dacc_write_conversion_data(DACC, (currentPoint[0] << 4) | (currentPoint[1] >> 4) ); //X
 	}
 	
-	spi_write(SPI, (currentPoint[4] << 4) | (0b0001 << 12), 0, 0); //G
+	spi_write(SPI, (currentPoint[6] << 4) | (0b0001 << 12), 0, 0); //I
 	spi_write(SPI, (currentPoint[5] << 4) | (0b0101 << 12), 0, 0); //B
-	spi_write(SPI, (currentPoint[6] << 4) | (0b1001 << 12), 0, 0); //I
+	spi_write(SPI, (currentPoint[4] << 4) | (0b1001 << 12), 0, 0); //G
 	spi_write(SPI, (currentPoint[3] << 4) | (0b1101 << 12), 0, 0); //R
 	
 	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
@@ -228,6 +224,8 @@ inline void stop(void) //outputs a blanked and centered point and stops playback
 		dacc_set_channel_selection(DACC, 1 );
 		dacc_write_conversion_data(DACC, 0x800 ); //Y
 	}
+	
+	spi_write(SPI, (0b0010 << 12), 0, 0); //blank colors again to be sure
 }
 
 inline void speed_set(uint32_t rate) //set the output speed in points per second
@@ -278,10 +276,10 @@ void iopins_init(void) //setup io pins config
 	ioport_set_pin_dir(PIN_STATUSLED, IOPORT_DIR_OUTPUT);
 	ioport_set_pin_dir(PIN_POWERLED, IOPORT_DIR_OUTPUT);
 	
-	ioport_set_pin_dir(PIN_DEBUG1, IOPORT_DIR_OUTPUT);
-	ioport_set_pin_level(PIN_DEBUG1, LOW);
-	ioport_set_pin_dir(PIN_DEBUG2, IOPORT_DIR_OUTPUT);
-	ioport_set_pin_level(PIN_DEBUG2, LOW);
+	//ioport_set_pin_dir(PIN_DEBUG1, IOPORT_DIR_OUTPUT);
+	//ioport_set_pin_level(PIN_DEBUG1, LOW);
+	//ioport_set_pin_dir(PIN_DEBUG2, IOPORT_DIR_OUTPUT);
+	//ioport_set_pin_level(PIN_DEBUG2, LOW);
 }
 
 void spi_init(void) //setup SPI for DAC084S085

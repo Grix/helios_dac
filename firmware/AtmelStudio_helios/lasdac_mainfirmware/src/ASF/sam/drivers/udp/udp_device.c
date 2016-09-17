@@ -1458,8 +1458,6 @@ static bool udd_ep_in_sent(udd_ep_id_t ep, bool b_tx)
 
 static void udd_ep_out_received(udd_ep_id_t ep)
 {
-	//ioport_toggle_pin_level(PIN_DEBUG2); //debug
-	
 	udd_ep_job_t *ptr_job = &udd_ep_job[ep - 1];
 	uint32_t nb_data = 0, i;
 	uint32_t nb_remain = ptr_job->buf_size - ptr_job->buf_cnt;

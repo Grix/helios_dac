@@ -21,7 +21,7 @@ Required Atmel Software Framework modules:
 
 //macros
 #define MAXSPEED 0xFFFF		//in pps	(65535)
-#define MINSPEED 3			//in pps
+#define MINSPEED 6			//in pps
 #define MAXFRAMESIZE 0x1000	//in points (4096)
 
 //global variables

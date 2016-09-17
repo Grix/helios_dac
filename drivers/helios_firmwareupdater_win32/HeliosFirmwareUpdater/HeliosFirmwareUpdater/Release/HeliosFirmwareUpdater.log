@@ -1,7 +1,14 @@
-﻿Build started 2016-07-20 14:56.45.
+﻿Build started 2016-09-16 23:54.43.
      1>Project "D:\GitHub\helios_dac\drivers\helios_firmwareupdater_win32\HeliosFirmwareUpdater\HeliosFirmwareUpdater\HeliosFirmwareUpdater.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt main.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt HeliosDac.cpp main.cpp
+         HeliosDac.cpp
+     1>d:\github\helios_dac\drivers\helios_firmwareupdater_win32\heliosfirmwareupdater\heliosfirmwareupdater\libusb.h(738): warning C4200: nonstandard extension used : zero-sized array in struct/union
+                 Cannot generate copy-ctor or copy-assignment operator when UDT contains a zero-sized array
+     1>d:\github\helios_dac\drivers\helios_firmwareupdater_win32\heliosfirmwareupdater\heliosfirmwareupdater\libusb.h(769): warning C4200: nonstandard extension used : zero-sized array in struct/union
+                 Cannot generate copy-ctor or copy-assignment operator when UDT contains a zero-sized array
+     1>d:\github\helios_dac\drivers\helios_firmwareupdater_win32\heliosfirmwareupdater\heliosfirmwareupdater\libusb.h(1262): warning C4200: nonstandard extension used : zero-sized array in struct/union
+                 Cannot generate copy-ctor or copy-assignment operator when UDT contains a zero-sized array
          main.cpp
      1>d:\github\helios_dac\drivers\helios_firmwareupdater_win32\heliosfirmwareupdater\heliosfirmwareupdater\libusb.h(738): warning C4200: nonstandard extension used : zero-sized array in struct/union
                  Cannot generate copy-ctor or copy-assignment operator when UDT contains a zero-sized array
@@ -28,4 +35,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:00.81
+Time Elapsed 00:00:01.31

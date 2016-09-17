@@ -1,8 +1,8 @@
-﻿Build started 2016-08-08 17:23.32.
+﻿Build started 2016-09-16 23:55.39.
      1>Project "D:\GitHub\helios_dac\drivers\helios_driver_win32\helios_driver_win32\helios_driver_win32.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _WINDOWS /D _USRDLL /D HELIOS_DRIVER_WIN32_EXPORTS /D _WINDLL /D _UNICODE /D UNICODE /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt main.cpp
-         main.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _WINDOWS /D _USRDLL /D HELIOS_DRIVER_WIN32_EXPORTS /D _WINDLL /D _UNICODE /D UNICODE /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt HeliosDac.cpp
+         HeliosDac.cpp
      1>d:\github\helios_dac\drivers\helios_driver_win32\helios_driver_win32\libusb.h(738): warning C4200: nonstandard extension used : zero-sized array in struct/union
                  Cannot generate copy-ctor or copy-assignment operator when UDT contains a zero-sized array
      1>d:\github\helios_dac\drivers\helios_driver_win32\helios_driver_win32\libusb.h(769): warning C4200: nonstandard extension used : zero-sized array in struct/union
@@ -28,4 +28,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:02.07
+Time Elapsed 00:00:01.21

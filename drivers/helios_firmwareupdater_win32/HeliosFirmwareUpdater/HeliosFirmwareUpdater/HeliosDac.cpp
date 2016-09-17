@@ -7,7 +7,6 @@ Dependencies: Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 
 #include "HeliosDac.h"
 
-
 HeliosDac::HeliosDac()
 {
 	inited = false;
@@ -38,7 +37,7 @@ int HeliosDac::OpenDevices()
 		return (int)cnt;
 
 	int devNum = 0;
-	for (int i = 0; ((i < cnt) && (i < HELIOS_MAX_DEVICES)); i++)
+	for (int i = 0; ((i < cnt) && (devNum < HELIOS_MAX_DEVICES)); i++)
 	{
 		struct libusb_device_descriptor devDesc;
 		int result = libusb_get_device_descriptor(devs[i], &devDesc);

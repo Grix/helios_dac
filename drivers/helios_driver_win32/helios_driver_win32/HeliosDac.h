@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include "libusb.h"
+#include <stdio.h>
 
 #define HELIOS_MAX_DEVICES	16
 #define HELIOS_MAX_POINTS	0x1000

@@ -21,13 +21,7 @@ int OpenDevices()
 	if (result <= 0)
 		delete dacController;
 	else
-	{
 		inited = true;
-
-		/*frameMutex = new std::mutex*[dacController->numOfDevices * 2];
-		for (int i = 0; i < dacController->numOfDevices*2; i++)
-			frameMutex[i] = new std::mutex;*/
-	}
 
 	return result;
 }
@@ -78,14 +72,7 @@ int GetName(int dacNum, char* name)
 	if (!inited)
 		return 0;
 
-	//todo: something better than this horseshit
-	name[0] = 'H';
-	name[1] = 'e';
-	name[2] = 'l';
-	name[3] = 'i';
-	name[4] = 'o';
-	name[5] = 's';
-	name[6] = ' ';
+	memcpy(name, "Helios ", 8);
 	name[7] = (char)((int)(dacNum >= 10) + 48);
 	name[8] = (char)((int)(dacNum % 10) + 48);
 	name[9] = '\0';
@@ -129,9 +116,6 @@ int CloseDevices()
 	if (inited)
 	{
 		inited = false;
-		//for (int i = 0; i < dacController->numOfDevices * 2; i++)
-		//	delete frameMutex[i];
-		//delete frameMutex;
 		delete dacController;
 		return 1;
 	}
@@ -150,7 +134,7 @@ int WINAPI OLSC_GetAPIVersion(void)
 
 int WINAPI OLSC_GetInterfaceName(char* pString)
 {
-	pString = "Helios";
+	memcpy(pString, "Helios", 7);
 	return 1;
 }
 
@@ -188,7 +172,7 @@ int WINAPI OLSC_GetDeviceCapabilities(int device_number, OLSC_DeviceCapabilites&
 	device_capabilities.max_speed = HELIOS_MAX_RATE;
 	device_capabilities.min_frame_size = 1;
 	device_capabilities.min_speed = 6;
-	GetName(device_number, device_capabilities.name);
+	GetName(device_number, &device_capabilities.name[0]);
 	device_capabilities.uses_callbacks = false;
 	device_capabilities.version_major = 1;
 	device_capabilities.version_minor = 0;
