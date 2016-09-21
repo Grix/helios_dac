@@ -52,4 +52,34 @@ void iopins_init(void);				//sets up IO module and pins
 void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep);
 void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep);
 
+
+// Below is part of setup to make Windows automatically install driver when plugged in
+// Credits: https://github.com/cjameshuff/m1k-fw
+
+/// Microsoft WCID descriptor
+typedef struct USB_MicrosoftCompatibleDescriptor_Interface {
+	uint8_t bFirstInterfaceNumber;
+	uint8_t reserved1;
+	uint8_t compatibleID[8];
+	uint8_t subCompatibleID[8];
+	uint8_t reserved2[6];
+} USB_MicrosoftCompatibleDescriptor_Interface;
+
+typedef struct USB_MicrosoftCompatibleDescriptor {
+	uint32_t dwLength;
+	uint16_t bcdVersion;
+	uint16_t wIndex;
+	uint8_t bCount;
+	uint8_t reserved[7];
+	USB_MicrosoftCompatibleDescriptor_Interface interfaces[];
+} USB_MicrosoftCompatibleDescriptor;
+
+bool msft_string_handle(void);
+bool usb_device_specific_request(void);
+
+#define stringify(x) #x
+#define xstringify(s) stringify(s)
+#define SWAP16(x) ((((x) & 0xff00)>> 8) | (((x) & 0x00ff) << 8))
+
+
 #endif /* MAIN_H_ */
