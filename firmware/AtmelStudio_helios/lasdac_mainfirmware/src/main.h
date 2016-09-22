@@ -74,9 +74,6 @@ typedef struct USB_MicrosoftCompatibleDescriptor {
 	USB_MicrosoftCompatibleDescriptor_Interface interfaces[];
 } USB_MicrosoftCompatibleDescriptor;
 
-bool msft_string_handle(void);
-bool usb_device_specific_request(void);
-
 #define stringify(x) #x
 #define xstringify(s) stringify(s)
 #define SWAP16(x) ((((x) & 0xff00)>> 8) | (((x) & 0x00ff) << 8))

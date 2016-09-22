@@ -320,11 +320,6 @@ void dac_init(void) //setup sam internal DAC controller
 static const char hwversion[] = xstringify(HW_VERSION);
 static const char fwversion[] = xstringify(FW_VERSION);
 
-static volatile bool reset;
-static bool main_b_vendor_enable;
-
-static uint8_t ret_data[64];
-
 static USB_MicrosoftCompatibleDescriptor msft_compatible = {
 	.dwLength = sizeof(USB_MicrosoftCompatibleDescriptor) +
 	1*sizeof(USB_MicrosoftCompatibleDescriptor_Interface),

@@ -132,7 +132,10 @@ extern void callback_vendor_disable(void);
 #define UDI_VENDOR_SETUP_IN_RECEIVED()   false
 
 #define UDC_GET_EXTRA_STRING() msft_string_handle()
+extern bool msft_string_handle(void);
 #define USB_DEVICE_SPECIFIC_REQUEST() usb_device_specific_request()
+extern bool usb_device_specific_request(void);
+
 /* *
  * #define  UDI_VENDOR_SETUP_OUT_RECEIVED()  my_vendor_setup_out_received()
  * extern bool my_vendor_setup_out_received(void);
@@ -166,6 +169,5 @@ extern void callback_vendor_disable(void);
 //! The includes of classes and other headers must be done
 //! at the end of this file to avoid compile error
 #include "udi_vendor_conf.h"
-#include "main.h"
 
 #endif // _CONF_USB_H_
