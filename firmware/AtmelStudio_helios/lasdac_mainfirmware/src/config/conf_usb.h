@@ -56,7 +56,7 @@
 
 //! Device definition (mandatory)
 #define  USB_DEVICE_VENDOR_ID             0x1209
-#define  USB_DEVICE_PRODUCT_ID            0xE500	//PID from http://pid.codes
+#define  USB_DEVICE_PRODUCT_ID            0xE500	//PID/VID from http://pid.codes
 #define  USB_DEVICE_MAJOR_VERSION         2
 #define  USB_DEVICE_MINOR_VERSION         0
 #define  USB_DEVICE_POWER                 150	//Max consumption on VBUS line (mA)
@@ -67,7 +67,7 @@
 //	(USB_CONFIG_ATTR_REMOTE_WAKEUP|USB_CONFIG_ATTR_BUS_POWERED)
 
 //! USB Device string definitions (Optional)
- #define  USB_DEVICE_MANUFACTURE_NAME      "Mikkelsen Electronics"
+ #define  USB_DEVICE_MANUFACTURE_NAME      "Gitle Mikkelsen"
  #define  USB_DEVICE_PRODUCT_NAME          "Helios Laser DAC"
  //#define  USB_DEVICE_SERIAL_NAME           "00001"
 

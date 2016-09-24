@@ -63,7 +63,7 @@ typedef struct USB_MicrosoftCompatibleDescriptor_Interface {
 	uint8_t compatibleID[8];
 	uint8_t subCompatibleID[8];
 	uint8_t reserved2[6];
-} USB_MicrosoftCompatibleDescriptor_Interface;
+} __attribute__((packed)) USB_MicrosoftCompatibleDescriptor_Interface;
 
 typedef struct USB_MicrosoftCompatibleDescriptor {
 	uint32_t dwLength;
@@ -72,11 +72,6 @@ typedef struct USB_MicrosoftCompatibleDescriptor {
 	uint8_t bCount;
 	uint8_t reserved[7];
 	USB_MicrosoftCompatibleDescriptor_Interface interfaces[];
-} USB_MicrosoftCompatibleDescriptor;
-
-#define stringify(x) #x
-#define xstringify(s) stringify(s)
-#define SWAP16(x) ((((x) & 0xff00)>> 8) | (((x) & 0x00ff) << 8))
-
+} __attribute__((packed)) USB_MicrosoftCompatibleDescriptor;
 
 #endif /* MAIN_H_ */

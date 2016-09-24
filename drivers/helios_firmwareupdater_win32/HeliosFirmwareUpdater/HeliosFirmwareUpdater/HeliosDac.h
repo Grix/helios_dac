@@ -12,8 +12,8 @@
 #define HELIOS_PID	0xE500
 #define EP_BULK_OUT	0x02
 #define EP_BULK_IN	0x81
-#define EP_INT_OUT	0x06 //?
-#define EP_INT_IN	0x87 //?
+#define EP_INT_OUT	0x06
+#define EP_INT_IN	0x87
 
 class HeliosDac
 {

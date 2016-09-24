@@ -206,6 +206,9 @@ inline void point_output(void) //sends point data to the DACs, data is point num
 inline void stop(void) //outputs a blanked and centered point and stops playback
 {
 	playing = false;
+	framePos = 0;
+	newFrameReady = false;
+	statusled_set(LOW);
 		
 	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
 	{
@@ -213,11 +216,11 @@ inline void stop(void) //outputs a blanked and centered point and stops playback
 		dacc_write_conversion_data(DACC, 0x800 ); //X
 	}
 	
-	spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
-	
-	framePos = 0;
-	newFrameReady = false;
-	statusled_set(LOW);
+	//blank colors
+	spi_write(SPI, (0b0001 << 12), 0, 0); //I
+	spi_write(SPI, (0b0101 << 12), 0, 0); //B
+	spi_write(SPI, (0b1001 << 12), 0, 0); //G
+	spi_write(SPI, (0b1101 << 12), 0, 0); //R
 	
 	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
 	{
@@ -225,7 +228,12 @@ inline void stop(void) //outputs a blanked and centered point and stops playback
 		dacc_write_conversion_data(DACC, 0x800 ); //Y
 	}
 	
-	spi_write(SPI, (0b0010 << 12), 0, 0); //blank colors again to be sure
+	//blank colors again to be sure, had some problems with them not being blanked first time
+	spi_write(SPI, (0b1101 << 12), 0, 0); //R
+	spi_write(SPI, (0b1001 << 12), 0, 0); //G
+	spi_write(SPI, (0b0101 << 12), 0, 0); //B
+	spi_write(SPI, (0b0001 << 12), 0, 0); //I
+	
 }
 
 inline void speed_set(uint32_t rate) //set the output speed in points per second
@@ -300,7 +308,7 @@ void spi_init(void) //setup SPI for DAC084S085
 	spi_set_clock_polarity(SPI, 0, 0);
 	spi_set_clock_phase(SPI, 0, 0);
 	spi_set_bits_per_transfer(SPI, 0, SPI_CSR_BITS_16_BIT);
-	spi_set_baudrate_div(SPI, 0, 7 ); //96MHz / 7 = 13.714..MHz
+	spi_set_baudrate_div(SPI, 0, 5 ); //96MHz / 5 = 19.2 MHz
 	spi_set_transfer_delay(SPI, 0, 0, 0);
 	spi_enable(SPI);
 }
@@ -316,9 +324,6 @@ void dac_init(void) //setup sam internal DAC controller
 
 // Below is all to make Windows automatically install driver when plugged in
 // Credits: https://github.com/cjameshuff/m1k-fw/
-
-static const char hwversion[] = xstringify(HW_VERSION);
-static const char fwversion[] = xstringify(FW_VERSION);
 
 static USB_MicrosoftCompatibleDescriptor msft_compatible = {
 	.dwLength = sizeof(USB_MicrosoftCompatibleDescriptor) +
@@ -383,21 +388,9 @@ bool msft_string_handle(void) {
 bool usb_device_specific_request(void) {
 	uint8_t* ptr = 0;
 	uint16_t size = 0;
-	if (Udd_setup_type() == USB_REQ_TYPE_VENDOR) {
+	
+	if (Udd_setup_type() == USB_REQ_TYPE_VENDOR) {//ioport_set_pin_level(PIN_POWERLED, LOW);
 		switch (udd_g_ctrlreq.req.bRequest) {
-			case 0x00: { // Info
-				switch(udd_g_ctrlreq.req.wIndex){
-					case 0:
-					ptr = (uint8_t*)hwversion;
-					size = sizeof(hwversion);
-					break;
-					case 1:
-					ptr = (uint8_t*)fwversion;
-					size = sizeof(fwversion);
-					break;
-				}
-				break;
-			}
 			/// windows compatible ID handling for auto install
 			case 0x30: {
 				if (udd_g_ctrlreq.req.wIndex == 0x04) {
@@ -406,6 +399,7 @@ bool usb_device_specific_request(void) {
 					if (size > msft_compatible.dwLength) {
 						size = msft_compatible.dwLength;
 					}
+					
 				}
 				else {
 					return false;

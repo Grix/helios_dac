@@ -1,4 +1,4 @@
-﻿Build started 2016-09-16 23:54.43.
+﻿Build started 2016-09-24 17:10.03.
      1>Project "D:\GitHub\helios_dac\drivers\helios_firmwareupdater_win32\HeliosFirmwareUpdater\HeliosFirmwareUpdater\HeliosFirmwareUpdater.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt HeliosDac.cpp main.cpp
