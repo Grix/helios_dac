@@ -23,6 +23,8 @@ int OpenDevices()
 	else
 		inited = true;
 
+	printf("OpenDevices() found: %d", result);
+
 	return result;
 }
 
@@ -31,7 +33,7 @@ int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numO
 {
 	if ((!inited) || (points == NULL))
 		return 0;
-	if ((numOfPoints > HELIOS_MAX_POINTS) || (pps > HELIOS_MAX_RATE))
+	if ((numOfPoints > HELIOS_MAX_POINTS) || (pps > HELIOS_MAX_RATE) || (pps < HELIOS_MIN_RATE))
 		return 0;
 
 	//prepare frame buffer
@@ -55,7 +57,6 @@ int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numO
 
 	return dacController->SendFrame(dacNum, &frameBuffer[0], bufPos);
 }
-
 
 int Stop(int dacNum)
 {
@@ -131,43 +132,43 @@ int CloseDevices()
 }
 
 
-//Below is OLSC implementation only
+//Below is OLSC implementation
 //OLSC API is designed by Chris Favreau, MIT License
 
-int WINAPI OLSC_GetAPIVersion(void)
+OLSC_API int __stdcall OLSC_GetAPIVersion(void)
 {
-	return OLSC_VERSION;
+	return OPEN_LASER_SHOW_DEVICE_API_VERSION;
 }
 
-int WINAPI OLSC_GetInterfaceName(char* pString)
+OLSC_API int __stdcall OLSC_GetInterfaceName(char* pString)
 {
 	memcpy(pString, "Helios", 7);
-	return 1;
+	return OLSC_ERROR_SUCCESS;
 }
 
-int WINAPI OLSC_Initialize(void)
+OLSC_API int __stdcall OLSC_Initialize(void)
 {
 	return OpenDevices();
 }
 
-int WINAPI OLSC_Shutdown(void)
+OLSC_API int __stdcall OLSC_Shutdown(void)
 {
 	CloseDevices();
-	return 1;
+	return OLSC_ERROR_SUCCESS;
 }
 
-int WINAPI OLSC_GetDeviceCount(void)
+OLSC_API int __stdcall OLSC_GetDeviceCount(void)
 {
 	if (!inited)
-		return 0;
+		return OLSC_ERROR_NONE;
 	else
 		return dacController->numOfDevices;
 }
 
-int WINAPI OLSC_GetDeviceCapabilities(int device_number, OLSC_DeviceCapabilites& device_capabilities)
+OLSC_API int __stdcall OLSC_GetDeviceCapabilities(int device_number, struct LASER_SHOW_DEVICE_CAPABILITIES& device_capabilities)
 {
 	if (!inited)
-		return 0;
+		return OLSC_ERROR_NONE;
 
 	device_capabilities.color_resolution = 8;
 	device_capabilities.xy_resolution = 12;
@@ -178,43 +179,53 @@ int WINAPI OLSC_GetDeviceCapabilities(int device_number, OLSC_DeviceCapabilites&
 	device_capabilities.max_frame_size = HELIOS_MAX_POINTS;
 	device_capabilities.max_speed = HELIOS_MAX_RATE;
 	device_capabilities.min_frame_size = 1;
-	device_capabilities.min_speed = 6;
+	device_capabilities.min_speed = HELIOS_MIN_RATE;
 	GetName(device_number, &device_capabilities.name[0]);
 	device_capabilities.uses_callbacks = false;
 	device_capabilities.version_major = 1;
 	device_capabilities.version_minor = 0;
 
-	return 1;
+	return OLSC_ERROR_SUCCESS;
 }
 
-int WINAPI OLSC_GetLastErrorNumber(int device_number, int& number, char* string_pointer, int string_length)
+OLSC_API int __stdcall OLSC_GetLastErrorNumber(int device_number, int& number, char* string_pointer, int string_length)
 {
 	//not supported yet
-	return 0;
+	return OLSC_ERROR_NONE;
 }
 
-int WINAPI OLSC_Play(int device_number)
+OLSC_API int __stdcall OLSC_Play(int device_number)
 {
-	//not supported yet, use WriteFrame
-	return 0;
+	//not supported yet, use OLSC_WriteFrame()
+	return OLSC_ERROR_NONE;
 }
 
-int WINAPI OLSC_Pause(int device_number)
+OLSC_API int __stdcall OLSC_Pause(int device_number)
 {
 	return Stop(device_number);
 }
 
-int WINAPI OLSC_Shutter(int device_number, int state)
+OLSC_API int __stdcall OLSC_Shutter(int device_number, int state)
 {
 	return SetShutter(device_number, !state); //OLSC uses 0 as ON for some reason
 }
 
-int WINAPI OLSC_WriteFrame(int device_number, OLSC_Frame frame)
+OLSC_API int __stdcall OLSC_WriteFrameEx(int device_number, int display_speed, int point_count, struct LASER_SHOW_DEVICE_POINT *points)
+{
+	struct LASER_SHOW_DEVICE_FRAME frame;
+	frame.display_speed = display_speed;
+	frame.point_count = point_count;
+	frame.points = points;
+
+	return OLSC_WriteFrame(device_number, frame);
+}
+
+OLSC_API int __stdcall OLSC_WriteFrame(int device_number, struct LASER_SHOW_DEVICE_FRAME frame)
 {
 	if (!inited)
-		return 0;
-	if ((frame.point_count > HELIOS_MAX_POINTS) || (frame.display_speed > HELIOS_MAX_RATE))
-		return 0;
+		return OLSC_ERROR_FAILED;
+	if ((frame.point_count > HELIOS_MAX_POINTS) || (frame.display_speed > HELIOS_MAX_RATE) || (frame.display_speed < HELIOS_MIN_RATE))
+		return OLSC_ERROR_INVALID_PARAMETER;
 
 	//prepare frame buffer, 16-bit values are explicitly split into 8-bit to avoid endianness-problems across any architecture
 	uint8_t frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
@@ -229,53 +240,64 @@ int WINAPI OLSC_WriteFrame(int device_number, OLSC_Frame frame)
 		frameBuffer[bufPos++] = (uint8_t)frame.points[i].b;
 		frameBuffer[bufPos++] = (uint8_t)frame.points[i].i;
 	}
-	frameBuffer[bufPos++] = (frame.display_speed >> 8);
 	frameBuffer[bufPos++] = (frame.display_speed & 0xFF);
-	frameBuffer[bufPos++] = (frame.point_count >> 8);
+	frameBuffer[bufPos++] = (frame.display_speed >> 8);
 	frameBuffer[bufPos++] = (frame.point_count & 0xFF);
+	frameBuffer[bufPos++] = (frame.point_count >> 8);
 	frameBuffer[bufPos++] = 0;
 
+	
 	//send frame to dac
 	return dacController->SendFrame(device_number, &frameBuffer[0], bufPos);
 }
 
-int WINAPI OLSC_GetStatus(int device_number, DWORD& status)
+OLSC_API int __stdcall OLSC_GetStatus(int device_number, DWORD& status)
 {
 	if (!inited)
-		return 0;
+		return OLSC_ERROR_NONE;
 
 	uint8_t statusResult = GetStatus(device_number);
-	if ((statusResult & (1 << 7)) == 0)
-		return 0;
+	if (statusResult == -1)
+		return OLSC_ERROR_FAILED;
 
-	if (statusResult & 1)
-		status |= 2;
+	if (statusResult == 1)
+	{
+		status = OLSC_STATUS_BUFFER_EMPTY;
+	}
 	else
-		status |= 1;
-
-	return 1;
+		status = OLSC_STATUS_BUFFER_FULL;
+	
+	return OLSC_ERROR_SUCCESS;
 }
 
-int WINAPI OLSC_WriteDMX(int device_number, int start_address, unsigned char *data_pointer, int length)
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+	OLSC_API int __stdcall OLSC_SetCallback(int device_number, HWND parent_window_handle, uint32_t message)
+	{
+		//not supported
+		return OLSC_ERROR_NONE;
+	}
+#endif
+
+OLSC_API int __stdcall OLSC_WriteDMX(int device_number, int start_address, uint8_t *data_pointer, int length)
 {
 	//not supported
-	return 0;
+	return OLSC_ERROR_NONE;
 }
 
-int WINAPI OLSC_ReadDMX(int device_number, int start_address, unsigned char *data_pointer, int length)
+OLSC_API int __stdcall OLSC_ReadDMX(int device_number, int start_address, uint8_t *data_pointer, int length)
 {
 	//not supported
-	return 0;
+	return OLSC_ERROR_NONE;
 }
 
-int WINAPI OLSC_WriteTTL(int device_number, DWORD data)
+OLSC_API int __stdcall OLSC_WriteTTL(int device_number, DWORD data)
 {
 	//not supported
-	return 0;
+	return OLSC_ERROR_NONE;
 }
 
-int WINAPI OLSC_ReadTTL(int device_number, DWORD& data)
+OLSC_API int __stdcall OLSC_ReadTTL(int device_number, DWORD& data)
 {
 	//not supported
-	return 0;
+	return OLSC_ERROR_NONE;
 }

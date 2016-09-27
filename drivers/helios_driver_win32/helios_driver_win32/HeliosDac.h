@@ -7,6 +7,7 @@
 #define HELIOS_MAX_DEVICES	16
 #define HELIOS_MAX_POINTS	0x1000
 #define HELIOS_MAX_RATE		0xFFFF
+#define HELIOS_MIN_RATE		6
 
 //usb properties
 #define HELIOS_VID	0x1209

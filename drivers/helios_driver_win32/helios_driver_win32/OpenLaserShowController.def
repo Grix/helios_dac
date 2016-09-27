@@ -1,0 +1,21 @@
+LIBRARY OLSD
+EXPORTS
+	OLSC_GetAPIVersion
+	OLSC_GetDeviceCapabilities
+	OLSC_GetDeviceCount
+	OLSC_GetInterfaceName
+	OLSC_GetLastErrorNumber
+	OLSC_GetStatus
+	OLSC_Initialize
+	OLSC_Pause
+	OLSC_Play
+	OLSC_ReadDMX
+	OLSC_ReadTTL
+	OLSC_SetCallback
+	OLSC_Shutdown
+	OLSC_Shutter
+	OLSC_WriteDMX
+	OLSC_WriteFrame
+	OLSC_WriteFrameEx
+	OLSC_WriteTTL
+	

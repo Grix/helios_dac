@@ -78,6 +78,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>libusb-1.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>OpenLaserShowController.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -88,6 +89,7 @@
     <ClInclude Include="HeliosDac.h" />
     <ClInclude Include="libusb.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="OpenLaserShowControllerV1.0.0-Mod.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

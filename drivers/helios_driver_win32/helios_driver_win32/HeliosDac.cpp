@@ -110,9 +110,7 @@ uint16_t HeliosDac::SendControl(int devNum, uint8_t* bufferAddress, bool getResp
 		if ((transferResult < 0) || (actualLength != 2))
 			return 0;
 		else
-		{
 			return (uint16_t)((data[0] << 8) | data[1]);
-		}
 	}
 	else
 		return (uint16_t)((transferResult == 0) && (actualLength == 3));

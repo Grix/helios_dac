@@ -32,5 +32,8 @@
     <ClInclude Include="HeliosDac.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="OpenLaserShowControllerV1.0.0-Mod.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
