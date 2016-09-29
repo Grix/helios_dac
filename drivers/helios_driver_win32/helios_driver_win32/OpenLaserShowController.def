@@ -1,4 +1,4 @@
-LIBRARY OLSD
+LIBRARY HeliosLaserDAC
 EXPORTS
 	OLSC_GetAPIVersion
 	OLSC_GetDeviceCapabilities

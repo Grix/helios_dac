@@ -37,8 +37,8 @@ int main (void)
 	wdt_disable(WDT);
 	
 	//set systick higher priority to avoid pauses in playback when processing USB transfers
-	NVIC_SetPriority(SysTick_IRQn, 0); 
-	NVIC_SetPriority(UDP_IRQn, 1);
+	NVIC_SetPriority(SysTick_IRQn, 1); 
+	NVIC_SetPriority(UDP_IRQn, 0);
 	
 	//default output
 	shutter_set(LOW);
@@ -170,8 +170,7 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 		{
 			stop();
 			flash_clear_gpnvm(1);
-			wdt_init(WDT, 0, 1, 0);
-			while (1); //MCU will restart into SAM-BA
+			rstc_start_software_reset(RSTC);
 		}
 	}
 	
@@ -205,35 +204,34 @@ inline void point_output(void) //sends point data to the DACs, data is point num
 
 inline void stop(void) //outputs a blanked and centered point and stops playback
 {
-	playing = false;
-	framePos = 0;
-	newFrameReady = false;
-	statusled_set(LOW);
+	cpu_irq_enter_critical();
+	
+		udd_ep_abort(UDI_VENDOR_EP_INTERRUPT_OUT);
+		udd_ep_abort(UDI_VENDOR_EP_BULK_OUT);
+		playing = false;
+		framePos = 0;
+		newFrameReady = false;
+		statusled_set(LOW);
 		
-	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	{
-		dacc_set_channel_selection(DACC, 0 );
-		dacc_write_conversion_data(DACC, 0x800 ); //X
-	}
+		if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+		{
+			dacc_set_channel_selection(DACC, 0 );
+			dacc_write_conversion_data(DACC, 0x800 ); //X
+		}
 	
-	//blank colors
-	spi_write(SPI, (0b0001 << 12), 0, 0); //I
-	spi_write(SPI, (0b0101 << 12), 0, 0); //B
-	spi_write(SPI, (0b1001 << 12), 0, 0); //G
-	spi_write(SPI, (0b1101 << 12), 0, 0); //R
+		//blank colors
+		spi_write(SPI, (0b0001 << 12), 0, 0); //I
+		spi_write(SPI, (0b0101 << 12), 0, 0); //B
+		spi_write(SPI, (0b1001 << 12), 0, 0); //G
+		spi_write(SPI, (0b1101 << 12), 0, 0); //R
 	
-	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	{
-		dacc_set_channel_selection(DACC, 1 );
-		dacc_write_conversion_data(DACC, 0x800 ); //Y
-	}
-	
-	//blank colors again to be sure, had some problems with them not being blanked first time
-	spi_write(SPI, (0b1101 << 12), 0, 0); //R
-	spi_write(SPI, (0b1001 << 12), 0, 0); //G
-	spi_write(SPI, (0b0101 << 12), 0, 0); //B
-	spi_write(SPI, (0b0001 << 12), 0, 0); //I
-	
+		if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+		{
+			dacc_set_channel_selection(DACC, 1 );
+			dacc_write_conversion_data(DACC, 0x800 ); //Y
+		}
+		
+	cpu_irq_leave_critical();
 }
 
 inline void speed_set(uint32_t rate) //set the output speed in points per second

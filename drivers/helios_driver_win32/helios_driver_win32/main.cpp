@@ -64,12 +64,8 @@ int Stop(int dacNum)
 		return 0;
 
 	uint8_t ctrlBuffer[2] = { 0x01, 0 };
-	int timeout = 10;
-	for (int i = 0; i < timeout; i++)
-	{
-		if (dacController->SendControl(dacNum, &ctrlBuffer[0], false) == true)
-			return 1;
-	}
+	if (dacController->SendControl(dacNum, &ctrlBuffer[0], false) == 1)
+		return 1;
 	return 0;
 
 }

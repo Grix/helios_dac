@@ -96,7 +96,7 @@ uint16_t HeliosDac::SendControl(int devNum, uint8_t* bufferAddress, bool getResp
 		return 0;
 
 	int actualLength = 0;
-	int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_OUT, bufferAddress, 2, &actualLength, 100);
+	int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_OUT, bufferAddress, 2, &actualLength, 200);
 
 	if (getResponse)
 	{
@@ -113,7 +113,7 @@ uint16_t HeliosDac::SendControl(int devNum, uint8_t* bufferAddress, bool getResp
 			return (uint16_t)((data[0] << 8) | data[1]);
 	}
 	else
-		return (uint16_t)((transferResult == 0) && (actualLength == 3));
+		return (uint16_t)((transferResult == 0) && (actualLength == 2));
 }
 
 //closes and frees all devices
