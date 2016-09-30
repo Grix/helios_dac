@@ -126,7 +126,8 @@ src/ASF/common/boards/user_board/init.d \
  ../src/config/conf_sleepmgr.h \
  ../src/ASF/common/services/sleepmgr/sleepmgr.h \
  ../src/ASF/common/services/sleepmgr/sam/sleepmgr.h \
- ../src/ASF/common/services/usb/udc/udc.h ../src/config/conf_usb.h \
+ ../src/ASF/sam/drivers/tc/tc.h ../src/ASF/common/services/usb/udc/udc.h \
+ ../src/config/conf_usb.h \
  ../src/ASF/common/services/usb/class/vendor/device/udi_vendor_conf.h \
  ../src/ASF/common/services/usb/class/vendor/device/udi_vendor.h \
  ../src/ASF/common/services/usb/usb_protocol.h \
@@ -403,6 +404,8 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 ../src/ASF/common/services/sleepmgr/sleepmgr.h:
 
 ../src/ASF/common/services/sleepmgr/sam/sleepmgr.h:
+
+../src/ASF/sam/drivers/tc/tc.h:
 
 ../src/ASF/common/services/usb/udc/udc.h:
 

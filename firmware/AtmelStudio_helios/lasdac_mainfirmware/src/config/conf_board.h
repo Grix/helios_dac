@@ -18,7 +18,7 @@
 #define BOARD_FREQ_MAINCK_BYPASS    (16000000UL)
 
 /** Master clock frequency */
-#define BOARD_MCK                   (96000000UL) //max for uc: 120 MHz
+#define BOARD_MCK                   (112000000UL) //max for uc: 120 MHz
 
 /** board main clock xtal startup time */
 #define BOARD_OSC_STARTUP_US		15625

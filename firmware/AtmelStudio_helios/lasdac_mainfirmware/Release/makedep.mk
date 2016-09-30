@@ -14,6 +14,8 @@ src\ASF\sam\drivers\pio\pio_handler.c
 
 src\ASF\sam\drivers\spi\spi.c
 
+src\ASF\sam\drivers\tc\tc.c
+
 src\ASF\sam\drivers\udp\udp_device.c
 
 src\ASF\sam\drivers\wdt\wdt.c

@@ -93,9 +93,6 @@
 // From module: Part identification macros
 #include <parts.h>
 
-// From module: RSTC - Reset Controller
-#include <rstc.h>
-
 // From module: SPI - Serial Peripheral Interface
 #include <spi.h>
 
@@ -105,6 +102,9 @@
 
 // From module: System Clock Control - SAM4S implementation
 #include <sysclk.h>
+
+// From module: TC - Timer Counter
+#include <tc.h>
 
 // From module: USB Device Stack Core (Common API)
 #include <udc.h>

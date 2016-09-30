@@ -91,8 +91,8 @@
 // - System clock source: PLLA
 // - System clock prescaler: 1 (divided by 1)
 // - PLLA source: XTAL
-// - PLLA output: XTAL * 6 / 1
-// - System clock: 16 * 3 / 1 / 1 = 48 MHz
+// - PLLA output: XTAL * 7 / 1
+// - System clock: 16 * 7 / 1 / 1 = 112 MHz
 // ===== Target frequency (USB Clock)
 // - USB clock source: PLLA
 // - USB clock divider: 1

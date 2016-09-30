@@ -33,6 +33,8 @@ bool playing = false;					//signals a point should be output next systick
 uint32_t outputSpeed = 20000;			//points per second rate
 bool notRepeat = true;					//signals that current frame should be only be played once even if no new frame arrives before it ends
 bool newNotRepeat = true;				//notRepeat value for pending frame
+bool stopFlag = false;					//delayed stop in effect, won't write new frame during this period
+uint32_t stopTimerCounts;				//num of cycles to delay stop, defined in timer_init
 
 uint8_t* frameAddress;				//frame currently being played
 uint8_t* newFrameAddress;			//buffer to receive usb transfer with frame
@@ -47,6 +49,7 @@ void stop(void);					//blanks and centers output and stops playback
 void spi_init(void);				//sets up SPI module
 void dac_init(void);				//sets up DACC module
 void iopins_init(void);				//sets up IO module and pins
+void timer_init(void);				//sets up TC0 module for stop delay timer
 
 //USB transfer interrupts
 void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep);

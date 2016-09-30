@@ -64,10 +64,9 @@ int Stop(int dacNum)
 		return 0;
 
 	uint8_t ctrlBuffer[2] = { 0x01, 0 };
-	if (dacController->SendControl(dacNum, &ctrlBuffer[0], false) == 1)
+	if (dacController->SendControl(dacNum, &ctrlBuffer[0], false) == (uint16_t)true)
 		return 1;
 	return 0;
-
 }
 
 

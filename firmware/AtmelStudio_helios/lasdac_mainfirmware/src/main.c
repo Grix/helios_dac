@@ -35,10 +35,11 @@ int main (void)
 	sleepmgr_init();
 	udc_start();
 	wdt_disable(WDT);
+	timer_init();
 	
 	//set systick higher priority to avoid pauses in playback when processing USB transfers
-	NVIC_SetPriority(SysTick_IRQn, 1); 
-	NVIC_SetPriority(UDP_IRQn, 0);
+	NVIC_SetPriority(SysTick_IRQn, 0); 
+	NVIC_SetPriority(UDP_IRQn, 1);
 	
 	//default output
 	shutter_set(LOW);
@@ -107,7 +108,7 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 	//n+2:	frame size in points 16bit little endian
 	//n+4:	flags
 	
-	if ( (status == UDD_EP_TRANSFER_OK) && (length <= MAXFRAMESIZE * 7 + 5) ) //if not invalid
+	if ( (status == UDD_EP_TRANSFER_OK) && (length <= MAXFRAMESIZE * 7 + 5) && (!stopFlag)) //if not invalid
 	{
 		uint16_t numOfPointBytes = length - 5; //from length of received data
 		uint16_t numOfPointBytes2 = ((newFrameAddress[numOfPointBytes + 3] << 8) | newFrameAddress[numOfPointBytes + 2]) * 7; //from control bytes
@@ -161,8 +162,10 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 		{
 			uint8_t statusTransfer[2] = {0x83, !newFrameReady};
 				
-			if (!newFrameReady)
+			if ((!newFrameReady) && (!stopFlag))
+			{
 				udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+			}
 				
 			udi_vendor_interrupt_in_run(&statusTransfer[0], 2, NULL);
 		}
@@ -170,7 +173,8 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 		{
 			stop();
 			flash_clear_gpnvm(1);
-			rstc_start_software_reset(RSTC);
+			NVIC_SystemReset();
+			while(1);
 		}
 	}
 	
@@ -204,35 +208,73 @@ inline void point_output(void) //sends point data to the DACs, data is point num
 
 inline void stop(void) //outputs a blanked and centered point and stops playback
 {
-	cpu_irq_enter_critical();
-	
-		udd_ep_abort(UDI_VENDOR_EP_INTERRUPT_OUT);
-		udd_ep_abort(UDI_VENDOR_EP_BULK_OUT);
-		playing = false;
-		framePos = 0;
-		newFrameReady = false;
-		statusled_set(LOW);
+	udd_ep_abort(UDI_VENDOR_EP_BULK_OUT);
+	udd_ep_abort(UDI_VENDOR_EP_INTERRUPT_OUT);
+	udd_ep_abort(UDI_VENDOR_EP_INTERRUPT_IN);
+	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk; //disable systick IRQ
+	stopFlag = true;
+	playing = false;
+	framePos = 0;
+	newFrameReady = false;
+	statusled_set(LOW);
 		
-		if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-		{
-			dacc_set_channel_selection(DACC, 0 );
-			dacc_write_conversion_data(DACC, 0x800 ); //X
-		}
+	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+	{
+		dacc_set_channel_selection(DACC, 0 );
+		dacc_write_conversion_data(DACC, 0x800 ); //X
+	}
 	
-		//blank colors
-		spi_write(SPI, (0b0001 << 12), 0, 0); //I
-		spi_write(SPI, (0b0101 << 12), 0, 0); //B
-		spi_write(SPI, (0b1001 << 12), 0, 0); //G
-		spi_write(SPI, (0b1101 << 12), 0, 0); //R
+	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+	{
+		dacc_set_channel_selection(DACC, 1 );
+		dacc_write_conversion_data(DACC, 0x800 ); //Y
+	}
 	
-		if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-		{
-			dacc_set_channel_selection(DACC, 1 );
-			dacc_write_conversion_data(DACC, 0x800 ); //Y
-		}
-		
-	cpu_irq_leave_critical();
+	//blank colors
+	spi_write(SPI, (0b0001 << 12), 0, 0); //I
+	spi_write(SPI, (0b0101 << 12), 0, 0); //B
+	spi_write(SPI, (0b1001 << 12), 0, 0); //G
+	spi_write(SPI, (0b1101 << 12), 0, 0); //R
+	
+	//set timer for delayed stop in case new unwanted frame is on the way over USB
+	tc_start(TC0, 0);
 }
+
+//timer ISR for delayed stop
+void TC0_Handler(void)
+{
+	uint32_t dummy;
+	dummy = tc_get_status(TC0, 0);
+	UNUSED(dummy);
+	tc_stop(TC0,0);
+	
+	playing = false;
+	framePos = 0;
+	newFrameReady = false;
+	statusled_set(LOW);
+	
+	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+	{
+		dacc_set_channel_selection(DACC, 0 );
+		dacc_write_conversion_data(DACC, 0x800 ); //X
+	}
+		
+	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+	{
+		dacc_set_channel_selection(DACC, 1 );
+		dacc_write_conversion_data(DACC, 0x800 ); //Y
+	}
+	
+	//blank colors
+	spi_write(SPI, (0b0001 << 12), 0, 0); //I
+	spi_write(SPI, (0b0101 << 12), 0, 0); //B
+	spi_write(SPI, (0b1001 << 12), 0, 0); //G
+	spi_write(SPI, (0b1101 << 12), 0, 0); //R
+	
+	stopFlag = false;
+	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 2, usb_interrupt_out_callback);
+}
+
 
 inline void speed_set(uint32_t rate) //set the output speed in points per second
 {
@@ -306,7 +348,7 @@ void spi_init(void) //setup SPI for DAC084S085
 	spi_set_clock_polarity(SPI, 0, 0);
 	spi_set_clock_phase(SPI, 0, 0);
 	spi_set_bits_per_transfer(SPI, 0, SPI_CSR_BITS_16_BIT);
-	spi_set_baudrate_div(SPI, 0, 5 ); //96MHz / 5 = 19.2 MHz
+	spi_set_baudrate_div(SPI, 0, 5 ); //112MHz / 5 = 22.4 MHz
 	spi_set_transfer_delay(SPI, 0, 0, 0);
 	spi_enable(SPI);
 }
@@ -319,6 +361,25 @@ void dac_init(void) //setup sam internal DAC controller
 	dacc_enable_channel(DACC, 1);
 	dacc_set_transfer_mode(DACC, 0);
 }
+
+void timer_init(void) //set up timer counter for delayed stop
+{
+	pmc_enable_periph_clk(ID_TC0);
+	uint32_t timerDiv;
+	uint32_t timerClkSource;
+	uint32_t timerFreq = 10; // 1s/10 = 100ms
+	uint32_t sysClkFreq = sysclk_get_cpu_hz();
+	tc_find_mck_divisor(timerFreq, sysClkFreq, &timerDiv, &timerClkSource, sysClkFreq);
+	tc_init(TC0, 0, timerClkSource | TC_CMR_CPCTRG | TC_CMR_CPCSTOP);
+	stopTimerCounts = (sysClkFreq/timerDiv)/timerFreq;
+	NVIC_DisableIRQ(TC0_IRQn);
+	NVIC_ClearPendingIRQ(TC0_IRQn);
+	NVIC_SetPriority(TC0_IRQn,0);
+	NVIC_EnableIRQ(TC0_IRQn);
+	tc_enable_interrupt(TC0, 0, TC_IER_CPCS);
+	tc_write_rc(TC0, 0, stopTimerCounts);
+}
+
 
 // Below is all to make Windows automatically install driver when plugged in
 // Credits: https://github.com/cjameshuff/m1k-fw/

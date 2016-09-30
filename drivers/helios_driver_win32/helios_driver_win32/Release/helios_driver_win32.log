@@ -1,4 +1,4 @@
-﻿Build started 2016-09-29 16:17.40.
+﻿Build started 2016-09-30 15:59.16.
      1>Project "D:\GitHub\helios_dac\drivers\helios_driver_win32\helios_driver_win32\helios_driver_win32.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _WINDOWS /D _USRDLL /D HELIOS_DRIVER_WIN32_EXPORTS /D _WINDLL /D _UNICODE /D UNICODE /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt HeliosDac.cpp
@@ -28,4 +28,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:01.05
+Time Elapsed 00:00:01.79
