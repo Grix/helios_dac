@@ -1,10 +1,33 @@
 /*
 Driver API for Helios Laser DACs , HEADER
 By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
+gitlem@gmail.com
 
 Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 HeliosDAC class (part of this driver)
+OpenLaserShowControllerV1.0.0 header and .def file
+
+BASIC USAGE:
+
+1.	Call OpenDevices() or OLSC_Initialize() to open devices, returns number of available devices
+
+2.	To send a new frame, first call GetStatus() or OLSC_GetStatus. If the function returns ready
+	(1 for GetStatus, OLSC_STATUS_BUFFER_EMPTY for OLSC_GetStatus), then you can call WriteFrame()
+	or OLSC_WriteFrame() / OLSC_WriteFrameEx(). 
+
+	You must get the status every time before a frame is written. The status will usually take about 2 ms to fetch.
+	The status should be polled until it returns ready. It can and sometimes will fail to return ready on the first try.
+	Care should be taken not to have multiple status requests or frame transfers run at the same time. Use a
+	mutex or something similar to force correct order and timing when interfacing with the DAC.
+	Both the status getters and frame write functions are BLOCKING and can take many milliseconds to finish if the frame is large.
+	It is recommended to run them in a separate thread from your main program.
+
+3.  To stop output, use Stop() or OLSC_Pause(). To restart output you must send a new frame as described above.
+4.	When the DAC is no longer needed, free it using CloseDevices() or OLSC_Shutdown()
+
+See OpenLaserShowControllerV1.0.0-Mod.h for documentation on OLSC_* functions
+
 */
 
 #pragma once
@@ -44,8 +67,7 @@ HELIOS_EXPORT int GetStatus(int dacNum);
 //flags: (default is 0)
 //	Bit 0 (LSB) = if true, start output immediately, instead of waiting for current frame (if there is one) to finish playing
 //	Bit 1 = if true, play frame only once, instead of repeating until another frame is written
-//	Bit 2 = if true, do NOT check if DAC is ready before sending a frame (must be done manually using GetStatus instead otherwise the write will fail)
-//	Bit 3-7 = reserved
+//	Bit 2-7 = reserved
 //points: pointer to point data. See point structure documentation in main.h
 //numOfPoints: number of points in the frame
 //returns 1 if successful
@@ -55,6 +77,9 @@ HELIOS_EXPORT int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* po
 //value 1 = shutter on, value 0 = shutter off
 //returns 1 if successful
 HELIOS_EXPORT int SetShutter(int dacNum, bool shutterValue);
+
+//Returns the firmware version number. Returns -1 if communcation failed.
+HELIOS_EXPORT int GetFirmwareVersion(int dacNum);
 
 //gets a descriptive name of the specified dac
 //name is max 32 bytes long

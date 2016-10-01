@@ -1,6 +1,9 @@
 /*
 Helios Laser DAC main AS project (for SAM4S2B board)
 By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
+gitlem@gmail.com
+
+See main.h for documentation
 
 Required Atmel Software Framework modules:
 	DACC - Digital-to-Analog Converter
@@ -158,23 +161,26 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 		{
 			shutter_set( (usbInterruptBufferAddress[1] && true) );
 		}
-		else if (usbInterruptBufferAddress[0] == 0x03)	//STATUS REQUEST
+		else if (usbInterruptBufferAddress[0] == 0x03)	//STATUS/NEW FRAME POLL
 		{
-			uint8_t statusTransfer[2] = {0x83, !newFrameReady};
-				
 			if ((!newFrameReady) && (!stopFlag))
 			{
 				udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 			}
-				
-			udi_vendor_interrupt_in_run(&statusTransfer[0], 2, NULL);
+			
+			uint8_t transfer[2] = {0x83, !newFrameReady};	
+			udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
+		}
+		else if (usbInterruptBufferAddress[0] == 0x04)	//GET FIRMWARE VERSION
+		{
+			uint8_t transfer[2] = {0x84, FIRMWARE_VERSION};
+			udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
 		}
 		else if (usbInterruptBufferAddress[0] == 0xDE)	//ERASE GPNVM BIT, BOOT TO FIRMWARE UPDATE BOOTLOADER
 		{
 			stop();
 			flash_clear_gpnvm(1);
-			NVIC_SystemReset();
-			while(1);
+			NVIC_SystemReset(); //should restart the mcu but doesn't work, must replug USB manually
 		}
 	}
 	

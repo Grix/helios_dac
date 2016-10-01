@@ -1,6 +1,8 @@
 /*
 Helios Laser DAC main AS project (for SAM4S2B board)
 By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
+gitlem@gmail.com
+
 
 Required Atmel Software Framework modules:
 	DACC - Digital-to-Analog Converter
@@ -20,9 +22,10 @@ Required Atmel Software Framework modules:
 #include <malloc.h>
 
 //macros
-#define MAXSPEED 0xFFFF		//in pps	(65535)
-#define MINSPEED 6			//in pps
-#define MAXFRAMESIZE 0x1000	//in points (4096)
+#define FIRMWARE_VERSION 1			//firmware version number. uint8_t
+#define MAXSPEED 0xFFFF				//in pps	(65535)
+#define MINSPEED 7					//in pps
+#define MAXFRAMESIZE 0x1000			//in points (4096)
 
 //global variables
 uint16_t frameSize = 0;					//size of frame buffer in points

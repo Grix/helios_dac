@@ -6,7 +6,6 @@ OpenLaserShowController.h : main header file for the OpenLaserShowController DLL
 -> Changes:
 	- Not dependent on windows.h
 		- stdint types
-		- __stdcall instead of WINAPI
 		- OLSC_SetCallback removed
 	- OPEN_LASER_SHOW_DEVICE_API_VERSION defined
 
@@ -159,25 +158,25 @@ extern "C" {
 // Outputs: Returns a single integer that represents the version number
 // Description: Returns the version of the OpenDAC API
 //				so we don't make any critical errors when using this DLL
-OLSC_API int __stdcall OLSC_GetAPIVersion(void);
+OLSC_API int WINAPI OLSC_GetAPIVersion(void);
 
 // OLSC_GetInterfaceName
 // Inputs: Pointer to a string at least 64 characters in length
 // Outputs: Returns success or failure
 // Description: Returns the string name of the OpenDC Interface
-OLSC_API int __stdcall OLSC_GetInterfaceName(char *pString);
+OLSC_API int WINAPI OLSC_GetInterfaceName(char *pString);
 
 // OLSC_Initialize
 // Inputs: None
 // Outputs: Returns the number of available devices.
 // Description: Initializes the hardware
-OLSC_API int __stdcall OLSC_Initialize(void);
+OLSC_API int WINAPI OLSC_Initialize(void);
 
 // OLSC_Shutdown
 // Inputs: None
 // Outputs: Returns success or failure
 // Description: Shuts down all devices
-OLSC_API int __stdcall OLSC_Shutdown(void);
+OLSC_API int WINAPI OLSC_Shutdown(void);
 
 // OLSC_GetDeviceCount
 // Inputs: None
@@ -185,7 +184,7 @@ OLSC_API int __stdcall OLSC_Shutdown(void);
 // Description: Has to be called AFTER Intialize has been called.  Thsi function
 // is to be used to query the number of available devices without calling
 // intialize again and again
-OLSC_API int __stdcall OLSC_GetDeviceCount(void);
+OLSC_API int WINAPI OLSC_GetDeviceCount(void);
 
 // OLSC_GetCapabilities
 // Inputs:  device Number, device capabilties structure to be filled in
@@ -202,31 +201,31 @@ OLSC_API int __stdcall OLSC_GetDeviceCount(void);
 //				Color Resolution (1 to 16 bits)
 //				Uses callbacks?
 //				Some reserved space for future use
-OLSC_API int __stdcall OLSC_GetDeviceCapabilities(int device_number, struct LASER_SHOW_DEVICE_CAPABILITIES &device_capabilities);
+OLSC_API int WINAPI OLSC_GetDeviceCapabilities(int device_number, struct LASER_SHOW_DEVICE_CAPABILITIES &device_capabilities);
 
 // OLSC_GetLastErrorNumber
 // Inputs: device number, error string pointer, and string length max.
 // Outputs: error number, and actual error string
 // Description: Get the string and/or number associated with the last error
-OLSC_API int __stdcall OLSC_GetLastErrorNumber(int device_number, int &number, char *string_pointer, int string_length);
+OLSC_API int WINAPI OLSC_GetLastErrorNumber(int device_number, int &number, char *string_pointer, int string_length);
 
 // OLSC_Play
 // Inputs: device number
 // Outputs: Returns success or failure
 // Description: Starts the output on a particular device or all devices
-OLSC_API int __stdcall OLSC_Play(int device_number);
+OLSC_API int WINAPI OLSC_Play(int device_number);
 
 // OLSC_Pause
 // Inputs: device number
 // Outputs: Returns success or failure
 // Description: Stops the output on a particular device or all devices
-OLSC_API int __stdcall OLSC_Pause(int device_number);
+OLSC_API int WINAPI OLSC_Pause(int device_number);
 
 // OLSC_Shutter
 // Inputs: device number, shutter state (LASER_SHOW_DEVICE_SHUTTER_STATE)
 // Outputs: Returns success or failure
 // Description: Turns the laser show device's shutter On/Off
-OLSC_API int __stdcall OLSC_Shutter(int device_number, int state);
+OLSC_API int WINAPI OLSC_Shutter(int device_number, int state);
 
 // OLSC_WriteFrameEx
 // Inputs: device number, display speed (pps), point count, point to array of LASER_SHOW_DEVICE_POINTs 
@@ -243,7 +242,7 @@ OLSC_API int __stdcall OLSC_Shutter(int device_number, int state);
 //
 // ** Any frame that is written will be displayed until another frame is written to take its place or the Output is Paused
 //
-OLSC_API int __stdcall OLSC_WriteFrameEx(int device_number, int display_speed, int point_count, struct LASER_SHOW_DEVICE_POINT *points);
+OLSC_API int WINAPI OLSC_WriteFrameEx(int device_number, int display_speed, int point_count, struct LASER_SHOW_DEVICE_POINT *points);
 
 // OLSC_WriteFrame
 // Inputs: device number, frame structure (LASER_SHOW_DEIVCE_FRAME)
@@ -263,7 +262,7 @@ OLSC_API int __stdcall OLSC_WriteFrameEx(int device_number, int display_speed, i
 //
 // ** Any frame that is written will be displayed until another frame is written to take its place or the Output is Paused
 //
-OLSC_API int __stdcall OLSC_WriteFrame(int device_number, struct LASER_SHOW_DEVICE_FRAME frame);
+OLSC_API int WINAPI OLSC_WriteFrame(int device_number, struct LASER_SHOW_DEVICE_FRAME frame);
 
 // OLSC_GetStatus()
 // Inputs: device number, status DWORD
@@ -283,7 +282,7 @@ OLSC_API int __stdcall OLSC_WriteFrame(int device_number, struct LASER_SHOW_DEVI
 // Bit 8 = Reserved
 // Bit 9-30 = Reserved
 // Bit 31 = An Error Occured
-OLSC_API int __stdcall OLSC_GetStatus(int device_number, uint32_t &status);
+OLSC_API int WINAPI OLSC_GetStatus(int device_number, uint32_t &status);
 
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
@@ -298,7 +297,7 @@ OLSC_API int __stdcall OLSC_GetStatus(int device_number, uint32_t &status);
 	// We all work in windows right?
 	// This interface is optional in the DLL and in the application.  The DLL writers should take this into account.
 	// So if you use the callback ... be able to function without it... it is used for efficiency.
-	OLSC_API int __stdcall OLSC_SetCallback(int device_number, HWND parent_window_handle, uint32_t message);
+	OLSC_API int WINAPI OLSC_SetCallback(int device_number, HWND parent_window_handle, uint32_t message);
 #endif
 
 // OLSC_WriteDMX()
@@ -306,28 +305,28 @@ OLSC_API int __stdcall OLSC_GetStatus(int device_number, uint32_t &status);
 // Outputs:  Returns success or failure
 // Description:
 // Writes DMX data to a particular device
-	OLSC_API int __stdcall OLSC_WriteDMX(int device_number, int start_address, uint8_t *data_pointer, int length);
+	OLSC_API int WINAPI OLSC_WriteDMX(int device_number, int start_address, uint8_t *data_pointer, int length);
 
 // OLSC_ReadDMX()
 // Inputs: device number, start address, data pointer, data length
 // Outputs:  Returns success or failure
 // Description:
 // Reads DMX data from a particular device
-	OLSC_API int __stdcall OLSC_ReadDMX(int device_number, int start_address, uint8_t *data_pointer, int length);
+	OLSC_API int WINAPI OLSC_ReadDMX(int device_number, int start_address, uint8_t *data_pointer, int length);
 
 // OLSC_WriteTTL()
 // Inputs: device number, data DWORD (up to 32 bits of TTL outputs)
 // Outputs:  Returns success or failure
 // Description:
 // Writes TTL data from a particular device
-OLSC_API int __stdcall OLSC_WriteTTL(int device_number, uint32_t data);
+OLSC_API int WINAPI OLSC_WriteTTL(int device_number, uint32_t data);
 
 // OLSC_ReadTTL()
 // Inputs: device number, data DWORD (up to 32 bits of TTL inputs)
 // Outputs:  Returns success or failure
 // Description:
 // Reads TTL data from a particular device
-OLSC_API int __stdcall OLSC_ReadTTL(int device_number, uint32_t &data);
+OLSC_API int WINAPI OLSC_ReadTTL(int device_number, uint32_t &data);
 
 #ifdef __cplusplus 
 }

@@ -1,11 +1,12 @@
 /*
-Class controlling communication with Helios Laser DACs.
+Class controlling lower-level communication with Helios Laser DACs.
 By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
 
 Dependencies: Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 */
 
 #include "HeliosDac.h"
+
 
 HeliosDac::HeliosDac()
 {
@@ -80,21 +81,22 @@ int HeliosDac::SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize)
 		return 0;
 
 	int actualLength = 0;
-	int transferResult = libusb_bulk_transfer(deviceList[devNum], EP_BULK_OUT, bufferAddress, bufferSize, &actualLength, 1000);
+
+	int transferResult = libusb_bulk_transfer(deviceList[devNum], EP_BULK_OUT, bufferAddress, bufferSize, &actualLength, 500);
 
 	return ((transferResult == 0) && (actualLength == bufferSize));
 }
 
-//sends a raw control transfer (implemented as interrupt transfer) to a dac device
-//returns true if successful, unless getResponse is true in which case it
-//waits for an incoming response interrupt transfer and returns the content
+//sends a raw control signal (implemented as interrupt transfer) to a dac device
+//returns 1 if successful, unless getResponse is true in which case it
+//waits for a response (incoming interrupt transfer) and returns its content
 uint16_t HeliosDac::SendControl(int devNum, uint8_t* bufferAddress, bool getResponse)
 {
-	if ((bufferAddress == NULL) || (!inited) || (devNum > numOfDevices))
+	if ((bufferAddress == NULL) || (!inited) || (devNum >= numOfDevices))
 		return 0;
 
 	int actualLength = 0;
-	int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_OUT, bufferAddress, 2, &actualLength, 1000);
+	int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_OUT, bufferAddress, 2, &actualLength, 32);
 
 	if (getResponse)
 	{
@@ -103,18 +105,20 @@ uint16_t HeliosDac::SendControl(int devNum, uint8_t* bufferAddress, bool getResp
 
 		uint8_t data[2] = { 0, 0 };
 		actualLength = 0;
-		transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], 2, &actualLength, 1000);
+		transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], 2, &actualLength, 64);
 
 		if ((transferResult < 0) || (actualLength != 2))
 			return 0;
 		else
-		{
-			uint16_t returnVal = (data[1] << 8) + data[0];
-			return returnVal;
-		}
+			return (uint16_t)((data[0] << 8) | data[1]);
 	}
 	else
-		return (uint16_t)((transferResult == 0) && (actualLength == 3));
+	{
+		if ((transferResult == 0) && (actualLength == 2))
+			return 1;
+		else
+			return 0;
+	}
 }
 
 //closes and frees all devices

@@ -4,8 +4,9 @@
 #include "libusb.h"
 
 #define HELIOS_MAX_DEVICES	16
-#define HELIOS_MAX_POINTS	3000
+#define HELIOS_MAX_POINTS	0x1000
 #define HELIOS_MAX_RATE		0xFFFF
+#define HELIOS_MIN_RATE		7
 
 //usb properties
 #define HELIOS_VID	0x1209
@@ -13,7 +14,7 @@
 #define EP_BULK_OUT	0x02
 #define EP_BULK_IN	0x81
 #define EP_INT_OUT	0x06
-#define EP_INT_IN	0x87
+#define EP_INT_IN	0x83
 
 class HeliosDac
 {
@@ -27,8 +28,6 @@ public:
 	int SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize);
 
 	int numOfDevices = 0;
-	const int maxPoints = HELIOS_MAX_POINTS;
-	const int maxRate = HELIOS_MAX_RATE;
 
 private:
 

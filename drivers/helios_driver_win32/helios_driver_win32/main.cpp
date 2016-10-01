@@ -2,6 +2,8 @@
 Driver API for Helios Laser DACs
 By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
 
+See main.h for documentation
+
 Dependencies: 
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 HeliosDAC class (part of this driver)
@@ -111,6 +113,20 @@ int SetShutter(int dacNum, bool value)
 
 	uint8_t ctrlBuffer[2] = { 0x02, value };
 	return dacController->SendControl(dacNum, &ctrlBuffer[0], false);
+}
+
+int GetFirmwareVersion(int dacNum)
+{
+	if (!inited)
+		return -1;
+
+	uint8_t ctrlBuffer[2] = { 0x04, 0 };
+	uint16_t result = dacController->SendControl(dacNum, &ctrlBuffer[0], true);
+
+	if ((result >> 8) == 0x84) //if received control byte is as expected
+		return (result & 0xFF);
+	else
+		return -1;
 }
 
 
