@@ -1,0 +1,54 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP AN431B
+D 2.503 Voltage reference
+K Vref, 2.5
+$ENDCMP
+#
+$CMP AP2114
+D AP2114 Low noise CMOS LDO regulator
+K low noise, LDO, 
+$ENDCMP
+#
+$CMP ATSAM4S
+D Atmel microcontroller
+K Atmel, ATSAM4S, ARM
+$ENDCMP
+#
+$CMP CONN_01X25
+D Connector 01x25
+$ENDCMP
+#
+$CMP CONN_01X25-SHIELD
+D Connector 01x25
+$ENDCMP
+#
+$CMP ISA_DC-DC_converter
+D SMPS double supply
+$ENDCMP
+#
+$CMP MC34063
+D Switch Mode Power Supply Controller
+K Switch Mode Power Supply, Boost, Invert, Step-down
+$ENDCMP
+#
+$CMP MC34063[ST]
+D Switch Mode Power Supply Controller
+K Switch Mode Power Supply, Boost, Invert, Step-down
+$ENDCMP
+#
+$CMP SPX431A,B,C
+D 2.503 Voltage reference
+K Vref, 2.5
+$ENDCMP
+#
+$CMP TL084_v
+D TL084 Quad Op Amp
+$ENDCMP
+#
+$CMP TL085CDT
+D Quad Opamp
+K Quad, opamp, operational amplifier
+$ENDCMP
+#
+#End Doc Library
