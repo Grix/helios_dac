@@ -24,7 +24,7 @@ int main (void)
 	//allocate memory to buffers
 	frameAddress = malloc(MAXFRAMESIZE * 7 + 5);
 	newFrameAddress = malloc(MAXFRAMESIZE * 7 + 5);
-	usbInterruptBufferAddress = malloc(2);
+	usbInterruptBufferAddress = malloc(32);
 	
 	//start modules
 	sysclk_init();
@@ -37,8 +37,9 @@ int main (void)
 	cpu_irq_enable();
 	sleepmgr_init();
 	udc_start();
-	wdt_disable(WDT);
+	//wdt_disable(WDT);
 	timer_init();
+	flash_init(FLASH_ACCESS_MODE_128, 4);
 	
 	//set systick higher priority to avoid pauses in playback when processing USB transfers
 	NVIC_SetPriority(SysTick_IRQn, 0); 
@@ -52,9 +53,15 @@ int main (void)
 	
 	sleepmgr_lock_mode(SLEEPMGR_WAIT_FAST);
 	
+	assignDefaultName();
+	
 	//waiting for interrupts..
-	while (true)
+	while (1)
+	{
+		wdt_restart(WDT);
 		sleepmgr_enter_sleep();
+	}
+		
 }
 
 void SysTick_Handler(void) //systick timer ISR, called for each point
@@ -149,9 +156,9 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 {
 	//LSB: Command
 	//MSB: Data
-	
+
 	UNUSED(ep);
-	if ( (status == UDD_EP_TRANSFER_OK) && (length == 2) )
+	if (status == UDD_EP_TRANSFER_OK)
 	{	
 		if (usbInterruptBufferAddress[0] == 0x01)		//STOP
 		{
@@ -173,18 +180,47 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 		}
 		else if (usbInterruptBufferAddress[0] == 0x04)	//GET FIRMWARE VERSION
 		{
-			uint8_t transfer[2] = {0x84, FIRMWARE_VERSION};
-			udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
+			uint8_t transfer[5] = {0x84,(uint8_t)(FIRMWARE_VERSION >> 0),
+										(uint8_t)(FIRMWARE_VERSION >> 8),
+										(uint8_t)(FIRMWARE_VERSION >> 16),
+										(uint8_t)(FIRMWARE_VERSION >> 24)};
+			udi_vendor_interrupt_in_run(&transfer[0], 5, NULL);
+		}
+		else if (usbInterruptBufferAddress[0] == 0x05)	//GET NAME
+		{
+			uint8_t transfer[32];
+			transfer[0] = 0x85;
+			uint32_t flashBuf[32];
+			flash_read_user_signature(&flashBuf[0], 32);
+			int i;
+			for (i = 0; i < 31; i++)
+			{
+				transfer[1+i] = flashBuf[i];
+				if (flashBuf[i] == 0)
+					break;
+			}
+			udi_vendor_interrupt_in_run(&transfer[0], i+2, NULL);
+		}
+		else if (usbInterruptBufferAddress[0] == 0x06)	//WRITE NAME
+		{
+			uint32_t flash[31];
+			int i;
+			for (i = 0; i < 31; i++)
+			{
+				flash[i] = (uint32_t)usbInterruptBufferAddress[1+i];
+			}
+			flash_erase_user_signature();
+			flash_write_user_signature((void*)&flash[0], 32);
 		}
 		else if (usbInterruptBufferAddress[0] == 0xDE)	//ERASE GPNVM BIT, BOOT TO FIRMWARE UPDATE BOOTLOADER
 		{
 			stop();
 			flash_clear_gpnvm(1);
-			NVIC_SystemReset(); //should restart the mcu but doesn't work, must replug USB manually
+			while (1); //watchdog should restart mcu eventually
 		}
 	}
 	
-	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 2, usb_interrupt_out_callback);
+	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 32, usb_interrupt_out_callback);
 }
 
 
@@ -278,7 +314,7 @@ void TC0_Handler(void)
 	spi_write(SPI, (0b1101 << 12), 0, 0); //R
 	
 	stopFlag = false;
-	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 2, usb_interrupt_out_callback);
+	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 32, usb_interrupt_out_callback);
 }
 
 
@@ -299,7 +335,7 @@ int callback_vendor_enable(void) //usb connection opened, preparing for activity
 	sleepmgr_unlock_mode(SLEEPMGR_WAIT_FAST);
 	sleepmgr_lock_mode(SLEEPMGR_ACTIVE);
 	
-	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 2, usb_interrupt_out_callback);
+	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 32, usb_interrupt_out_callback);
 	
 	return 1;
 }
@@ -384,6 +420,28 @@ void timer_init(void) //set up timer counter for delayed stop
 	NVIC_EnableIRQ(TC0_IRQn);
 	tc_enable_interrupt(TC0, 0, TC_IER_CPCS);
 	tc_write_rc(TC0, 0, stopTimerCounts);
+}
+
+void assignDefaultName() //on first ever boot, assign default name and store to flash
+{
+	uint32_t flash[16];
+	flash_read_user_signature(&flash[0], 16);
+	if (flash[0] == 0xFFFFFFFF) //factory value
+	{
+		uint32_t unique;
+		flash_read_unique_id(&unique, 1);
+		char name[16];
+		sprintf(&name[0], "Helios %ld", unique);
+		int i;
+		for (i = 0; i < 16; i++)
+		{
+			flash[i] = (uint32_t)name[i];
+			if (name[i] == 0)
+				break;
+		}
+		flash_erase_user_signature();
+		flash_write_user_signature((void*)&flash[0], 16);
+	}
 }
 
 

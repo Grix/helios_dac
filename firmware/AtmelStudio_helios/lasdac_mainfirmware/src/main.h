@@ -20,12 +20,15 @@ Required Atmel Software Framework modules:
 
 #include "asf.h"
 #include <malloc.h>
+#include <string.h> //for memcpy
 
 //macros
-#define FIRMWARE_VERSION 1			//firmware version number. uint8_t
+#define FIRMWARE_VERSION 2			//firmware version number
 #define MAXSPEED 0xFFFF				//in pps	(65535)
 #define MINSPEED 7					//in pps
 #define MAXFRAMESIZE 0x1000			//in points (4096)
+
+#define DACNAME_ADDR (IFLASH0_ADDR+0x19000)		//location of saved name of dac in flash
 
 //global variables
 uint16_t frameSize = 0;					//size of frame buffer in points
@@ -53,6 +56,7 @@ void spi_init(void);				//sets up SPI module
 void dac_init(void);				//sets up DACC module
 void iopins_init(void);				//sets up IO module and pins
 void timer_init(void);				//sets up TC0 module for stop delay timer
+void assignDefaultName(void);		//on first ever boot, assign default name and store to flash
 
 //USB transfer interrupts
 void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep);

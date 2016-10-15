@@ -144,12 +144,12 @@ extern bool usb_device_specific_request(void);
  */
 
 //! endpoints size for full speed
-#define  UDI_VENDOR_EPS_SIZE_INT_FS		2
+#define  UDI_VENDOR_EPS_SIZE_INT_FS		32
 #define  UDI_VENDOR_EPS_SIZE_BULK_FS	64
 #define  UDI_VENDOR_EPS_SIZE_ISO_FS		1
 
 //for high speed (not used)
-#define  UDI_VENDOR_EPS_SIZE_INT_HS		2
+#define  UDI_VENDOR_EPS_SIZE_INT_HS		32
 #define  UDI_VENDOR_EPS_SIZE_BULK_HS	512
 #define  UDI_VENDOR_EPS_SIZE_ISO_HS		1
 

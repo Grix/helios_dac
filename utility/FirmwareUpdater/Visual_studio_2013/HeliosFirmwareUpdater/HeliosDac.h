@@ -1,3 +1,12 @@
+/*
+Class controlling lower-level communication with Helios Laser DACs.
+By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
+
+Dependencies: Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
+
+See HeliosDac.cpp for function documentation
+*/
+
 #pragma once
 
 #include <stdint.h>
@@ -24,7 +33,8 @@ public:
 	~HeliosDac();
 	int OpenDevices();
 	int CloseDevices();
-	uint16_t SendControl(int devNum, uint8_t* bufferAddress, bool getResponse);
+	int SendControl(int devNum, uint8_t* bufferAddress, int length);
+	int GetControlResponse(int devNum, uint8_t* bufferAddress);
 	int SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize);
 
 	int numOfDevices = 0;
