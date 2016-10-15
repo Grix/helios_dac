@@ -2,14 +2,14 @@
 Driver API for Helios Laser DACs
 By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
 
-See main.h for documentation
+See HeliosDacAPI.h for documentation
 
 Dependencies: 
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 HeliosDAC class (part of this driver)
 */
 
-#include "main.h"
+#include "HeliosDacAPI.h"
 
 
 int OpenDevices()
@@ -65,24 +65,40 @@ int Stop(int dacNum)
 	if (!inited)
 		return 0;
 
-	uint8_t ctrlBuffer[2] = { 0x01, 0 };
-	if (dacController->SendControl(dacNum, &ctrlBuffer[0], false) == (uint16_t)true)
+	uint8_t ctrlBuffer[1] = { 0x01 };
+	if (dacController->SendControl(dacNum, &ctrlBuffer[0], 1))
 		return 1;
-	return 0;
+	else
+		return 0;
 }
 
 
 int GetName(int dacNum, char* name)
 {
 	if (!inited)
-		return 0;
+		return  -1;
 
+	uint8_t ctrlBuffer[32] = { 0x05 };
+	int tx = dacController->SendControl(dacNum, &ctrlBuffer[0], 1);
+	if (tx == 1)
+	{
+		tx = dacController->GetControlResponse(dacNum, &ctrlBuffer[0]);
+		if (tx > 0)
+		{
+			if ((ctrlBuffer[0]) == 0x85) //if received control byte is as expected
+			{
+				memcpy(name, &ctrlBuffer[1], 32);
+				return 1;
+			}
+		}
+	}
+
+	//if the above failed, fallback name:
 	memcpy(name, "Helios ", 8);
 	name[7] = (char)((int)(dacNum >= 10) + 48);
 	name[8] = (char)((int)(dacNum % 10) + 48);
 	name[9] = '\0';
-
-	return 1;
+	return 0;
 }
 
 
@@ -91,15 +107,21 @@ int GetStatus(int dacNum)
 	if (!inited)
 		return -1;
 
-	uint8_t ctrlBuffer[2] = { 0x03, 0 };
-	uint16_t result = dacController->SendControl(dacNum, &ctrlBuffer[0], true);
+	uint8_t ctrlBuffer[32] = { 0x03 };
+	int tx = dacController->SendControl(dacNum, &ctrlBuffer[0], 1);
+	if (tx != 1)
+		return -1;
 
-	if ((result >> 8) == 0x83) //if received control byte is as expected
+	tx = dacController->GetControlResponse(dacNum, &ctrlBuffer[0]);
+	if (tx > 0)
 	{
-		if (result & 1) //if dac is ready
-			return 1;
-		else
-			return 0;
+		if ((ctrlBuffer[0]) == 0x83) //if received control byte is as expected
+		{
+			if (ctrlBuffer[1] == 1) //if dac is ready
+				return 1;
+			else
+				return 0;
+		}
 	}
 	else
 		return -1;
@@ -112,7 +134,7 @@ int SetShutter(int dacNum, bool value)
 		return 0;
 
 	uint8_t ctrlBuffer[2] = { 0x02, value };
-	return dacController->SendControl(dacNum, &ctrlBuffer[0], false);
+	return dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
 }
 
 int GetFirmwareVersion(int dacNum)
@@ -120,15 +142,25 @@ int GetFirmwareVersion(int dacNum)
 	if (!inited)
 		return -1;
 
-	uint8_t ctrlBuffer[2] = { 0x04, 0 };
-	uint16_t result = dacController->SendControl(dacNum, &ctrlBuffer[0], true);
+	uint8_t ctrlBuffer[32] = { 0x04 };
+	int tx = dacController->SendControl(dacNum, &ctrlBuffer[0], 1);
+	if (tx != 1)
+		return -1;
 
-	if ((result >> 8) == 0x84) //if received control byte is as expected
-		return (result & 0xFF);
+	tx = dacController->GetControlResponse(dacNum, &ctrlBuffer[0]);
+	if (tx == 1)
+	{
+		if ((ctrlBuffer[0]) == 0x84) //if received control byte is as expected
+		{
+			return ((ctrlBuffer[1] << 0) |
+					(ctrlBuffer[2] << 8) |
+					(ctrlBuffer[3] << 16) |
+					(ctrlBuffer[4] << 24));
+		}
+	}
 	else
 		return -1;
 }
-
 
 int CloseDevices()
 {
@@ -145,6 +177,8 @@ int CloseDevices()
 
 //Below is OLSC implementation
 //OLSC API is designed by Chris Favreau, MIT License
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 
 OLSC_API int __stdcall OLSC_GetAPIVersion(void)
 {
@@ -312,3 +346,5 @@ OLSC_API int __stdcall OLSC_ReadTTL(int device_number, DWORD& data)
 	//not supported
 	return OLSC_ERROR_NONE;
 }
+
+#endif

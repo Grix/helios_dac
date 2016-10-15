@@ -15,10 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="HeliosDac.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HeliosDac.cpp">
+    <ClCompile Include="HeliosDacAPI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -26,13 +26,13 @@
     <ClInclude Include="libusb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="main.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="HeliosDac.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="OpenLaserShowControllerV1.0.0-Mod.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HeliosDacAPI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

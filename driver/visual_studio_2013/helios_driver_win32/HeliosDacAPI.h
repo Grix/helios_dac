@@ -26,16 +26,19 @@ BASIC USAGE:
 3.  To stop output, use Stop() or OLSC_Pause(). To restart output you must send a new frame as described above.
 4.	When the DAC is no longer needed, free it using CloseDevices() or OLSC_Shutdown()
 
-See OpenLaserShowControllerV1.0.0-Mod.h for documentation on OLSC_* functions
+See OpenLaserShowControllerV1.0.0-Mod.h for documentation on OLSC_* functions. Not recommended for cross-platform apps
 
 */
 
 #pragma once
 
-#include "libusb.h"
+//#include "libusb.h"
 #include "stdio.h"
 #include "HeliosDac.h"
-#include "OpenLaserShowControllerV1.0.0-Mod.h"
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+	#include "OpenLaserShowControllerV1.0.0-Mod.h"
+#endif
 
 #define HELIOS_EXPORT extern "C" __declspec (dllexport)
 
@@ -82,8 +85,10 @@ HELIOS_EXPORT int SetShutter(int dacNum, bool shutterValue);
 HELIOS_EXPORT int GetFirmwareVersion(int dacNum);
 
 //gets a descriptive name of the specified dac
-//name is max 32 bytes long
-//returns 1 if successful
+//name is max 32 bytes long, char needs to be able to hold 32 bytes
+//returns 1 if successful, return 0 if the proper name couldn't be fetched from the DAC, but name is
+//still populated with a fallback numbered name based on order of discovery by the library
+//return -1 if unsuccessful and name is not populated.
 HELIOS_EXPORT int GetName(int dacNum, char* name);
 
 //stops, blanks and centers output on the specified dac

@@ -83,12 +83,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="HeliosDac.cpp" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="HeliosDacAPI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HeliosDac.h" />
     <ClInclude Include="libusb.h" />
-    <ClInclude Include="main.h" />
+    <ClInclude Include="HeliosDacAPI.h" />
     <ClInclude Include="OpenLaserShowControllerV1.0.0-Mod.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,3 +1,5 @@
+//Header for lower level Helios DAC functions. See HeliosDacAPI.h instead for top level functions
+
 #pragma once
 
 #include <stdint.h>
@@ -24,7 +26,8 @@ public:
 	~HeliosDac();
 	int OpenDevices();
 	int CloseDevices();
-	uint16_t SendControl(int devNum, uint8_t* bufferAddress, bool getResponse);
+	int SendControl(int devNum, uint8_t* bufferAddress, int length);
+	int GetControlResponse(int devNum, uint8_t* bufferAddress);
 	int SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize);
 
 	int numOfDevices = 0;
