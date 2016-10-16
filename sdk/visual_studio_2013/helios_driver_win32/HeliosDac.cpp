@@ -98,7 +98,7 @@ int HeliosDac::SendControl(int devNum, uint8_t* bufferAddress, int length)
 
 	int actualLength = 0;
 	int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_OUT, bufferAddress, length, &actualLength, 32);
-	
+
 	if ((transferResult == 0) && (actualLength == length))
 		return 1;
 	else
@@ -115,9 +115,11 @@ int HeliosDac::GetControlResponse(int devNum, uint8_t* bufferAddress)
 	uint8_t data[32];
 	int actualLength = 0;
 	int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], 32, &actualLength, 64);
-
+	
 	if (transferResult < 0)
+	{
 		return transferResult;
+	}
 	else
 	{
 		memcpy(bufferAddress, &data[0], actualLength);

@@ -6,7 +6,7 @@ int main()
 	HeliosDac dac = HeliosDac();
 	int numDacs = dac.OpenDevices();
 
-	std::cout << "Select operation. Enter 1 to erase firmware, enter 2 to update name of DAC: \n";
+	std::cout << "Select operation. Enter 1 to erase firmware, enter 2 to update name of DAC, enter 3 to test status getting: \n";
 	int c = 0;
 	std::cin >> c;
 	
@@ -14,8 +14,8 @@ int main()
 	{
 		if (c == 1) //ERASE FIRMWARE
 		{
-			uint8_t ctrlBuffer[1] = { 0x04 };
-			int result = dac.SendControl(0, &ctrlBuffer[0], 1);
+			uint8_t ctrlBuffer[2] = { 0x04, 0 };
+			int result = dac.SendControl(0, &ctrlBuffer[0], 2);
 			if (result)
 			{
 				uint8_t response[32];
@@ -39,8 +39,8 @@ int main()
 		}
 		else if (c == 2) //SET NEW NAME
 		{
-			uint8_t ctrlBuffer[1] = { 0x05 };
-			int result = dac.SendControl(0, &ctrlBuffer[0], 1);
+			uint8_t ctrlBuffer[2] = { 0x05, 0 };
+			int result = dac.SendControl(0, &ctrlBuffer[0], 2);
 			if (result)
 			{
 				uint8_t response[32];
@@ -69,7 +69,7 @@ int main()
 			if (result)
 			{
 				ctrlBuffer[0] = 0x05;
-				int result = dac.SendControl(0, &ctrlBuffer[0], 1);
+				int result = dac.SendControl(0, &ctrlBuffer[0], 2);
 				uint8_t response[32];
 				result = dac.GetControlResponse(0, &response[0]);
 				if ((result > 0) && (response[0] == 0x85))
@@ -83,6 +83,24 @@ int main()
 			}
 			if (!success)
 				std::cout << "\nERROR: Could not set new DAC name. Press any key + enter to exit.\n";
+		}
+		else if (c == 3) //TEST STATUS
+		{
+			uint8_t ctrlBuffer[2] = { 0x03, 0 };
+			int result = dac.SendControl(0, &ctrlBuffer[0], 2);
+			bool success = false;
+			if (result)
+			{
+				uint8_t response[32];
+				result = dac.GetControlResponse(0, &response[0]);
+				if ((result > 0) && (response[0] == 0x83))
+				{
+					std::cout << "\nStatus query returned " << response[1] << "\n";
+					success = true;
+				}
+			}
+			if (!success)
+				std::cout << "ERROR: Could not get status.\n";
 		}
 	}
 	else

@@ -65,8 +65,8 @@ int Stop(int dacNum)
 	if (!inited)
 		return 0;
 
-	uint8_t ctrlBuffer[1] = { 0x01 };
-	if (dacController->SendControl(dacNum, &ctrlBuffer[0], 1))
+	uint8_t ctrlBuffer[2] = { 0x01, 0 };
+	if (dacController->SendControl(dacNum, &ctrlBuffer[0], 2))
 		return 1;
 	else
 		return 0;
@@ -107,8 +107,8 @@ int GetStatus(int dacNum)
 	if (!inited)
 		return -1;
 
-	uint8_t ctrlBuffer[32] = { 0x03 };
-	int tx = dacController->SendControl(dacNum, &ctrlBuffer[0], 1);
+	uint8_t ctrlBuffer[32] = { 0x03, 0 };
+	int tx = dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
 	if (tx != 1)
 		return -1;
 
@@ -142,8 +142,8 @@ int GetFirmwareVersion(int dacNum)
 	if (!inited)
 		return -1;
 
-	uint8_t ctrlBuffer[32] = { 0x04 };
-	int tx = dacController->SendControl(dacNum, &ctrlBuffer[0], 1);
+	uint8_t ctrlBuffer[32] = { 0x04, 0 };
+	int tx = dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
 	if (tx != 1)
 		return -1;
 
