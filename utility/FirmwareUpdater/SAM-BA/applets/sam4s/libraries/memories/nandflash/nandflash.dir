@@ -1,0 +1,69 @@
+/* ----------------------------------------------------------------------------
+ *         ATMEL Microcontroller Software Support 
+ * ----------------------------------------------------------------------------
+ * Copyright (c) 2008, Atmel Corporation
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * - Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the disclaimer below.
+ *
+ * Atmel's name may not be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * DISCLAIMER: THIS SOFTWARE IS PROVIDED BY ATMEL "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT ARE
+ * DISCLAIMED. IN NO EVENT SHALL ATMEL BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * ----------------------------------------------------------------------------
+ */
+
+/**
+ * \page nandflash NandFlash
+ * 
+ * \section Purpose
+ * 
+ *  This directory contains nandflash drivers
+ * 
+ * \section Description
+ * NAND Flash driver package is composed of low-level functions for NAND Flash devices 
+ * and external API functions that support the unified interface of functions and operations
+ * for all supported NAND Flash Devices. The NAND Flash driver can be used for reference
+ * code that demonstrates usage of low-level functions.
+ * The NAND Flash drivers can be divided set of layers:
+ *  - Raw Layer \n
+ * The RawNandFlash layer drives hardware-specific Bus Read and Bus Write operations to 
+ * communicate with the NAND Flash device. It directly interacts with hardware's register to 
+ * operate NAND Flash interface.The RawNandFlash layer code implement procedures to program 
+ * basic NAND Flash operations. It takes care of issuing the correct sequences of write/read 
+ * operations for each command. All functions in the layer are blocked i.e. they wait for 
+ * the completion of an operation. RawNandFlash layer access NAND Flash device by SMC.
+ *  - Ecc Layer \n
+ * Error Checking and Correction (ECC) to be calculated for each page of data. The
+ * ECC data is used to detect when a memory location 'goes bad' and (depending on the ECC
+ * algorithm) fix the bad bit. Typically, three bytes of ECC are generated for each page 
+ * and placed in the 'spare area' of the page. The ECC algorithm in the NAND Flash driver 
+ * support software Hamming ECC algorithm.
+ *  - SkippedBlock Layer\n 
+ * This layer is to just skip over the bad blocks and place the data in the known good blocks.
+ * The algorithm starts by reading the entire spare area of the entire memory. The addresses 
+ * of the factory-marked bad blocks are then collected in the programmer RAM. Next, the image is
+ * sequentially programmed (page by page) into the target device. When the target address 
+ * corresponds to a bad block address, these pages are stored in the next good block, skipping 
+ * the bad block.
+ * The SkipBlocks method is a very generic and well-performing strategy. When a bad block is
+ * encountered, the algorithm simply skips ahead to the next good block.
+ *  - Translated Layer\n
+ * TranslatedNandFlash is an efficient layer to manage read and write access to flash.It adaptively
+ * switches logical addresses to physical addresses in the flash memory by using block mapping,
+ * page mapping technique.
+ */
