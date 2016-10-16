@@ -27,7 +27,7 @@ public:
 	int OpenDevices();
 	int CloseDevices();
 	int SendControl(int devNum, uint8_t* bufferAddress, int length);
-	int GetControlResponse(int devNum, uint8_t* bufferAddress);
+	int GetControlResponse(int devNum, uint8_t* bufferAddress, int length);
 	int SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize);
 
 	int numOfDevices = 0;
