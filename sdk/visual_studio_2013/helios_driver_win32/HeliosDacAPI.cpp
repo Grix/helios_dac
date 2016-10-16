@@ -82,8 +82,8 @@ int GetName(int dacNum, char* name)
 	int tx = dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
 	if (tx == 1)
 	{
-		tx = dacController->GetControlResponse(dacNum, &ctrlBuffer[0]);
-		if (tx > 0)
+		tx = dacController->GetControlResponse(dacNum, &ctrlBuffer[0], 32);
+		if (tx == 1)
 		{
 			if ((ctrlBuffer[0]) == 0x85) //if received control byte is as expected
 			{
@@ -112,8 +112,8 @@ int GetStatus(int dacNum)
 	if (tx != 1)
 		return -1;
 
-	tx = dacController->GetControlResponse(dacNum, &ctrlBuffer[0]);
-	if (tx > 0)
+	tx = dacController->GetControlResponse(dacNum, &ctrlBuffer[0], 2);
+	if (tx == 1)
 	{
 		if ((ctrlBuffer[0]) == 0x83) //if received control byte is as expected
 		{
@@ -147,7 +147,7 @@ int GetFirmwareVersion(int dacNum)
 	if (tx != 1)
 		return -1;
 
-	tx = dacController->GetControlResponse(dacNum, &ctrlBuffer[0]);
+	tx = dacController->GetControlResponse(dacNum, &ctrlBuffer[0], 5);
 	if (tx == 1)
 	{
 		if ((ctrlBuffer[0]) == 0x84) //if received control byte is as expected
@@ -159,7 +159,7 @@ int GetFirmwareVersion(int dacNum)
 		}
 	}
 	else
-		return -1;
+		return 0;
 }
 
 int CloseDevices()

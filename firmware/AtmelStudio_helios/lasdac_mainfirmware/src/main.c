@@ -199,7 +199,7 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 				if (flashBuf[i] == 0)
 					break;
 			}
-			udi_vendor_interrupt_in_run(&transfer[0], i+2, NULL);
+			udi_vendor_interrupt_in_run(&transfer[0], 32, NULL);
 		}
 		else if (usbInterruptBufferAddress[0] == 0x06)	//WRITE NAME
 		{
