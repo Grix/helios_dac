@@ -43,6 +43,8 @@ dlldata.c
 project.lock.json
 artifacts/
 
+*.tlog
+
 *_i.c
 *_p.c
 *_i.h
