@@ -1,0 +1,2 @@
+To flash new firmware to the Helios, replace "lasdac_mainfirmware.bin" with the firmware image, then run "flash.bat" and follow the instructions on the window.
+Only for Windows right now.
