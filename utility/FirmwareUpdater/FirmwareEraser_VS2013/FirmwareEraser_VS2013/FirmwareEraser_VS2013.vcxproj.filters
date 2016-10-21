@@ -15,18 +15,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="HeliosDac.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HeliosDac.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="main.h">
+    <ClInclude Include="HeliosDac.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HeliosDac.h">
+    <ClInclude Include="libusb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="main.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

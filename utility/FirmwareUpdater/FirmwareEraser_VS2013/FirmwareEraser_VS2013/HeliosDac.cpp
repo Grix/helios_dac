@@ -108,21 +108,23 @@ int HeliosDac::SendControl(int devNum, uint8_t* bufferAddress, int length)
 
 //Attempts to receive a response to a previous control transfer. 
 //Returns length of packet >0 , and populates bufferAddress on success
-int HeliosDac::GetControlResponse(int devNum, uint8_t* bufferAddress)
+int HeliosDac::GetControlResponse(int devNum, uint8_t* bufferAddress, int length)
 {
-	if ((bufferAddress == NULL) || (!inited) || (devNum >= numOfDevices))
+	if ((bufferAddress == NULL) || (!inited) || (devNum >= numOfDevices) || (length > 32) || (length <= 0))
 		return 0;
 
 	uint8_t data[32];
 	int actualLength = 0;
-	int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], 32, &actualLength, 64);
+	int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], length, &actualLength, 32);
 
 	if (transferResult < 0)
+	{
 		return transferResult;
+	}
 	else
 	{
-		memcpy(bufferAddress, &data[0], actualLength);
-		return actualLength;
+		memcpy(bufferAddress, &data[0], length);
+		return 1;
 	}
 }
 

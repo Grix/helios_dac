@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HeliosFirmwareUpdater", "HeliosFirmwareUpdater\HeliosFirmwareUpdater.vcxproj", "{4418B6C6-09B9-4C5C-8B3E-13AF271D957C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FirmwareEraser_VS2013", "FirmwareEraser_VS2013\FirmwareEraser_VS2013.vcxproj", "{DD8A9F0B-6F75-4BF1-BD6B-99057AD7DFB2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +11,10 @@ Global
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4418B6C6-09B9-4C5C-8B3E-13AF271D957C}.Debug|Win32.ActiveCfg = Debug|Win32
-		{4418B6C6-09B9-4C5C-8B3E-13AF271D957C}.Debug|Win32.Build.0 = Debug|Win32
-		{4418B6C6-09B9-4C5C-8B3E-13AF271D957C}.Release|Win32.ActiveCfg = Release|Win32
-		{4418B6C6-09B9-4C5C-8B3E-13AF271D957C}.Release|Win32.Build.0 = Release|Win32
+		{DD8A9F0B-6F75-4BF1-BD6B-99057AD7DFB2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DD8A9F0B-6F75-4BF1-BD6B-99057AD7DFB2}.Debug|Win32.Build.0 = Debug|Win32
+		{DD8A9F0B-6F75-4BF1-BD6B-99057AD7DFB2}.Release|Win32.ActiveCfg = Release|Win32
+		{DD8A9F0B-6F75-4BF1-BD6B-99057AD7DFB2}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
