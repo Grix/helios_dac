@@ -234,10 +234,10 @@ inline void point_output(void) //sends point data to the DACs, data is point num
 		dacc_write_conversion_data(DACC, (currentPoint[0] << 4) | (currentPoint[1] >> 4) ); //X
 	}
 	
-	spi_write(SPI, (currentPoint[6] << 4) | (0b0001 << 12), 0, 0); //I
-	spi_write(SPI, (currentPoint[5] << 4) | (0b0101 << 12), 0, 0); //B
-	spi_write(SPI, (currentPoint[4] << 4) | (0b1001 << 12), 0, 0); //G
 	spi_write(SPI, (currentPoint[3] << 4) | (0b1101 << 12), 0, 0); //R
+	spi_write(SPI, (currentPoint[4] << 4) | (0b1001 << 12), 0, 0); //G
+	spi_write(SPI, (currentPoint[5] << 4) | (0b0101 << 12), 0, 0); //B
+	spi_write(SPI, (currentPoint[6] << 4) | (0b0001 << 12), 0, 0); //I
 	
 	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
 	{
@@ -248,11 +248,10 @@ inline void point_output(void) //sends point data to the DACs, data is point num
 	statusled_set( (currentPoint[6] != 0) ); //turn on status led if not blanked
 }
 
-inline void stop(void) //outputs a blanked and centered point and stops playback
+void stop(void) //outputs a blanked and centered point and stops playback
 {
 	udd_ep_abort(UDI_VENDOR_EP_BULK_OUT);
 	udd_ep_abort(UDI_VENDOR_EP_INTERRUPT_OUT);
-	udd_ep_abort(UDI_VENDOR_EP_INTERRUPT_IN);
 	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk; //disable systick IRQ
 	stopFlag = true;
 	playing = false;
@@ -260,23 +259,19 @@ inline void stop(void) //outputs a blanked and centered point and stops playback
 	newFrameReady = false;
 	statusled_set(LOW);
 		
-	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	{
-		dacc_set_channel_selection(DACC, 0 );
-		dacc_write_conversion_data(DACC, 0x800 ); //X
-	}
+	//if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+	//{
+		//dacc_set_channel_selection(DACC, 0 );
+		//dacc_write_conversion_data(DACC, 0x800 ); //X
+	//}
+	//
+	//if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+	//{
+		//dacc_set_channel_selection(DACC, 1 );
+		//dacc_write_conversion_data(DACC, 0x800 ); //Y
+	//}
 	
-	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	{
-		dacc_set_channel_selection(DACC, 1 );
-		dacc_write_conversion_data(DACC, 0x800 ); //Y
-	}
-	
-	//blank colors
-	spi_write(SPI, (0b0001 << 12), 0, 0); //I
-	spi_write(SPI, (0b0101 << 12), 0, 0); //B
-	spi_write(SPI, (0b1001 << 12), 0, 0); //G
-	spi_write(SPI, (0b1101 << 12), 0, 0); //R
+	spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
 	
 	//set timer for delayed stop in case new unwanted frame is on the way over USB
 	tc_start(TC0, 0);
@@ -295,30 +290,26 @@ void TC0_Handler(void)
 	newFrameReady = false;
 	statusled_set(LOW);
 	
-	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	{
-		dacc_set_channel_selection(DACC, 0 );
-		dacc_write_conversion_data(DACC, 0x800 ); //X
-	}
-		
-	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	{
-		dacc_set_channel_selection(DACC, 1 );
-		dacc_write_conversion_data(DACC, 0x800 ); //Y
-	}
+	//if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+	//{
+		//dacc_set_channel_selection(DACC, 0 );
+		//dacc_write_conversion_data(DACC, 0x800 ); //X
+	//}
+		//
+	//if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+	//{
+		//dacc_set_channel_selection(DACC, 1 );
+		//dacc_write_conversion_data(DACC, 0x800 ); //Y
+	//}
 	
-	//blank colors
-	spi_write(SPI, (0b0001 << 12), 0, 0); //I
-	spi_write(SPI, (0b0101 << 12), 0, 0); //B
-	spi_write(SPI, (0b1001 << 12), 0, 0); //G
-	spi_write(SPI, (0b1101 << 12), 0, 0); //R
+	spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
 	
 	stopFlag = false;
 	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 32, usb_interrupt_out_callback);
 }
 
 
-inline void speed_set(uint32_t rate) //set the output speed in points per second
+void speed_set(uint32_t rate) //set the output speed in points per second
 {
 	if (rate > MAXSPEED)
 		rate = MAXSPEED;
