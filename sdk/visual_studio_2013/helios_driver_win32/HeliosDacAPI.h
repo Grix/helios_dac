@@ -32,7 +32,6 @@ See OpenLaserShowControllerV1.0.0-Mod.h for documentation on OLSC_* functions. N
 
 #pragma once
 
-//#include "libusb.h"
 #include "stdio.h"
 #include "HeliosDac.h"
 
@@ -91,6 +90,11 @@ HELIOS_EXPORT int GetFirmwareVersion(int dacNum);
 //return -1 if unsuccessful and name is not populated.
 HELIOS_EXPORT int GetName(int dacNum, char* name);
 
+//gets a descriptive name of the specified dac
+//name is max 31 bytes long including null terminator
+//returns 1 if successful, return 0 if the transfer failed
+HELIOS_EXPORT int SetName(int dacNum, char* name);
+
 //stops, blanks and centers output on the specified dac
 //returns 1 if successful
 HELIOS_EXPORT int Stop(int dacNum);
@@ -98,3 +102,7 @@ HELIOS_EXPORT int Stop(int dacNum);
 //closes connection to all dacs and frees resources
 //should be called when library is no longer needed (program exit for example)
 HELIOS_EXPORT int CloseDevices();
+
+//Clears the GPNVM1 bit on the DACs microcontroller. This will cause the DAC to boot into SAM-BA bootloader
+//which allows new firmware to be uploaded over USB. 
+HELIOS_EXPORT int EraseFirmware(int dacNum);

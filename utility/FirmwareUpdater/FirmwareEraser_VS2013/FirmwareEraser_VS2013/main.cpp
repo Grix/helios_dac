@@ -16,8 +16,10 @@ int main()
 			result = dac.GetControlResponse(0, &response[0], 5);
 			if ((result > 4) && (response[0] == 0x84))
 			{	
-				uint32_t version;
-				memcpy(&version, &response[1], 4);
+				uint32_t version = (	response[1] << 0 |
+												response[2] << 8 |
+												response[3] << 16 |
+												response[4] << 24 );
 				std::cout << "\nCurrent firmware version: " << version << "\n";
 			}
 			else 
