@@ -101,6 +101,16 @@ int GetName(int dacNum, char* name)
 	return 0;
 }
 
+int SetName(int dacNum, char* name)
+{
+	if (!inited)
+		return  -1;
+
+	uint8_t ctrlBuffer[32] = { 0x06 };
+	memcpy(&ctrlBuffer[1], name, 31);
+	return dacController->SendControl(dacNum, &ctrlBuffer[0], 32);
+}
+
 
 int GetStatus(int dacNum)
 {
@@ -160,6 +170,15 @@ int GetFirmwareVersion(int dacNum)
 	}
 	else
 		return 0;
+}
+
+int EraseFirmware(int dacNum)
+{
+	if (!inited)
+		return  -1;
+
+	uint8_t ctrlBuffer[2] = { 0xDE, 0 };
+	return dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
 }
 
 int CloseDevices()

@@ -45,6 +45,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <TargetName>HeliosLaserDAC</TargetName>
+    <SourcePath>$(SolutionDir)\..\;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -71,6 +72,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;HELIOS_DRIVER_WIN32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -82,14 +84,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="HeliosDac.cpp" />
-    <ClCompile Include="HeliosDacAPI.cpp" />
+    <ClInclude Include="..\..\HeliosDac.h" />
+    <ClInclude Include="..\..\HeliosDacAPI.h" />
+    <ClInclude Include="..\..\libusb.h" />
+    <ClInclude Include="..\..\OpenLaserShowControllerV1.0.0-Mod.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="HeliosDac.h" />
-    <ClInclude Include="libusb.h" />
-    <ClInclude Include="HeliosDacAPI.h" />
-    <ClInclude Include="OpenLaserShowControllerV1.0.0-Mod.h" />
+    <ClCompile Include="..\..\HeliosDac.cpp" />
+    <ClCompile Include="..\..\HeliosDacAPI.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
