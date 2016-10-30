@@ -1,18 +1,19 @@
-/*
-Driver API for Helios Laser DACs
-By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
-
-See HeliosDacAPI.h for documentation
-
-Dependencies: 
-Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
-HeliosDAC class (part of this driver)
-*/
-
-#include "HeliosDacAPI.h"
+#include "HeliosDacClass.h"
 
 
-int OpenDevices()
+HeliosDacClass::HeliosDacClass()
+{
+	inited = false;
+}
+
+
+HeliosDacClass::~HeliosDacClass()
+{
+	CloseDevices();
+}
+
+
+int HeliosDacClass::OpenDevices()
 {
 	CloseDevices();
 
@@ -25,13 +26,11 @@ int OpenDevices()
 	else
 		inited = true;
 
-	printf("OpenDevices() found: %d", result);
-
 	return result;
 }
 
 
-int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numOfPoints)
+int HeliosDacClass::WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numOfPoints)
 {
 	if ((!inited) || (points == NULL))
 		return 0;
@@ -60,7 +59,7 @@ int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numO
 	return dacController->SendFrame(dacNum, &frameBuffer[0], bufPos);
 }
 
-int Stop(int dacNum)
+int HeliosDacClass::Stop(int dacNum)
 {
 	if (!inited)
 		return 0;
@@ -73,7 +72,7 @@ int Stop(int dacNum)
 }
 
 
-int GetName(int dacNum, char* name)
+int HeliosDacClass::GetName(int dacNum, char* name)
 {
 	if (!inited)
 		return  -1;
@@ -101,7 +100,7 @@ int GetName(int dacNum, char* name)
 	return 0;
 }
 
-int SetName(int dacNum, char* name)
+int HeliosDacClass::SetName(int dacNum, char* name)
 {
 	if (!inited)
 		return  -1;
@@ -112,7 +111,7 @@ int SetName(int dacNum, char* name)
 }
 
 
-int GetStatus(int dacNum)
+int HeliosDacClass::GetStatus(int dacNum)
 {
 	if (!inited)
 		return -1;
@@ -133,12 +132,12 @@ int GetStatus(int dacNum)
 				return 0;
 		}
 	}
-	else
-		return -1;
+
+	return -1;
 }
 
 
-int SetShutter(int dacNum, bool value)
+int HeliosDacClass::SetShutter(int dacNum, bool value)
 {
 	if (!inited)
 		return 0;
@@ -147,7 +146,7 @@ int SetShutter(int dacNum, bool value)
 	return dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
 }
 
-int GetFirmwareVersion(int dacNum)
+int HeliosDacClass::GetFirmwareVersion(int dacNum)
 {
 	if (!inited)
 		return -1;
@@ -163,16 +162,16 @@ int GetFirmwareVersion(int dacNum)
 		if ((ctrlBuffer[0]) == 0x84) //if received control byte is as expected
 		{
 			return ((ctrlBuffer[1] << 0) |
-					(ctrlBuffer[2] << 8) |
-					(ctrlBuffer[3] << 16) |
-					(ctrlBuffer[4] << 24));
+				(ctrlBuffer[2] << 8) |
+				(ctrlBuffer[3] << 16) |
+				(ctrlBuffer[4] << 24));
 		}
 	}
 	else
 		return 0;
 }
 
-int EraseFirmware(int dacNum)
+int HeliosDacClass::EraseFirmware(int dacNum)
 {
 	if (!inited)
 		return  -1;
@@ -181,7 +180,7 @@ int EraseFirmware(int dacNum)
 	return dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
 }
 
-int CloseDevices()
+int HeliosDacClass::CloseDevices()
 {
 	if (inited)
 	{
