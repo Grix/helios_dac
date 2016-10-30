@@ -66,7 +66,7 @@ int main (void)
 
 void SysTick_Handler(void) //systick timer ISR, called for each point
 {
-	if (playing)
+	if ((playing) && (!stopFlag))
 	{
 		if (framePos >= frameSize) //if frame reached the end
 		{
@@ -170,12 +170,13 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 		}
 		else if (usbInterruptBufferAddress[0] == 0x03)	//STATUS/NEW FRAME POLL
 		{
-			if ((!newFrameReady) && (!stopFlag))
+			uint8_t transfer[2] = {0x83, 0};
+			if (!newFrameReady)
 			{
 				udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+				transfer[1] = 1;	
 			}
-			
-			uint8_t transfer[2] = {0x83, !newFrameReady};	
+					
 			udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
 		}
 		else if (usbInterruptBufferAddress[0] == 0x04)	//GET FIRMWARE VERSION
@@ -250,26 +251,12 @@ inline void point_output(void) //sends point data to the DACs, data is point num
 
 void stop(void) //outputs a blanked and centered point and stops playback
 {
-	udd_ep_abort(UDI_VENDOR_EP_BULK_OUT);
-	udd_ep_abort(UDI_VENDOR_EP_INTERRUPT_OUT);
 	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk; //disable systick IRQ
 	stopFlag = true;
 	playing = false;
 	framePos = 0;
 	newFrameReady = false;
 	statusled_set(LOW);
-		
-	//if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	//{
-		//dacc_set_channel_selection(DACC, 0 );
-		//dacc_write_conversion_data(DACC, 0x800 ); //X
-	//}
-	//
-	//if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	//{
-		//dacc_set_channel_selection(DACC, 1 );
-		//dacc_write_conversion_data(DACC, 0x800 ); //Y
-	//}
 	
 	spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
 	
@@ -290,17 +277,17 @@ void TC0_Handler(void)
 	newFrameReady = false;
 	statusled_set(LOW);
 	
-	//if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	//{
-		//dacc_set_channel_selection(DACC, 0 );
-		//dacc_write_conversion_data(DACC, 0x800 ); //X
-	//}
-		//
-	//if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	//{
-		//dacc_set_channel_selection(DACC, 1 );
-		//dacc_write_conversion_data(DACC, 0x800 ); //Y
-	//}
+	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+	{
+		dacc_set_channel_selection(DACC, 0 );
+		dacc_write_conversion_data(DACC, 0x800 ); //X
+	}
+		
+	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+	{
+		dacc_set_channel_selection(DACC, 1 );
+		dacc_write_conversion_data(DACC, 0x800 ); //Y
+	}
 	
 	spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
 	

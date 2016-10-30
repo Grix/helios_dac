@@ -37,10 +37,6 @@ See OpenLaserShowControllerV1.0.0-Mod.h for documentation on OLSC_* functions. N
 
 #define HELIOS_EXPORT extern "C" __declspec (dllexport)
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-	#include "OpenLaserShowControllerV1.0.0-Mod.h"
-#endif
-
 bool inited = false;
 HeliosDac* dacController;
 
