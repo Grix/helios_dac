@@ -5063,19 +5063,19 @@ Disassembly of section .text:
 
 00402f24 <assignDefaultName>:
   402f24:	b530      	push	{r4, r5, lr}
-  402f26:	b097      	sub	sp, #92	; 0x5c
-  402f28:	ac06      	add	r4, sp, #24
+  402f26:	b099      	sub	sp, #100	; 0x64
+  402f28:	ac08      	add	r4, sp, #32
   402f2a:	2110      	movs	r1, #16
   402f2c:	4620      	mov	r0, r4
   402f2e:	f7fe ff91 	bl	401e54 <flash_read_user_signature>
-  402f32:	9b06      	ldr	r3, [sp, #24]
+  402f32:	9b08      	ldr	r3, [sp, #32]
   402f34:	3301      	adds	r3, #1
   402f36:	d117      	bne.n	402f68 <assignDefaultName+0x44>
-  402f38:	2101      	movs	r1, #1
-  402f3a:	a801      	add	r0, sp, #4
-  402f3c:	ad02      	add	r5, sp, #8
+  402f38:	2104      	movs	r1, #4
+  402f3a:	4668      	mov	r0, sp
+  402f3c:	ad04      	add	r5, sp, #16
   402f3e:	f7fe ff69 	bl	401e14 <flash_read_unique_id>
-  402f42:	9a01      	ldr	r2, [sp, #4]
+  402f42:	9a03      	ldr	r2, [sp, #12]
   402f44:	4909      	ldr	r1, [pc, #36]	; (402f6c <assignDefaultName+0x48>)
   402f46:	4628      	mov	r0, r5
   402f48:	f000 f9c2 	bl	4032d0 <siprintf>
@@ -5090,7 +5090,7 @@ Disassembly of section .text:
   402f60:	2110      	movs	r1, #16
   402f62:	4620      	mov	r0, r4
   402f64:	f7fe ff8a 	bl	401e7c <flash_write_user_signature>
-  402f68:	b017      	add	sp, #92	; 0x5c
+  402f68:	b019      	add	sp, #100	; 0x64
   402f6a:	bd30      	pop	{r4, r5, pc}
   402f6c:	00403a2b 	.word	0x00403a2b
 

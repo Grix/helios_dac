@@ -406,10 +406,10 @@ void assignDefaultName() //on first ever boot, assign default name and store to 
 	flash_read_user_signature(&flash[0], 16);
 	if (flash[0] == 0xFFFFFFFF) //factory value
 	{
-		uint32_t unique;
-		flash_read_unique_id(&unique, 1);
+		uint32_t unique[4];
+		flash_read_unique_id(&unique[0], 4);
 		char name[16];
-		sprintf(&name[0], "Helios %ld", unique);
+		sprintf(&name[0], "Helios %ld", unique[3]);
 		int i;
 		for (i = 0; i < 16; i++)
 		{

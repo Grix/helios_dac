@@ -28,8 +28,6 @@ Required Atmel Software Framework modules:
 #define MINSPEED 7					//in pps
 #define MAXFRAMESIZE 0x1000			//in points (4096)
 
-#define DACNAME_ADDR (IFLASH0_ADDR+0x19000)		//location of saved name of dac in flash
-
 //global variables
 uint16_t frameSize = 0;					//size of frame buffer in points
 uint16_t framePos = 0;					//current position in frame in points
