@@ -27,21 +27,28 @@ int main(void)
 		}
 	}
 
-	//connect to DAC and output frames
+	//connect to DACs and output frames
 	HeliosDacClass helios;
-	if (helios.OpenDevices() > 0)
+	int numDevs = helios.OpenDevices();
+	
+	int i = 0;
+	while (1)
 	{
-		int i = 0;
-		while (1)
-		{
-			if (i > 300) 
-				break;
+		if (i > 150) //cancel after 5 animations
+			break;
 
-			if (helios.GetStatus(0) == 1)
+		for (int j = 0; j < numDevs; j++)
+		{
+			if (helios.GetStatus(j) == 1)
 			{
-				helios.WriteFrame(0, 30000, 0, &frame[i++ % 30][0], 1000);
+				helios.WriteFrame(j, 30000, 0, &frame[i++ % 30][0], 1000);
 			}
 		}
 	}
-	helios.Stop(0);
+
+	//freeing connection
+	for (int j = 0; j < numDevs; j++)
+	{
+		helios.Stop(j);
+	}
 }
