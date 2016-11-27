@@ -71,6 +71,14 @@ int HeliosDac::OpenDevices()
 
 	numOfDevices = devNum;
 	inited = true;
+	
+	if (numOfDevices > 0)
+	{
+		//This will time out. Used as delay because the DAC won't accept frames for about 100ms after initialization
+		uint8_t buf;
+		int len;
+		libusb_bulk_transfer(deviceList[0], EP_INT_IN, &buf, 1, &len, 150);
+	}
 
 	return devNum;
 }

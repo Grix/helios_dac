@@ -16,7 +16,7 @@ int main(void)
 			if (j < 500)
 				x = j * 0xFFF / 500;
 			else
-				x = 0xFFF - ((j-500) * 0xFFF / 500);
+				x = 0xFFF - ((j - 500) * 0xFFF / 500);
 
 			frame[i][j].x = x;
 			frame[i][j].y = y;
@@ -30,7 +30,7 @@ int main(void)
 	//connect to DACs and output frames
 	HeliosDacClass helios;
 	int numDevs = helios.OpenDevices();
-	
+
 	int i = 0;
 	while (1)
 	{
