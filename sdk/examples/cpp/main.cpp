@@ -47,8 +47,5 @@ int main(void)
 	}
 
 	//freeing connection
-	for (int j = 0; j < numDevs; j++)
-	{
-		helios.Stop(j);
-	}
+	helios.CloseDevices();
 }
