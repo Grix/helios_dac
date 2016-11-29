@@ -4,13 +4,16 @@ By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International
 
 See HeliosDacAPI.h for documentation
 
-Dependencies: 
+Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 HeliosDAC class (part of this driver)
 */
 
 #include "HeliosDacAPI.h"
 
+#ifdef __linux__
+	#include <memory.h>
+#endif
 
 int OpenDevices()
 {
@@ -310,7 +313,7 @@ OLSC_API int __stdcall OLSC_WriteFrame(int device_number, struct LASER_SHOW_DEVI
 	frameBuffer[bufPos++] = (frame.point_count >> 8);
 	frameBuffer[bufPos++] = 0;
 
-	
+
 	//send frame to dac
 	return dacController->SendFrame(device_number, &frameBuffer[0], bufPos);
 }
@@ -330,7 +333,7 @@ OLSC_API int __stdcall OLSC_GetStatus(int device_number, DWORD& status)
 	}
 	else
 		status = OLSC_STATUS_BUFFER_FULL;
-	
+
 	return OLSC_ERROR_SUCCESS;
 }
 
