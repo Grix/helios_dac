@@ -2,32 +2,24 @@
 Driver API for Helios Laser DACs , HEADER
 By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
 gitlem@gmail.com
-
 Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 HeliosDAC class (part of this driver)
 OpenLaserShowControllerV1.0.0 header and .def file
-
 BASIC USAGE:
-
 1.	Call OpenDevices() or OLSC_Initialize() to open devices, returns number of available devices
-
 2.	To send a new frame, first call GetStatus() or OLSC_GetStatus. If the function returns ready
 	(1 for GetStatus, OLSC_STATUS_BUFFER_EMPTY for OLSC_GetStatus), then you can call WriteFrame()
-	or OLSC_WriteFrame() / OLSC_WriteFrameEx(). 
-
+	or OLSC_WriteFrame() / OLSC_WriteFrameEx().
 	You must get the status every time before a frame is written. The status will usually take about 2 ms to fetch.
 	The status should be polled until it returns ready. It can and sometimes will fail to return ready on the first try.
 	Care should be taken not to have multiple status requests or frame transfers run at the same time. Use a
 	mutex or something similar to force correct order and timing when interfacing with the DAC.
 	Both the status getters and frame write functions are BLOCKING and can take many milliseconds to finish if the frame is large.
 	It is recommended to run them in a separate thread from your main program.
-
 3.  To stop output, use Stop() or OLSC_Pause(). To restart output you must send a new frame as described above.
 4.	When the DAC is no longer needed, free it using CloseDevices() or OLSC_Shutdown()
-
 See OpenLaserShowControllerV1.0.0-Mod.h for documentation on OLSC_* functions. Not recommended for cross-platform apps
-
 */
 
 #pragma once
@@ -35,7 +27,11 @@ See OpenLaserShowControllerV1.0.0-Mod.h for documentation on OLSC_* functions. N
 #include "stdio.h"
 #include "HeliosDac.h"
 
-#define HELIOS_EXPORT extern "C" __declspec (dllexport)
+#ifdef _WIN32
+	#define HELIOS_EXPORT extern "C" __declspec (dllexport)
+#else
+	#define HELIOS_EXPORT
+#endif
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 	#include "OpenLaserShowControllerV1.0.0-Mod.h"
@@ -45,7 +41,7 @@ bool inited = false;
 HeliosDac* dacController;
 
 //point data structure
-typedef struct 
+typedef struct
 {
 	uint16_t x; //12 bit (from 0 to 0xFFF)
 	uint16_t y; //12 bit (from 0 to 0xFFF)
@@ -55,11 +51,11 @@ typedef struct
 	uint8_t i;	//8 bit (from 0 to 0xFF)
 } HeliosPoint;
 
-//initializes drivers, opens connection to all devices. 
+//initializes drivers, opens connection to all devices.
 //Returns number of available devices.
 HELIOS_EXPORT int OpenDevices();
 
-//Gets status from the specified dac. 
+//Gets status from the specified dac.
 //Return 1 if ready to receive new frame, 0 if not, -1 if communcation failed
 HELIOS_EXPORT int GetStatus(int dacNum);
 
@@ -75,7 +71,7 @@ HELIOS_EXPORT int GetStatus(int dacNum);
 //returns 1 if successful
 HELIOS_EXPORT int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numOfPoints);
 
-//sets the shutter of the specified dac. 
+//sets the shutter of the specified dac.
 //value 1 = shutter on, value 0 = shutter off
 //returns 1 if successful
 HELIOS_EXPORT int SetShutter(int dacNum, bool shutterValue);
@@ -104,5 +100,5 @@ HELIOS_EXPORT int Stop(int dacNum);
 HELIOS_EXPORT int CloseDevices();
 
 //Clears the GPNVM1 bit on the DACs microcontroller. This will cause the DAC to boot into SAM-BA bootloader
-//which allows new firmware to be uploaded over USB. 
+//which allows new firmware to be uploaded over USB.
 HELIOS_EXPORT int EraseFirmware(int dacNum);
