@@ -9,6 +9,9 @@ Dependencies: Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 
 #include "HeliosDac.h"
 
+#ifdef __linux__
+	#include <memory.h>
+#endif
 
 HeliosDac::HeliosDac()
 {
@@ -71,7 +74,7 @@ int HeliosDac::OpenDevices()
 
 	numOfDevices = devNum;
 	inited = true;
-	
+
 	if (numOfDevices > 0)
 	{
 		//This will time out. Used as delay because the DAC won't accept frames for about 100ms after initialization
@@ -113,7 +116,7 @@ int HeliosDac::SendControl(int devNum, uint8_t* bufferAddress, int length)
 		return transferResult;
 }
 
-//Attempts to receive a response to a previous control transfer. 
+//Attempts to receive a response to a previous control transfer.
 //Returns length of packet >0 , and populates bufferAddress on success
 int HeliosDac::GetControlResponse(int devNum, uint8_t* bufferAddress, int length)
 {
@@ -123,7 +126,7 @@ int HeliosDac::GetControlResponse(int devNum, uint8_t* bufferAddress, int length
 	uint8_t data[32];
 	int actualLength = 0;
 	int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], length, &actualLength, 32);
-	
+
 	if (transferResult < 0)
 	{
 		return transferResult;
