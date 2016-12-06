@@ -16,9 +16,9 @@ class HeliosPoint(ctypes.Structure):
                 ('i', ctypes.c_uint8)]
 
 #Load and initialize library
-HeliosLib = ctypes.cdll.LoadLibrary("HeliosLaserDAC.dll")
+HeliosLib = ctypes.cdll.LoadLibrary("./libHeliosDacAPI.so")
 numDevices = HeliosLib.OpenDevices()
-                
+
 #Create sample frames
 frames = [0 for x in range(30)]
 frameType = HeliosPoint * 1000
@@ -32,15 +32,15 @@ for i in range(30):
             x = round(j * 0xFFF / 500)
         else:
             x = round(0xFFF - ((j - 500) * 0xFFF / 500))
-        
-        frames[i][j] = HeliosPoint(x,y,255,255,255,255)
-    
+
+        frames[i][j] = HeliosPoint(int(x),int(y),255,255,255,255)
+
 #Play frames on DAC
 for i in range(150):
     for j in range(numDevices):
         while (HeliosLib.GetStatus(j) != 1):
             pass
         HeliosLib.WriteFrame(0, 30000, 0, ctypes.pointer(frames[i % 30]), 1000)
-      
+
 
 HeliosLib.CloseDevices()

@@ -30,7 +30,7 @@ See OpenLaserShowControllerV1.0.0-Mod.h for documentation on OLSC_* functions. N
 #ifdef _WIN32
 	#define HELIOS_EXPORT extern "C" __declspec (dllexport)
 #else
-	#define HELIOS_EXPORT
+	#define HELIOS_EXPORT extern "C"
 #endif
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
