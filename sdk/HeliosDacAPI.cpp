@@ -46,9 +46,18 @@ int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numO
 	int bufPos = 0;
 	for (int i = 0; i < numOfPoints; i++)
 	{
-		frameBuffer[bufPos++] = (points[i].x >> 4);
-		frameBuffer[bufPos++] = ((points[i].x & 0x0F) << 4) | (points[i].y >> 8);
-		frameBuffer[bufPos++] = (points[i].y & 0xFF);
+		if (flipX)
+		{
+			frameBuffer[bufPos++] = ((0xFFF - points[i].x) >> 4);
+			frameBuffer[bufPos++] = (((0xFFF - points[i].x) & 0x0F) << 4) | (points[i].y >> 8);
+			frameBuffer[bufPos++] = (points[i].y & 0xFF);
+		}
+		else
+		{
+			frameBuffer[bufPos++] = (points[i].x >> 4);
+			frameBuffer[bufPos++] = ((points[i].x & 0x0F) << 4) | (points[i].y >> 8);
+			frameBuffer[bufPos++] = (points[i].y & 0xFF);
+		}
 		frameBuffer[bufPos++] = points[i].r;
 		frameBuffer[bufPos++] = points[i].g;
 		frameBuffer[bufPos++] = points[i].b;

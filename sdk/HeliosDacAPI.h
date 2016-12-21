@@ -38,6 +38,7 @@ See OpenLaserShowControllerV1.0.0-Mod.h for documentation on OLSC_* functions. N
 #endif
 
 bool inited = false;
+bool flipX = true;
 HeliosDac* dacController;
 
 //point data structure

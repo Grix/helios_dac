@@ -8,6 +8,7 @@ public:
 	~HeliosDacClass();
 
 	bool inited;
+	bool flipX;
 	HeliosDac* dacController;
 
 	//point data structure
