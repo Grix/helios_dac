@@ -1,5 +1,5 @@
 /*
-Driver API for Helios Laser DACs , HEADER
+Driver API for Helios Laser DAC shared library , HEADER
 By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
 gitlem@gmail.com
 Dependencies:

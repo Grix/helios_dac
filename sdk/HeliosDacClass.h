@@ -1,3 +1,23 @@
+/*
+Driver API for Helios Laser DAC class , HEADER
+By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
+gitlem@gmail.com
+Dependencies:
+Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
+HeliosDAC class (part of this driver)
+BASIC USAGE:
+1.	Call OpenDevices()  to open devices, returns number of available devices
+2.	To send a new frame, first call GetStatus() or OLSC_GetStatus. If the function returns ready (1), then you can call WriteFrame().
+	You must get the status every time before a frame is written. The status will usually take about 2 ms to fetch.
+	The status should be polled until it returns ready. It can and sometimes will fail to return ready on the first try.
+	Care should be taken not to have multiple status requests or frame transfers run at the same time. Use a
+	mutex or something similar to force correct order and timing when interfacing with the DAC.
+	The status getters and frame write functions are BLOCKING and can take many milliseconds to finish if the frame is large.
+	It is recommended to run them in a separate thread from your main program.
+3.  To stop output, use Stop(). To restart output you must send a new frame as described above.
+4.	When the DAC is no longer needed, free it using CloseDevices()
+*/
+
 #include "HeliosDac.h"
 
 #pragma once
