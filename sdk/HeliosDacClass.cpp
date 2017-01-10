@@ -177,8 +177,8 @@ int HeliosDacClass::GetFirmwareVersion(int dacNum)
 				(ctrlBuffer[4] << 24));
 		}
 	}
-	else
-		return 0;
+	
+	return 0;
 }
 
 int HeliosDacClass::EraseFirmware(int dacNum)
