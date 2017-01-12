@@ -37,7 +37,7 @@ int main (void)
 	cpu_irq_enable();
 	sleepmgr_init();
 	udc_start();
-	//wdt_disable(WDT);
+	wdt_setup();
 	timer_init();
 	flash_init(FLASH_ACCESS_MODE_128, 4);
 	
@@ -227,24 +227,20 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 
 inline void point_output(void) //sends point data to the DACs, data is point number "framePos" in buffer "frameAddress".
 {
-	uint8_t* currentPoint = frameAddress + framePos;
+	cpu_irq_enter_critical();
+		uint8_t* currentPoint = frameAddress + framePos;
 	
-	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	{
-		dacc_set_channel_selection(DACC, 0);
-		dacc_write_conversion_data(DACC, (currentPoint[0] << 4) | (currentPoint[1] >> 4) ); //X
-	}
+		if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+		{
+			posData = ((((currentPoint[0] << 4) | (currentPoint[1] >> 4)) << 16)) | ((1 << 12) | ((currentPoint[1] & 0x0F) << 8) | currentPoint[2]);
+			dacc_write_conversion_data(DACC, posData );
+		}
 	
-	spi_write(SPI, (currentPoint[3] << 4) | (0b1101 << 12), 0, 0); //R
-	spi_write(SPI, (currentPoint[4] << 4) | (0b1001 << 12), 0, 0); //G
-	spi_write(SPI, (currentPoint[5] << 4) | (0b0101 << 12), 0, 0); //B
-	spi_write(SPI, (currentPoint[6] << 4) | (0b0001 << 12), 0, 0); //I
-	
-	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	{
-		dacc_set_channel_selection(DACC, 1);
-		dacc_write_conversion_data(DACC, ((currentPoint[1] & 0x0F) << 8) | currentPoint[2]); //Y
-	}
+		spi_write(SPI, (currentPoint[3] << 4) | (0b1101 << 12), 0, 0); //R
+		spi_write(SPI, (currentPoint[4] << 4) | (0b1001 << 12), 0, 0); //G
+		spi_write(SPI, (currentPoint[5] << 4) | (0b0101 << 12), 0, 0); //B
+		spi_write(SPI, (currentPoint[6] << 4) | (0b0001 << 12), 0, 0); //I
+	cpu_irq_leave_critical();
 	
 	statusled_set( (currentPoint[6] != 0) ); //turn on status led if not blanked
 }
@@ -279,14 +275,8 @@ void TC0_Handler(void)
 	
 	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
 	{
-		dacc_set_channel_selection(DACC, 0 );
-		dacc_write_conversion_data(DACC, 0x800 ); //X
-	}
-		
-	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	{
-		dacc_set_channel_selection(DACC, 1 );
-		dacc_write_conversion_data(DACC, 0x800 ); //Y
+		posData = (0x800 << 16) | ((1 << 12) | 0x800);
+		dacc_write_conversion_data(DACC, posData );
 	}
 	
 	spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
@@ -379,7 +369,8 @@ void dac_init(void) //setup sam internal DAC controller
 	dacc_reset(DACC);
 	dacc_enable_channel(DACC, 0);
 	dacc_enable_channel(DACC, 1);
-	dacc_set_transfer_mode(DACC, 0);
+	dacc_set_transfer_mode(DACC, 1);
+	dacc_enable_flexible_selection(DACC);
 }
 
 void timer_init(void) //set up timer counter for delayed stop
@@ -398,6 +389,13 @@ void timer_init(void) //set up timer counter for delayed stop
 	NVIC_EnableIRQ(TC0_IRQn);
 	tc_enable_interrupt(TC0, 0, TC_IER_CPCS);
 	tc_write_rc(TC0, 0, stopTimerCounts);
+}
+
+void wdt_setup() //setup watchdog to trigger a reset at WDT_PERIOD ms inactivity
+{
+	uint32_t timeout_value = wdt_get_timeout_value(WDT_PERIOD * 1000, BOARD_FREQ_SLCK_XTAL);
+	uint32_t wdt_mode = WDT_MR_WDRSTEN | WDT_MR_WDDBGHLT | WDT_MR_WDIDLEHLT;
+	wdt_init(WDT, wdt_mode, timeout_value, timeout_value);
 }
 
 void assignDefaultName() //on first ever boot, assign default name and store to flash

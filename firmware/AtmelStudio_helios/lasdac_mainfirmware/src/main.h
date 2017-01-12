@@ -23,10 +23,11 @@ Required Atmel Software Framework modules:
 #include <string.h> //for memcpy
 
 //macros
-#define FIRMWARE_VERSION 3			//firmware version number
+#define FIRMWARE_VERSION 4			//firmware version number
 #define MAXSPEED 0xFFFF				//in pps	(65535)
 #define MINSPEED 7					//in pps
 #define MAXFRAMESIZE 0x1000			//in points (4096)
+#define WDT_PERIOD 500				//watchdog timer period in ms
 
 //global variables
 uint16_t frameSize = 0;					//size of frame buffer in points
@@ -39,6 +40,7 @@ bool notRepeat = true;					//signals that current frame should be only be played
 bool newNotRepeat = true;				//notRepeat value for pending frame
 bool stopFlag = false;					//delayed stop in effect, won't write new frame during this period
 uint32_t stopTimerCounts;				//num of cycles to delay stop, defined in timer_init
+uint32_t posData;
 
 uint8_t* frameAddress;				//frame currently being played
 uint8_t* newFrameAddress;			//buffer to receive usb transfer with frame
@@ -54,6 +56,7 @@ void spi_init(void);				//sets up SPI module
 void dac_init(void);				//sets up DACC module
 void iopins_init(void);				//sets up IO module and pins
 void timer_init(void);				//sets up TC0 module for stop delay timer
+void wdt_setup(void);
 void assignDefaultName(void);		//on first ever boot, assign default name and store to flash
 
 //USB transfer interrupts

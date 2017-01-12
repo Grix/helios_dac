@@ -283,7 +283,7 @@ OLSC_API int __stdcall OLSC_Pause(int device_number)
 
 OLSC_API int __stdcall OLSC_Shutter(int device_number, int state)
 {
-	return SetShutter(device_number, !state); //OLSC uses 0 as ON for some reason
+	return SetShutter(device_number, state); 
 }
 
 OLSC_API int __stdcall OLSC_WriteFrameEx(int device_number, int display_speed, int point_count, struct LASER_SHOW_DEVICE_POINT *points)

@@ -73,7 +73,7 @@ HELIOS_EXPORT int GetStatus(int dacNum);
 HELIOS_EXPORT int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numOfPoints);
 
 //sets the shutter of the specified dac.
-//value 1 = shutter on, value 0 = shutter off
+//value 1 = shutter open, value 0 = shutter closed
 //returns 1 if successful
 HELIOS_EXPORT int SetShutter(int dacNum, bool shutterValue);
 
