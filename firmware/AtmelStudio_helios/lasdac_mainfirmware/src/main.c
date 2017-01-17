@@ -41,9 +41,7 @@ int main (void)
 	timer_init();
 	flash_init(FLASH_ACCESS_MODE_128, 4);
 	
-	//set systick higher priority to avoid pauses in playback when processing USB transfers
-	//for (int i = -14; i < 34; i++)
-	//	NVIC_SetPriority(i, 1); //invalid indexes don't matter
+	//set systick higher priority to avoid jitter in playback when processing USB transfers
 	NVIC_SetPriority(UDP_IRQn, 2);
 	NVIC_SetPriority(SysTick_IRQn, 1);
 	
@@ -66,7 +64,7 @@ int main (void)
 		
 }
 
-void SysTick_Handler()//void SysTick_Handler(void) //systick timer ISR, called for each point
+void SysTick_Handler() //systick timer ISR, called for each point
 {
 	if ((playing) && (!stopFlag))
 	{
@@ -279,7 +277,7 @@ void TC0_Handler(void)
 	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
 	{
 		posData = (0x800 << 16) | ((1 << 12) | 0x800);
-		dacc_write_conversion_data(DACC, posData );
+		dacc_write_conversion_data(DACC, posData ); //center XY
 	}
 	
 	spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
@@ -297,15 +295,6 @@ void speed_set(uint32_t rate) //set the output speed in points per second
 	outputSpeed = rate;
 	SysTick_Config( (sysclk_get_cpu_hz() / rate) + 1);
 	NVIC_SetPriority(SysTick_IRQn, 1);
-	
-	//uint32_t timerDiv;
-	//uint32_t timerClkSource;
-	//uint32_t timerFreq = rate;
-	//uint32_t sysClkFreq = sysclk_get_cpu_hz();
-	//tc_find_mck_divisor(timerFreq, sysClkFreq, &timerDiv, &timerClkSource, sysClkFreq);
-	//stopTimerCounts = (sysClkFreq/timerDiv)/timerFreq;
-	//tc_write_rc(TC0, 0, stopTimerCounts);
-	//tc_start(TC0, 0);
 }
 
 int callback_vendor_enable(void) //usb connection opened, preparing for activity
@@ -401,15 +390,6 @@ void timer_init(void) //set up timer counter for delayed stop
 	NVIC_EnableIRQ(TC0_IRQn);
 	tc_enable_interrupt(TC0, 0, TC_IER_CPCS);
 	tc_write_rc(TC0, 0, stopTimerCounts);
-	
-	//pmc_enable_periph_clk(ID_TC1);
-	//tc_init(TC1, 0, timerClkSource | TC_CMR_CPCTRG | TC_CMR_CPCSTOP);
-	//NVIC_DisableIRQ(TC1_IRQn);
-	//NVIC_ClearPendingIRQ(TC1_IRQn);
-	//NVIC_SetPriority(TC1_IRQn,0);
-	//NVIC_EnableIRQ(TC1_IRQn);
-	//tc_enable_interrupt(TC1, 0, TC_IER_CPCS);
-	//tc_write_rc(TC1, 0, stopTimerCounts);
 }
 
 void wdt_setup() //setup watchdog to trigger a reset at WDT_PERIOD ms inactivity
