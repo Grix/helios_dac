@@ -2,9 +2,14 @@
 
 #pragma once
 
+#ifdef __linux__
+#include <memory.h>
+#endif
+
 #include <stdint.h>
 #include "libusb.h"
 #include <thread>
+#include <mutex>
 
 #define HELIOS_MAX_DEVICES	16
 #define HELIOS_MAX_POINTS	0x1000
@@ -39,6 +44,7 @@ private:
 	void InterruptTransferHandler(int devNum);
 	struct libusb_device_handle* deviceList[HELIOS_MAX_DEVICES]; //todo use std::vector
 	bool status[HELIOS_MAX_DEVICES];
+	std::mutex statusLock[HELIOS_MAX_DEVICES];
 	bool inited = false;
 };
 

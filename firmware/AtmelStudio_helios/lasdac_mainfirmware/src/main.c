@@ -102,7 +102,14 @@ void SysTick_Handler() //systick timer ISR, called for each point
 				}
 				else
 				{
-					stop();
+					playing = false;
+					framePos = 0;
+					newFrameReady = false;
+					statusled_set(LOW);
+					spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
+					uint8_t transfer[2] = {0x83, 1};
+					udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
+					udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 				}
 				
 			}

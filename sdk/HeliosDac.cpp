@@ -9,10 +9,6 @@ Dependencies: Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 
 #include "HeliosDac.h"
 
-#ifdef __linux__
-	#include <memory.h>
-#endif
-
 HeliosDac::HeliosDac()
 {
 	inited = false;
@@ -69,6 +65,7 @@ int HeliosDac::OpenDevices()
 			continue;
 
 		//successfully opened, add to device list
+		std::lock_guard<std::mutex> lock(statusLock[devNum]);
 		status[devNum] = true;
 		deviceList[devNum] = devHandle;
 
@@ -109,6 +106,7 @@ int HeliosDac::SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize)
 
 	if ((transferResult == 0) && (actualLength == bufferSize))
 	{
+		std::lock_guard<std::mutex> lock(statusLock[devNum]);
 		status[devNum] = false;
 		return 1;
 	}
@@ -122,6 +120,7 @@ bool HeliosDac::GetStatus(int devNum)
 	if (!inited)
 		return false;
 
+	std::lock_guard<std::mutex> lock(statusLock[devNum]);
 	return status[devNum];
 }
 
@@ -170,13 +169,14 @@ int HeliosDac::CloseDevices()
 	if (!inited)
 		return 0;
 
+	inited = false;
+
 	for (int i = 0; i < numOfDevices; i++)
 	{
 		libusb_close(deviceList[i]);
 	}
 
 	libusb_exit(NULL);
-	inited = false;
 	numOfDevices = 0;
 
 	return 1;
@@ -188,17 +188,29 @@ void HeliosDac::InterruptTransferHandler(int devNum)
 	while (inited)
 	{
 		uint8_t data[2];
-		int actualLength = 0;
-		int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], 2, &actualLength, 0);
+		int actualLength;
 
+		int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], 2, &actualLength, 1);
 		if (transferResult == 0) //if transfer valid
 		{
 			if ((data[0]) == 0x83) //status transfer code
 			{
-				//todo mutex
+				std::lock_guard<std::mutex> lock(statusLock[devNum]);
 				status[devNum] = (data[1] == 1);
-				//MessageBoxW(NULL, L"status", L"cap", MB_OK);
 				printf("X");
+			}
+		}
+		else
+		{
+			int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], 2, &actualLength, 0);
+			if (transferResult == 0) //if transfer valid
+			{
+				if ((data[0]) == 0x83) //status transfer code
+				{
+					std::lock_guard<std::mutex> lock(statusLock[devNum]);
+					status[devNum] = (data[1] == 1);
+					printf("X");
+				}
 			}
 		}
 	}
