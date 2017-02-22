@@ -23,7 +23,7 @@ Required Atmel Software Framework modules:
 #include <string.h> //for memcpy
 
 //macros
-#define FIRMWARE_VERSION 4			//firmware version number
+#define FIRMWARE_VERSION 5			//firmware version number
 #define MAXSPEED 0xFFFF				//in pps	(65535)
 #define MINSPEED 7					//in pps
 #define MAXFRAMESIZE 0x1000			//in points (4096)

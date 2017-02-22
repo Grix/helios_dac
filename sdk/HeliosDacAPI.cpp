@@ -41,7 +41,7 @@ int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numO
 	if ((numOfPoints > HELIOS_MAX_POINTS) || (pps > HELIOS_MAX_RATE) || (pps < HELIOS_MIN_RATE))
 		return 0;
 
-	//prepare frame buffer
+	//prepare frame buffer 
 	uint8_t frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
 	int bufPos = 0;
 	for (int i = 0; i < numOfPoints; i++)
@@ -129,24 +129,28 @@ int GetStatus(int dacNum)
 	if (!inited)
 		return -1;
 
-	uint8_t ctrlBuffer[32] = { 0x03, 0 };
-	int tx = dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
-	if (tx != 1)
-		return -1;
+	//uint8_t ctrlBuffer[32] = { 0x03, 0 };
+	//int tx = dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
+	//if (tx != 1)
+	//	return -1;
 
-	tx = dacController->GetControlResponse(dacNum, &ctrlBuffer[0], 2);
-	if (tx == 1)
-	{
-		if ((ctrlBuffer[0]) == 0x83) //if received control byte is as expected
-		{
-			if (ctrlBuffer[1] == 1) //if dac is ready
-				return 1;
-			else
-				return 0;
-		}
-	}
-	else
-		return -1;
+	return (int)dacController->GetStatus(dacNum);
+
+	//int tx = dacController->GetControlResponse(dacNum, &ctrlBuffer[0], 2);
+	//if (tx == 1)
+	//{
+	//	if ((ctrlBuffer[0]) == 0x83) //if received control byte is as expected
+	//	{
+	//		if (ctrlBuffer[1] == 1) //if dac is ready
+	//			return 1;
+	//		else
+	//			return 0;
+	//	}
+	//	else
+	//		return -1;
+	//}
+	//else
+	//	return -1;
 }
 
 
@@ -179,6 +183,8 @@ int GetFirmwareVersion(int dacNum)
 					(ctrlBuffer[3] << 16) |
 					(ctrlBuffer[4] << 24));
 		}
+		else
+			return 0;
 	}
 	else
 		return 0;
@@ -283,7 +289,7 @@ OLSC_API int __stdcall OLSC_Pause(int device_number)
 
 OLSC_API int __stdcall OLSC_Shutter(int device_number, int state)
 {
-	return SetShutter(device_number, state); 
+	return (int)SetShutter(device_number, state); 
 }
 
 OLSC_API int __stdcall OLSC_WriteFrameEx(int device_number, int display_speed, int point_count, struct LASER_SHOW_DEVICE_POINT *points)

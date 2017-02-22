@@ -42,6 +42,8 @@ int HeliosDac::OpenDevices()
 	if (cnt < 0)
 		return (int)cnt;
 
+	inited = true;
+
 	int devNum = 0;
 	for (int i = 0; ((i < cnt) && (devNum < HELIOS_MAX_DEVICES)); i++)
 	{
@@ -67,27 +69,35 @@ int HeliosDac::OpenDevices()
 			continue;
 
 		//successfully opened, add to device list
-		deviceList[devNum++] = devHandle;
+		status[devNum] = true;
+		deviceList[devNum] = devHandle;
+
+		std::thread statusHandlerThread(&HeliosDac::InterruptTransferHandler, this, devNum);
+		statusHandlerThread.detach();
+
+		devNum++;
 	}
 
 	libusb_free_device_list(devs, 1);
 
 	numOfDevices = devNum;
-	inited = true;
 
-	if (numOfDevices > 0)
-	{
-		//This will time out. Used as delay because the DAC won't accept frames for about 100ms after initialization
-		uint8_t buf;
-		int len;
-		libusb_bulk_transfer(deviceList[0], EP_INT_IN, &buf, 1, &len, 150);
-	}
+	for (int u = 0; u < 10000000; u++);
+
+	//todo fix
+	//if (numOfDevices > 0)
+	//{
+	//	//This will time out. Used as delay because the DAC won't accept frames for about 100ms after initialization
+	//	uint8_t buf;
+	//	int len;
+	//	libusb_bulk_transfer(deviceList[0], EP_INT_IN, &buf, 1, &len, 150);
+	//}
 
 	return devNum;
 }
 
 //sends a raw frame buffer (implemented as bulk transfer) to a dac device
-//returns true if transfer succeeds
+//returns 1 if transfer succeeds
 int HeliosDac::SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize)
 {
 	if ((bufferAddress == NULL) || (!inited) || (devNum > numOfDevices) || (bufferSize > HELIOS_MAX_POINTS * 7 + 5))
@@ -97,7 +107,22 @@ int HeliosDac::SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize)
 
 	int transferResult = libusb_bulk_transfer(deviceList[devNum], EP_BULK_OUT, bufferAddress, bufferSize, &actualLength, 500);
 
-	return ((transferResult == 0) && (actualLength == bufferSize));
+	if ((transferResult == 0) && (actualLength == bufferSize))
+	{
+		status[devNum] = false;
+		return 1;
+	}
+	else
+		return 0;
+}
+
+//Gets status of DAC, true means DAC is ready to receive frame
+bool HeliosDac::GetStatus(int devNum)
+{
+	if (!inited)
+		return false;
+
+	return status[devNum];
 }
 
 //sends a raw control signal (implemented as interrupt transfer) to a dac device
@@ -125,7 +150,7 @@ int HeliosDac::GetControlResponse(int devNum, uint8_t* bufferAddress, int length
 
 	uint8_t data[32];
 	int actualLength = 0;
-	int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], length, &actualLength, 32);
+	int transferResult = libusb_bulk_transfer(deviceList[devNum], EP_BULK_IN, &data[0], length, &actualLength, 32);
 
 	if (transferResult < 0)
 	{
@@ -155,4 +180,26 @@ int HeliosDac::CloseDevices()
 	numOfDevices = 0;
 
 	return 1;
+}
+
+//buffers interrupt usb transfers (status)
+void HeliosDac::InterruptTransferHandler(int devNum)
+{
+	while (inited)
+	{
+		uint8_t data[2];
+		int actualLength = 0;
+		int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], 2, &actualLength, 0);
+
+		if (transferResult == 0) //if transfer valid
+		{
+			if ((data[0]) == 0x83) //status transfer code
+			{
+				//todo mutex
+				status[devNum] = (data[1] == 1);
+				//MessageBoxW(NULL, L"status", L"cap", MB_OK);
+				printf("X");
+			}
+		}
+	}
 }

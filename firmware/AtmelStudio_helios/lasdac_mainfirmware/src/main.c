@@ -3,7 +3,6 @@ Helios Laser DAC main AS project (for SAM4S2B board)
 By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
 gitlem@gmail.com
 
-See main.h for documentation
 
 Required Atmel Software Framework modules:
 	DACC - Digital-to-Analog Converter
@@ -55,6 +54,10 @@ int main (void)
 	
 	assignDefaultName();
 	
+	//uint8_t transfer[2] = {0x83, 1};
+	//udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
+	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+	
 	//waiting for interrupts..
 	while (1)
 	{
@@ -83,6 +86,10 @@ void SysTick_Handler() //systick timer ISR, called for each point
 				point_output();
 				framePos += 7;
 				speed_set(outputSpeed);
+				
+				uint8_t transfer[2] = {0x83, 1};
+				udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
+				udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 			}
 			else
 			{
@@ -117,7 +124,7 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 	//n:	output rate 16bit little endian
 	//n+2:	frame size in points 16bit little endian
 	//n+4:	flags
-	
+		
 	if ( (status == UDD_EP_TRANSFER_OK) && (length <= MAXFRAMESIZE * 7 + 5) && (!stopFlag)) //if not invalid
 	{
 		uint16_t numOfPointBytes = length - 5; //from length of received data
@@ -141,6 +148,10 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 					playing = true;
 					notRepeat = newNotRepeat;
 					speed_set(outputSpeed);
+					
+					uint8_t transfer[2] = {0x83, 1};
+					udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
+					udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 				} 
 				else
 				{
@@ -173,10 +184,10 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 			uint8_t transfer[2] = {0x83, 0};
 			if (!newFrameReady)
 			{
-				udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+				//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 				transfer[1] = 1;	
 			}
-					
+			
 			udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
 		}
 		else if (usbInterruptBufferAddress[0] == 0x04)	//GET FIRMWARE VERSION
@@ -185,7 +196,7 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 										(uint8_t)(FIRMWARE_VERSION >> 8),
 										(uint8_t)(FIRMWARE_VERSION >> 16),
 										(uint8_t)(FIRMWARE_VERSION >> 24)};
-			udi_vendor_interrupt_in_run(&transfer[0], 5, NULL);
+			udi_vendor_bulk_in_run(&transfer[0], 5, NULL);
 		}
 		else if (usbInterruptBufferAddress[0] == 0x05)	//GET NAME
 		{
@@ -200,7 +211,7 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 				if (flashBuf[i] == 0)
 					break;
 			}
-			udi_vendor_interrupt_in_run(&transfer[0], 32, NULL);
+			udi_vendor_bulk_in_run(&transfer[0], 32, NULL);
 		}
 		else if (usbInterruptBufferAddress[0] == 0x06)	//WRITE NAME
 		{
@@ -217,7 +228,7 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 		{
 			stop();
 			flash_clear_gpnvm(1);
-			while (1); //watchdog should restart mcu eventually
+			while (1); //watchdog should restart mcu
 		}
 	}
 	
@@ -227,20 +238,18 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 
 inline void point_output(void) //sends point data to the DACs, data is point number "framePos" in buffer "frameAddress".
 {
-	//cpu_irq_enter_critical();
-		uint8_t* currentPoint = frameAddress + framePos;
+	uint8_t* currentPoint = frameAddress + framePos;
 	
-		if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-		{
-			posData = ((((currentPoint[0] << 4) | (currentPoint[1] >> 4)) << 16)) | ((1 << 12) | ((currentPoint[1] & 0x0F) << 8) | currentPoint[2]);
-			dacc_write_conversion_data(DACC, posData );
-		}
+	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+	{
+		posData = ((((currentPoint[0] << 4) | (currentPoint[1] >> 4)) << 16)) | ((1 << 12) | ((currentPoint[1] & 0x0F) << 8) | currentPoint[2]);
+		dacc_write_conversion_data(DACC, posData );
+	}
 	
-		spi_write(SPI, (currentPoint[3] << 4) | (0b1101 << 12), 0, 0); //R
-		spi_write(SPI, (currentPoint[4] << 4) | (0b1001 << 12), 0, 0); //G
-		spi_write(SPI, (currentPoint[5] << 4) | (0b0101 << 12), 0, 0); //B
-		spi_write(SPI, (currentPoint[6] << 4) | (0b0001 << 12), 0, 0); //I
-	//cpu_irq_leave_critical();
+	spi_write(SPI, (currentPoint[3] << 4) | (0b1101 << 12), 0, 0); //R
+	spi_write(SPI, (currentPoint[4] << 4) | (0b1001 << 12), 0, 0); //G
+	spi_write(SPI, (currentPoint[5] << 4) | (0b0101 << 12), 0, 0); //B
+	spi_write(SPI, (currentPoint[6] << 4) | (0b0001 << 12), 0, 0); //I
 	
 	statusled_set( (currentPoint[6] != 0) ); //turn on status led if not blanked
 }
@@ -283,7 +292,11 @@ void TC0_Handler(void)
 	spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
 	
 	stopFlag = false;
-	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 32, usb_interrupt_out_callback);
+	//udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 32, usb_interrupt_out_callback);
+	
+	uint8_t transfer[2] = {0x83, 1};
+	udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
+	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 }
 
 void speed_set(uint32_t rate) //set the output speed in points per second
@@ -305,6 +318,7 @@ int callback_vendor_enable(void) //usb connection opened, preparing for activity
 	sleepmgr_lock_mode(SLEEPMGR_ACTIVE);
 	
 	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 32, usb_interrupt_out_callback);
+	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 	
 	return 1;
 }

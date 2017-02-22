@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 #include "libusb.h"
+#include <thread>
 
 #define HELIOS_MAX_DEVICES	16
 #define HELIOS_MAX_POINTS	0x1000
@@ -26,6 +27,7 @@ public:
 	~HeliosDac();
 	int OpenDevices();
 	int CloseDevices();
+	bool GetStatus(int devNum);
 	int SendControl(int devNum, uint8_t* bufferAddress, int length);
 	int GetControlResponse(int devNum, uint8_t* bufferAddress, int length);
 	int SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize);
@@ -34,7 +36,9 @@ public:
 
 private:
 
-	struct libusb_device_handle* deviceList[HELIOS_MAX_DEVICES];
+	void InterruptTransferHandler(int devNum);
+	struct libusb_device_handle* deviceList[HELIOS_MAX_DEVICES]; //todo use std::vector
+	bool status[HELIOS_MAX_DEVICES];
 	bool inited = false;
 };
 
