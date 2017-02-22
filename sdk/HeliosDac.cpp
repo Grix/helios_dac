@@ -190,28 +190,15 @@ void HeliosDac::InterruptTransferHandler(int devNum)
 		uint8_t data[2];
 		int actualLength;
 
-		int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], 2, &actualLength, 1);
-		if (transferResult == 0) //if transfer valid
+		int transferResult = -1;
+		while ((transferResult != 0) && (inited))
+			transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], 2, &actualLength, 0);
+
+		if ((data[0]) == 0x83) //status transfer code
 		{
-			if ((data[0]) == 0x83) //status transfer code
-			{
-				std::lock_guard<std::mutex> lock(statusLock[devNum]);
-				status[devNum] = (data[1] == 1);
-				printf("X");
-			}
-		}
-		else
-		{
-			int transferResult = libusb_interrupt_transfer(deviceList[devNum], EP_INT_IN, &data[0], 2, &actualLength, 0);
-			if (transferResult == 0) //if transfer valid
-			{
-				if ((data[0]) == 0x83) //status transfer code
-				{
-					std::lock_guard<std::mutex> lock(statusLock[devNum]);
-					status[devNum] = (data[1] == 1);
-					printf("X");
-				}
-			}
+			std::lock_guard<std::mutex> lock(statusLock[devNum]);
+			status[devNum] = (data[1] == 1);
+			printf("X");
 		}
 	}
 }
