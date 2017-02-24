@@ -61,10 +61,7 @@
 #define  USB_DEVICE_MINOR_VERSION         0
 #define  USB_DEVICE_POWER                 150	//Max consumption on VBUS line (mA)
 #define  USB_DEVICE_ATTR                  (USB_CONFIG_ATTR_BUS_POWERED)
-	//(USB_CONFIG_ATTR_SELF_POWERED)
-// (USB_CONFIG_ATTR_BUS_POWERED)
-//	(USB_CONFIG_ATTR_REMOTE_WAKEUP|USB_CONFIG_ATTR_SELF_POWERED)
-//	(USB_CONFIG_ATTR_REMOTE_WAKEUP|USB_CONFIG_ATTR_BUS_POWERED)
+
 
 //! USB Device string definitions (Optional)
  #define  USB_DEVICE_MANUFACTURE_NAME      "Gitle Mikkelsen"

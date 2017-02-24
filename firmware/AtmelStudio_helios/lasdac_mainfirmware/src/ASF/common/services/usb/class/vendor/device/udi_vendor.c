@@ -162,7 +162,7 @@ uint8_t udi_vendor_getsetting(void)
 bool udi_vendor_interrupt_in_run(uint8_t * buf, iram_size_t buf_size,
 		udd_callback_trans_t callback)
 {
-	return udd_ep_run(UDI_VENDOR_EP_INTERRUPT_IN,
+	return udd_ep_run(UDI_VENDOR_EP_INTERRUPT_IN, 
 			false,
 			buf,
 			buf_size,

@@ -56,7 +56,7 @@
  */
 
 //! Control endpoint size
-#define  USB_DEVICE_EP_CTRL_SIZE       64
+#define  USB_DEVICE_EP_CTRL_SIZE       8
 
 //! Endpoint numbers used by vendor interface.
 //! Note: The order of endpoint can depend on USB hardware capability

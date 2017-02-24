@@ -7,6 +7,8 @@ See HeliosDacAPI.h for documentation
 Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 HeliosDAC class (part of this driver)
+
+git repo: https://github.com/Grix/helios_dac.git
 */
 
 #include "HeliosDacAPI.h"

@@ -48,15 +48,11 @@ int main (void)
 	shutter_set(LOW);
 	statusled_set(LOW);
 	ioport_set_pin_level(PIN_POWERLED, HIGH);
-	stop();
+	stop_weak();
 	
 	sleepmgr_lock_mode(SLEEPMGR_WAIT_FAST);
 	
-	assignDefaultName();
-	
-	//uint8_t transfer[2] = {0x83, 1};
-	//udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
-	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+	assign_default_name();
 	
 	//waiting for interrupts..
 	while (1)
@@ -79,7 +75,6 @@ void SysTick_Handler() //systick timer ISR, called for each point
 				uint8_t* previousFrameAddress = frameAddress;
 				frameAddress = newFrameAddress;
 				newFrameAddress = previousFrameAddress;
-				newFrameReady = false;
 				framePos = 0;
 				frameSize = newFrameSize;
 				notRepeat = newNotRepeat;
@@ -87,9 +82,7 @@ void SysTick_Handler() //systick timer ISR, called for each point
 				framePos += 7;
 				speed_set(outputSpeed);
 				
-				uint8_t transfer[2] = {0x83, 1};
-				udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
-				udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+				update_status();
 			}
 			else
 			{
@@ -102,14 +95,8 @@ void SysTick_Handler() //systick timer ISR, called for each point
 				}
 				else
 				{
-					playing = false;
-					framePos = 0;
-					newFrameReady = false;
-					statusled_set(LOW);
-					spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
-					uint8_t transfer[2] = {0x83, 1};
-					udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
-					udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+					stop_weak();
+					update_status();
 				}
 				
 			}
@@ -151,14 +138,11 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 					newFrameAddress = previousFrameAddress;
 					framePos = 0;
 					frameSize = numOfPointBytes;
-					newFrameReady = false;
 					playing = true;
 					notRepeat = newNotRepeat;
 					speed_set(outputSpeed);
 					
-					uint8_t transfer[2] = {0x83, 1};
-					udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
-					udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+					update_status();
 				} 
 				else
 				{
@@ -186,12 +170,12 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 		{
 			shutter_set( (usbInterruptBufferAddress[1] && true) );
 		}
-		else if (usbInterruptBufferAddress[0] == 0x03)	//STATUS/NEW FRAME POLL
+		else if (usbInterruptBufferAddress[0] == 0x03)	//STATUS/NEW FRAME POLL (deprecated)
 		{
 			uint8_t transfer[2] = {0x83, 0};
 			if (!newFrameReady)
 			{
-				//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+				udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 				transfer[1] = 1;	
 			}
 			
@@ -203,7 +187,10 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 										(uint8_t)(FIRMWARE_VERSION >> 8),
 										(uint8_t)(FIRMWARE_VERSION >> 16),
 										(uint8_t)(FIRMWARE_VERSION >> 24)};
-			udi_vendor_bulk_in_run(&transfer[0], 5, NULL);
+			if (sdkVersion < 5)
+				udi_vendor_interrupt_in_run(&transfer[0], 5, NULL);
+			else
+				udi_vendor_bulk_in_run(&transfer[0], 5, NULL);
 		}
 		else if (usbInterruptBufferAddress[0] == 0x05)	//GET NAME
 		{
@@ -218,7 +205,11 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 				if (flashBuf[i] == 0)
 					break;
 			}
-			udi_vendor_bulk_in_run(&transfer[0], 32, NULL);
+			
+			if (sdkVersion < 5)
+				udi_vendor_interrupt_in_run(&transfer[0], 32, NULL);
+			else
+				udi_vendor_bulk_in_run(&transfer[0], 32, NULL);
 		}
 		else if (usbInterruptBufferAddress[0] == 0x06)	//WRITE NAME
 		{
@@ -231,9 +222,13 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 			flash_erase_user_signature();
 			flash_write_user_signature((void*)&flash[0], 32);
 		}
+		else if (usbInterruptBufferAddress[0] == 0x07)	//GET SDK VERSION
+		{
+			sdkVersion = usbInterruptBufferAddress[1];
+		}
 		else if (usbInterruptBufferAddress[0] == 0xDE)	//ERASE GPNVM BIT, BOOT TO FIRMWARE UPDATE BOOTLOADER
 		{
-			stop();
+			stop_weak();
 			flash_clear_gpnvm(1);
 			while (1); //watchdog should restart mcu
 		}
@@ -261,19 +256,22 @@ inline void point_output(void) //sends point data to the DACs, data is point num
 	statusled_set( (currentPoint[6] != 0) ); //turn on status led if not blanked
 }
 
-void stop(void) //outputs a blanked and centered point and stops playback
+void stop_weak(void) //outputs a blanked and centered point and stops playback
 {
 	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk; //disable systick IRQ
-	stopFlag = true;
 	playing = false;
 	framePos = 0;
 	newFrameReady = false;
 	statusled_set(LOW);
 	
 	spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
-	
-	//set timer for delayed stop in case new unwanted frame is on the way over USB
-	tc_start(TC0, 0);
+}
+
+void stop(void) //outputs a blanked and centered point and stops playback
+{
+	stopFlag = true;
+	stop_weak();
+	tc_start(TC0, 0); //set timer for delayed stop in case new unwanted frame is on the way over USB
 }
 
 //timer ISR for delayed stop
@@ -285,10 +283,7 @@ void TC0_Handler(void)
 	
 	tc_stop(TC0,0);
 	
-	playing = false;
-	framePos = 0;
-	newFrameReady = false;
-	statusled_set(LOW);
+	stop_weak();
 	
 	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
 	{
@@ -296,14 +291,9 @@ void TC0_Handler(void)
 		dacc_write_conversion_data(DACC, posData ); //center XY
 	}
 	
-	spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
-	
 	stopFlag = false;
-	//udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 32, usb_interrupt_out_callback);
 	
-	uint8_t transfer[2] = {0x83, 1};
-	udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
-	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+	update_status();
 }
 
 void speed_set(uint32_t rate) //set the output speed in points per second
@@ -319,13 +309,13 @@ void speed_set(uint32_t rate) //set the output speed in points per second
 
 int callback_vendor_enable(void) //usb connection opened, preparing for activity
 {	
-	stop();
+	stop_weak();
 	
 	sleepmgr_unlock_mode(SLEEPMGR_WAIT_FAST);
 	sleepmgr_lock_mode(SLEEPMGR_ACTIVE);
 	
 	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 32, usb_interrupt_out_callback);
-	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+	update_status();
 	
 	return 1;
 }
@@ -420,7 +410,7 @@ void wdt_setup() //setup watchdog to trigger a reset at WDT_PERIOD ms inactivity
 	wdt_init(WDT, wdt_mode, timeout_value, timeout_value);
 }
 
-void assignDefaultName() //on first ever boot, assign default name and store to flash
+void assign_default_name() //on first ever boot, assign default name and store to flash
 {
 	uint32_t flash[16];
 	flash_read_user_signature(&flash[0], 16);
@@ -442,6 +432,17 @@ void assignDefaultName() //on first ever boot, assign default name and store to 
 	}
 }
 
+void update_status() // send an usb transfer telling the host driver the frame buffer status
+{
+	newFrameReady = false;
+	uint8_t transfer[2] = {0x83, 1};
+		
+	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+		
+	if (udi_vendor_interrupt_in_run(&transfer[0], 2, NULL) == false)
+		if (udi_vendor_interrupt_in_run(&transfer[0], 2, NULL) == false)
+				udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
+}
 
 // Below is all to make Windows automatically install driver when plugged in
 // Credits: https://github.com/cjameshuff/m1k-fw/

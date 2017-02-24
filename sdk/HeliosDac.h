@@ -10,8 +10,8 @@
 #include "libusb.h"
 #include <thread>
 #include <mutex>
+#include <vector>
 
-#define HELIOS_MAX_DEVICES	16
 #define HELIOS_MAX_POINTS	0x1000
 #define HELIOS_MAX_RATE		0xFFFF
 #define HELIOS_MIN_RATE		7
@@ -42,9 +42,9 @@ public:
 private:
 
 	void InterruptTransferHandler(int devNum);
-	struct libusb_device_handle* deviceList[HELIOS_MAX_DEVICES]; //todo use std::vector
-	bool status[HELIOS_MAX_DEVICES];
-	std::mutex statusLock[HELIOS_MAX_DEVICES];
+	std::vector<struct libusb_device_handle*> deviceList;
+	std::vector<bool> status;
+	std::vector<std::mutex> threadLock;
 	bool inited = false;
 };
 
