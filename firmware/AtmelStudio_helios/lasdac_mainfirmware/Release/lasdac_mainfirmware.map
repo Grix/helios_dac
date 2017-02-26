@@ -1344,89 +1344,88 @@ LOAD c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin
                 0x004029cc       0x14 src/main.o
                 0x004029cc                shutter_set
  .text.usb_interrupt_out_callback
-                0x004029e0      0x120 src/main.o
+                0x004029e0      0x124 src/main.o
                 0x004029e0                usb_interrupt_out_callback
  .text.statusled_set
-                0x00402b00       0x14 src/main.o
-                0x00402b00                statusled_set
+                0x00402b04       0x14 src/main.o
+                0x00402b04                statusled_set
  .text.point_output
-                0x00402b14       0xac src/main.o
-                0x00402b14                point_output
+                0x00402b18       0xac src/main.o
+                0x00402b18                point_output
  .text.iopins_init
-                0x00402bc0       0x28 src/main.o
-                0x00402bc0                iopins_init
+                0x00402bc4       0x28 src/main.o
+                0x00402bc4                iopins_init
  .text.spi_init
-                0x00402be8       0xac src/main.o
-                0x00402be8                spi_init
+                0x00402bec       0xac src/main.o
+                0x00402bec                spi_init
  .text.dac_init
-                0x00402c94       0x38 src/main.o
-                0x00402c94                dac_init
+                0x00402c98       0x38 src/main.o
+                0x00402c98                dac_init
  .text.timer_init
-                0x00402ccc       0x7c src/main.o
-                0x00402ccc                timer_init
+                0x00402cd0       0x7c src/main.o
+                0x00402cd0                timer_init
  .text.wdt_setup
-                0x00402d48       0x28 src/main.o
-                0x00402d48                wdt_setup
+                0x00402d4c       0x28 src/main.o
+                0x00402d4c                wdt_setup
  .text.assign_default_name
-                0x00402d70       0x4c src/main.o
-                0x00402d70                assign_default_name
+                0x00402d74       0x4c src/main.o
+                0x00402d74                assign_default_name
  .text.startup.main
-                0x00402dbc       0xf4 src/main.o
-                0x00402dbc                main
+                0x00402dc0       0xf4 src/main.o
+                0x00402dc0                main
  .text.update_status
-                0x00402eb0       0x54 src/main.o
-                0x00402eb0                update_status
+                0x00402eb4       0x54 src/main.o
+                0x00402eb4                update_status
  .text.SysTick_Handler
-                0x00402f04       0xa0 src/main.o
-                0x00402f04                SysTick_Handler
+                0x00402f08       0xa0 src/main.o
+                0x00402f08                SysTick_Handler
  .text.usb_bulk_out_callback
-                0x00402fa4       0xc0 src/main.o
-                0x00402fa4                usb_bulk_out_callback
+                0x00402fa8       0xc0 src/main.o
+                0x00402fa8                usb_bulk_out_callback
  .text.TC0_Handler
-                0x00403064       0x50 src/main.o
-                0x00403064                TC0_Handler
+                0x00403068       0x50 src/main.o
+                0x00403068                TC0_Handler
  .text.callback_vendor_enable
-                0x004030b4       0x30 src/main.o
-                0x004030b4                callback_vendor_enable
+                0x004030b8       0x30 src/main.o
+                0x004030b8                callback_vendor_enable
  .text.msft_string_handle
-                0x004030e4       0x5c src/main.o
-                0x004030e4                msft_string_handle
+                0x004030e8       0x5c src/main.o
+                0x004030e8                msft_string_handle
  .text.usb_device_specific_request
-                0x00403140       0x48 src/main.o
-                0x00403140                usb_device_specific_request
+                0x00403144       0x48 src/main.o
+                0x00403144                usb_device_specific_request
  .text.__libc_init_array
-                0x00403188       0x4c c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-init.o)
-                0x00403188                __libc_init_array
- .text.malloc   0x004031d4       0x10 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-malloc.o)
-                0x004031d4                malloc
- .text.memcpy   0x004031e4       0x16 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-memcpy-stub.o)
-                0x004031e4                memcpy
- *fill*         0x004031fa        0x2 
- .text._free_r  0x004031fc       0x8c c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-nano-freer.o)
-                0x004031fc                _free_r
+                0x0040318c       0x4c c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-init.o)
+                0x0040318c                __libc_init_array
+ .text.malloc   0x004031d8       0x10 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-malloc.o)
+                0x004031d8                malloc
+ .text.memcpy   0x004031e8       0x16 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-memcpy-stub.o)
+                0x004031e8                memcpy
+ *fill*         0x004031fe        0x2 
+ .text._free_r  0x00403200       0x8c c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-nano-freer.o)
+                0x00403200                _free_r
  .text._malloc_r
-                0x00403288       0xa8 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-nano-mallocr.o)
-                0x00403288                _malloc_r
- .text._sbrk_r  0x00403330       0x20 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-sbrkr.o)
-                0x00403330                _sbrk_r
- .text.sprintf  0x00403350       0x48 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-sprintf.o)
-                0x00403350                siprintf
-                0x00403350                sprintf
+                0x0040328c       0xa8 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-nano-mallocr.o)
+                0x0040328c                _malloc_r
+ .text._sbrk_r  0x00403334       0x20 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-sbrkr.o)
+                0x00403334                _sbrk_r
+ .text.sprintf  0x00403354       0x48 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-sprintf.o)
+                0x00403354                siprintf
+                0x00403354                sprintf
  .text.__ssputs_r
-                0x00403398       0xb2 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-nano-svfprintf.o)
-                0x00403398                __ssputs_r
- *fill*         0x0040344a        0x2 
+                0x0040339c       0xb2 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-nano-svfprintf.o)
+                0x0040339c                __ssputs_r
+ *fill*         0x0040344e        0x2 
  .text._svfprintf_r
-                0x0040344c      0x1e8 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-nano-svfprintf.o)
-                0x0040344c                _svfiprintf_r
-                0x0040344c                _svfprintf_r
+                0x00403450      0x1e8 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-nano-svfprintf.o)
+                0x00403450                _svfiprintf_r
+                0x00403450                _svfprintf_r
  .text._printf_common
-                0x00403634       0xec c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-nano-vfprintf_i.o)
-                0x00403634                _printf_common
+                0x00403638       0xec c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-nano-vfprintf_i.o)
+                0x00403638                _printf_common
  .text._printf_i
-                0x00403720      0x24c c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-nano-vfprintf_i.o)
-                0x00403720                _printf_i
- *fill*         0x0040396c        0x4 
+                0x00403724      0x24c c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-nano-vfprintf_i.o)
+                0x00403724                _printf_i
  .text          0x00403970       0xa0 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-memchr.o)
                 0x00403970                memchr
  .text.memmove  0x00403a10       0x36 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/5.3.1/../../../../arm-none-eabi/lib/armv7e-m\libc_nano.a(lib_a-memmove.o)

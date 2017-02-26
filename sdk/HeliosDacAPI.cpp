@@ -80,10 +80,7 @@ int Stop(int dacNum)
 		return 0;
 
 	uint8_t ctrlBuffer[2] = { 0x01, 0 };
-	if (dacController->SendControl(dacNum, &ctrlBuffer[0], 2))
-		return 1;
-	else
-		return 0;
+	return (dacController->SendControl(dacNum, &ctrlBuffer[0], 2));
 }
 
 
@@ -131,28 +128,7 @@ int GetStatus(int dacNum)
 	if (!inited)
 		return -1;
 
-	//uint8_t ctrlBuffer[32] = { 0x03, 0 };
-	//int tx = dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
-	//if (tx != 1)
-	//	return -1;
-
 	return (int)dacController->GetStatus(dacNum);
-
-	//int tx = dacController->GetControlResponse(dacNum, &ctrlBuffer[0], 2);
-	//if (tx == 1)
-	//{
-	//	if ((ctrlBuffer[0]) == 0x83) //if received control byte is as expected
-	//	{
-	//		if (ctrlBuffer[1] == 1) //if dac is ready
-	//			return 1;
-	//		else
-	//			return 0;
-	//	}
-	//	else
-	//		return -1;
-	//}
-	//else
-	//	return -1;
 }
 
 
@@ -246,7 +222,7 @@ OLSC_API int __stdcall OLSC_GetDeviceCount(void)
 	if (!inited)
 		return OLSC_ERROR_NONE;
 	else
-		return dacController->numOfDevices;
+		return dacController->GetDeviceCount();
 }
 
 OLSC_API int __stdcall OLSC_GetDeviceCapabilities(int device_number, struct LASER_SHOW_DEVICE_CAPABILITIES& device_capabilities)

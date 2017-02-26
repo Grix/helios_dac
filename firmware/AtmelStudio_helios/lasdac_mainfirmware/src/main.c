@@ -179,7 +179,10 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 				transfer[1] = 1;	
 			}
 			
-			udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
+			if (sdkVersion < 5)
+				udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
+			else
+				udi_vendor_bulk_in_run(&transfer[0], 2, NULL);
 		}
 		else if (usbInterruptBufferAddress[0] == 0x04)	//GET FIRMWARE VERSION
 		{

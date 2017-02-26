@@ -1,16 +1,15 @@
-//Header for lower level Helios DAC functions. See HeliosDacAPI.h instead for top level functions
+//Header for lower level Helios DAC functions. See HeliosDacAPI.h or HeliosDacClass.h instead for top level functions
 
 #pragma once
-
-#ifdef __linux__
-#include <memory.h>
-#endif
 
 #include <stdint.h>
 #include "libusb.h"
 #include <thread>
 #include <mutex>
 #include <vector>
+#include <memory>
+
+#define HELIOS_SDK_VERSION	5
 
 #define HELIOS_MAX_POINTS	0x1000
 #define HELIOS_MAX_RATE		0xFFFF
@@ -31,20 +30,40 @@ public:
 	HeliosDac();
 	~HeliosDac();
 	int OpenDevices();
+	int GetDeviceCount();
 	int CloseDevices();
-	bool GetStatus(int devNum);
+	int GetStatus(int devNum);
 	int SendControl(int devNum, uint8_t* bufferAddress, int length);
 	int GetControlResponse(int devNum, uint8_t* bufferAddress, int length);
 	int SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize);
 
-	int numOfDevices = 0;
-
 private:
 
-	void InterruptTransferHandler(int devNum);
-	std::vector<struct libusb_device_handle*> deviceList;
-	std::vector<bool> status;
-	std::vector<std::mutex> threadLock;
+	class HeliosDacDevice
+	{
+	public:
+
+		HeliosDacDevice(libusb_device_handle*);
+		~HeliosDacDevice();
+		int GetStatus();
+		int SendControl(uint8_t* bufferAddress, int length);
+		int GetControlResponse(uint8_t* bufferAddress, int length);
+		int SendFrame(uint8_t* bufferAddress, int bufferSize);
+		int CloseDevice();
+
+	private:
+
+		void InterruptTransferHandler(void);
+		int GetDevice(int devNum);
+
+		struct libusb_device_handle* usbHandle;
+		std::mutex threadLock;
+		int status = 1;
+		bool closed = false;
+	};
+
+	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;
+	std::mutex threadLock;
 	bool inited = false;
 };
 

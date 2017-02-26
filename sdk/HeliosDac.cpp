@@ -2,7 +2,7 @@
 Class controlling lower-level communication with Helios Laser DACs.
 By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
 
-See HeliosDacAPI.h instead for top level functions
+See HeliosDacAPI.h or HeliosDacClass.h instead for top level functions
 
 Dependencies: Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 
@@ -41,8 +41,6 @@ int HeliosDac::OpenDevices()
 		if (cnt < 0)
 			return (int)cnt;
 
-		inited = true;
-
 		int devNum = 0;
 		for (int i = 0; i < cnt; i++)
 		{
@@ -68,23 +66,36 @@ int HeliosDac::OpenDevices()
 				continue;
 
 			//successfully opened, add to device list
-			std::lock_guard<std::mutex> lock(threadLock.at(devNum));
-			status[devNum] = true;
-			deviceList[devNum] = devHandle;
+			deviceList.push_back(std::make_unique<HeliosDacDevice>(devHandle));
 
-			std::thread statusHandlerThread(&HeliosDac::InterruptTransferHandler, this, devNum);
-			statusHandlerThread.detach();
+			uint8_t ctrlBuffer[2] = { 0x07, HELIOS_SDK_VERSION };
+			SendControl(devNum, &ctrlBuffer[0], 2);
 
 			devNum++;
 		}
 
 		libusb_free_device_list(devs, 1);
-
-		numOfDevices = devNum;
+		inited = true;
 
 		return devNum;
 	}
-	catch (std::exception e)
+	catch(...)
+	{
+		CloseDevices();
+		return 0;
+	}
+}
+
+int HeliosDac::GetDeviceCount()
+{
+	try
+	{
+		if (!inited)
+			return 0;
+
+		return deviceList.size();
+	}
+	catch(...)
 	{
 		return 0;
 	}
@@ -96,42 +107,44 @@ int HeliosDac::SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize)
 {
 	try
 	{
-		if ((bufferAddress == NULL) || (!inited) || (devNum >= numOfDevices) || (bufferSize > HELIOS_MAX_POINTS * 7 + 5))
+		if ((!inited) || (devNum >= deviceList.size()))
 			return 0;
 
-		int actualLength = 0;
-
-		int transferResult = libusb_bulk_transfer(deviceList.at(devNum), EP_BULK_OUT, bufferAddress, bufferSize, &actualLength, 500);
-
-		if ((transferResult == 0) && (actualLength == bufferSize))
-		{
-			std::lock_guard<std::mutex> lock(threadLock.at(devNum));
-			status[devNum] = false;
-			return 1;
-		}
-		else
+		std::unique_lock<std::mutex> lock(threadLock, std::defer_lock);
+		lock.lock();
+			HeliosDacDevice* dev = deviceList.at(devNum).get();
+		lock.unlock();
+		if (dev == NULL)
 			return 0;
+
+		return dev->SendFrame(bufferAddress, bufferSize);
 	}
-	catch (std::exception e)
+	catch(...)
 	{
 		return 0;
 	}
 }
 
 //Gets status of DAC, true means DAC is ready to receive frame
-bool HeliosDac::GetStatus(int devNum)
+int HeliosDac::GetStatus(int devNum)
 {
 	try
 	{
-		if (!inited)
-			return false;
+		if ((!inited) || (devNum >= deviceList.size()))
+			return -1;
 
-		std::lock_guard<std::mutex> lock(threadLock.at(devNum));
-		return status.at(devNum);
+		std::unique_lock<std::mutex> lock(threadLock, std::defer_lock);
+		lock.lock();
+			HeliosDacDevice* dev = deviceList.at(devNum).get();
+		lock.unlock();
+		if (dev == NULL)
+			return -1;
+
+		return dev->GetStatus();
 	}
-	catch (std::exception e)
+	catch(...)
 	{
-		return false;
+		return -1;
 	}
 }
 
@@ -141,47 +154,43 @@ int HeliosDac::SendControl(int devNum, uint8_t* bufferAddress, int length)
 {
 	try
 	{
-		if ((bufferAddress == NULL) || (!inited) || (devNum >= numOfDevices) || (length > 32) || (length <= 0))
+		if ((!inited) || (devNum >= deviceList.size()))
 			return 0;
 
-		int actualLength = 0;
-		int transferResult = libusb_interrupt_transfer(deviceList.at(devNum), EP_INT_OUT, bufferAddress, length, &actualLength, 32);
+		std::unique_lock<std::mutex> lock(threadLock, std::defer_lock);
+		lock.lock();
+			HeliosDacDevice* dev = deviceList.at(devNum).get();
+		lock.unlock();
+		if (dev == NULL)
+			return 0;
 
-		if ((transferResult == 0) && (actualLength == length))
-			return 1;
-		else
-			return transferResult;
+		return dev->SendControl(bufferAddress, length);
 	}
-	catch (std::exception e)
+	catch(...)
 	{
 		return 0;
 	}
 }
 
 //Attempts to receive a response to a previous control transfer.
-//Returns 1 if successful, and populates bufferAddress on success
+//Returns 1 and populates bufferAddress if successful
 int HeliosDac::GetControlResponse(int devNum, uint8_t* bufferAddress, int length)
 {
 	try
 	{
-		if ((bufferAddress == NULL) || (!inited) || (devNum >= numOfDevices) || (length > 32) || (length <= 0))
+		if ((!inited) || (devNum >= deviceList.size()))
 			return 0;
 
-		uint8_t data[32];
-		int actualLength = 0;
-		int transferResult = libusb_bulk_transfer(deviceList.at(devNum), EP_BULK_IN, &data[0], length, &actualLength, 32);
+		std::unique_lock<std::mutex> lock(threadLock, std::defer_lock);
+		lock.lock();
+			HeliosDacDevice* dev = deviceList.at(devNum).get();
+		lock.unlock();
+		if (dev == NULL)
+			return 0;
 
-		if (transferResult < 0)
-		{
-			return transferResult;
-		}
-		else
-		{
-			memcpy(bufferAddress, &data[0], length);
-			return 1;
-		}
+		return dev->GetControlResponse(bufferAddress, length);
 	}
-	catch (std::exception e)
+	catch(...)
 	{
 		return 0;
 	}
@@ -197,55 +206,170 @@ int HeliosDac::CloseDevices()
 			return 0;
 
 		inited = false;
-
-		for (int i = 0; i < numOfDevices; i++)
-		{
-			libusb_close(deviceList.at(i));
-		}
-
+		deviceList.clear(); //various destructors will clean all devices
 		libusb_exit(NULL);
-		numOfDevices = 0;
 
 		return 1;
 	}
-	catch (std::exception e)
+	catch(...)
 	{
 		return 0;
 	}
 }
 
-//buffers interrupt usb transfers (status)
-void HeliosDac::InterruptTransferHandler(int devNum)
-{
-	//todo mutex to protect stuff
-	try 
-	{
-		if ((inited) && (devNum < numOfDevices)) 
-		{
-			uint8_t data[2];
-			int actualLength;
+/// -----------------------------------------------------------------------
+/// HELIOSDACDEVICE START
+/// -----------------------------------------------------------------------
 
-			int transferResult = libusb_interrupt_transfer(deviceList.at(devNum), EP_INT_IN, &data[0], 2, &actualLength, 2);
+HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
+{
+	usbHandle = handle;
+	std::thread statusHandlerThread(&HeliosDac::HeliosDacDevice::InterruptTransferHandler, this);
+	statusHandlerThread.detach();
+}
+
+//sends a raw frame buffer (implemented as bulk transfer) to a dac device
+//returns 1 if transfer succeeds
+int HeliosDac::HeliosDacDevice::SendFrame(uint8_t* bufferAddress, int bufferSize)
+{
+	try
+	{
+		if ((bufferAddress == NULL) || (closed) || (bufferSize > HELIOS_MAX_POINTS * 7 + 5))
+			return 0;
+
+		int actualLength = 0;
+
+		int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, bufferAddress, bufferSize, &actualLength, 500);
+
+		if ((transferResult == 0) && (actualLength == bufferSize))
+		{
+			std::lock_guard<std::mutex> lock(threadLock);
+			status = 0;
+			return 1;
+		}
+		else
+			return 0;
+	}
+	catch(...)
+	{
+		return 0;
+	}
+}
+
+//Gets status of DAC, 1 means DAC is ready to receive frame, 0 means it's not
+int HeliosDac::HeliosDacDevice::GetStatus()
+{
+	try
+	{
+		if (closed)
+			return -1;
+
+		std::lock_guard<std::mutex> lock(threadLock);
+		return status;
+	}
+	catch(...)
+	{
+		return -1;
+	}
+}
+
+//sends a raw control signal (implemented as interrupt transfer) to a dac device
+//returns 1 if successful
+int HeliosDac::HeliosDacDevice::SendControl(uint8_t* bufferAddress, int length)
+{
+	try
+	{
+		if ((bufferAddress == NULL) || (closed) || (length > 32) || (length <= 0))
+			return 0;
+
+		int actualLength = 0;
+		int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, bufferAddress, length, &actualLength, 32);
+
+		if ((transferResult == 0) && (actualLength == length))
+			return 1;
+		else
+			return transferResult;
+	}
+	catch(...)
+	{
+		return 0;
+	}
+}
+
+//Attempts to receive a response to a previous control transfer.
+//Returns 1 and populates bufferAddress if successful
+int HeliosDac::HeliosDacDevice::GetControlResponse(uint8_t* bufferAddress, int length)
+{
+	try
+	{
+		if ((bufferAddress == NULL) || (closed) || (length > 32) || (length <= 0))
+			return 0;
+
+		uint8_t data[32];
+		int actualLength = 0;
+		int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_IN, &data[0], length, &actualLength, 32);
+
+		if (transferResult < 0)
+		{
+			return transferResult;
+		}
+		else
+		{
+			memcpy(bufferAddress, &data[0], length);
+			return 1;
+		}
+	}
+	catch(...)
+	{
+		return 0;
+	}
+}
+
+void HeliosDac::HeliosDacDevice::InterruptTransferHandler()
+{
+	try
+	{
+		uint8_t data[2];
+		int actualLength;
+		int transferResult;
+		std::unique_lock<std::mutex> lock(threadLock, std::defer_lock);
+
+		while (!closed)
+		{
+			//try three times to check for incoming status transfers
+			transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, &data[0], 2, &actualLength, 2);
 			if (transferResult < 0)
 			{
-				transferResult = libusb_interrupt_transfer(deviceList.at(devNum), EP_INT_IN, &data[0], 2, &actualLength, 5);
+				transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, &data[0], 2, &actualLength, 5);
 				if (transferResult < 0)
 				{
-					transferResult = libusb_interrupt_transfer(deviceList.at(devNum), EP_INT_IN, &data[0], 2, &actualLength, 20);
+					transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, &data[0], 2, &actualLength, 20);
 				}
 			}
 
-			if ((data[0]) == 0x83) //status transfer code
+			if ((transferResult == 0) && (data[0] == 0x83)) //status transfer code
 			{
-				std::lock_guard<std::mutex> lock(threadLock.at(devNum));
-				status[devNum] = (data[1] == 1);
+				lock.lock();
+					status = (data[1] == 1);
+				lock.unlock();
 			}
-			InterruptTransferHandler(devNum);
-		}
+		}	
 	}
-	catch (std::exception e)
+	catch(...)
 	{
-		InterruptTransferHandler(devNum);
+		if (!closed) InterruptTransferHandler();
 		return;
 	}
+}
+
+int HeliosDac::HeliosDacDevice::CloseDevice()
+{
+	closed = true;
+	libusb_close(usbHandle);
+	return 1;
+}
+
+HeliosDac::HeliosDacDevice::~HeliosDacDevice()
+{
+	CloseDevice();
 }
