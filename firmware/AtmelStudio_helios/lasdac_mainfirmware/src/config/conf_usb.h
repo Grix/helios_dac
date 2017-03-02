@@ -132,7 +132,6 @@ extern void callback_vendor_disable(void);
 extern bool msft_string_handle(void);
 #define USB_DEVICE_SPECIFIC_REQUEST() usb_device_specific_request()
 extern bool usb_device_specific_request(void);
-
 /* *
  * #define  UDI_VENDOR_SETUP_OUT_RECEIVED()  my_vendor_setup_out_received()
  * extern bool my_vendor_setup_out_received(void);

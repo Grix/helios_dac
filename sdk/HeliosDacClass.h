@@ -1,6 +1,6 @@
 /*
 Driver API for Helios Laser DAC class , HEADER
-By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
+By Gitle Mikkelsen
 gitlem@gmail.com
 Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)

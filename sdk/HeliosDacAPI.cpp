@@ -1,6 +1,6 @@
 /*
 Driver API for Helios Laser DACs
-By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
+By Gitle Mikkelsen
 
 See HeliosDacAPI.h for documentation
 
@@ -12,10 +12,6 @@ git repo: https://github.com/Grix/helios_dac.git
 */
 
 #include "HeliosDacAPI.h"
-
-#ifdef __linux__
-	#include <memory.h>
-#endif
 
 int OpenDevices()
 {
@@ -30,7 +26,7 @@ int OpenDevices()
 	else
 		inited = true;
 
-	printf("OpenDevices() found: %d", result);
+	//printf("OpenDevices() found: %d", result);
 
 	return result;
 }
@@ -77,7 +73,7 @@ int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numO
 int Stop(int dacNum)
 {
 	if (!inited)
-		return 0;
+		return -1;
 
 	uint8_t ctrlBuffer[2] = { 0x01, 0 };
 	return (dacController->SendControl(dacNum, &ctrlBuffer[0], 2));
@@ -89,26 +85,18 @@ int GetName(int dacNum, char* name)
 	if (!inited)
 		return  -1;
 
-	uint8_t ctrlBuffer[32] = { 0x05, 0 };
-	int tx = dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
-	if (tx == 1)
-	{
-		tx = dacController->GetControlResponse(dacNum, &ctrlBuffer[0], 32);
-		if (tx == 1)
-		{
-			if ((ctrlBuffer[0]) == 0x85) //if received control byte is as expected
-			{
-				memcpy(name, &ctrlBuffer[1], 32);
-				return 1;
-			}
-		}
-	}
-
+	char* tempName = dacController->GetName(dacNum);
 	//if the above failed, fallback name:
-	memcpy(name, "Helios ", 8);
-	name[7] = (char)((int)(dacNum >= 10) + 48);
-	name[8] = (char)((int)(dacNum % 10) + 48);
-	name[9] = '\0';
+	if (tempName[0] == '/0')
+	{
+		memcpy(name, "Helios ", 8);
+		name[7] = (char)((int)(dacNum >= 10) + 48);
+		name[8] = (char)((int)(dacNum % 10) + 48);
+		name[9] = '\0';
+	}
+	else
+		memcpy(name, tempName, 32);
+
 	return 0;
 }
 
@@ -146,26 +134,7 @@ int GetFirmwareVersion(int dacNum)
 	if (!inited)
 		return -1;
 
-	uint8_t ctrlBuffer[32] = { 0x04, 0 };
-	int tx = dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
-	if (tx != 1)
-		return -1;
-
-	tx = dacController->GetControlResponse(dacNum, &ctrlBuffer[0], 5);
-	if (tx == 1)
-	{
-		if ((ctrlBuffer[0]) == 0x84) //if received control byte is as expected
-		{
-			return ((ctrlBuffer[1] << 0) |
-					(ctrlBuffer[2] << 8) |
-					(ctrlBuffer[3] << 16) |
-					(ctrlBuffer[4] << 24));
-		}
-		else
-			return 0;
-	}
-	else
-		return 0;
+	return dacController->GetFirmwareVersion(dacNum);
 }
 
 int EraseFirmware(int dacNum)

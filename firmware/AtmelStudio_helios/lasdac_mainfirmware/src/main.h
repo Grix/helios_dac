@@ -41,26 +41,26 @@ bool newNotRepeat = true;				//notRepeat value for pending frame
 bool stopFlag = false;					//delayed stop in effect, won't write new frame during this period
 uint32_t stopTimerCounts;				//num of cycles to delay stop, defined in timer_init
 uint32_t posData;						//XY position data
-uint8_t sdkVersion = 4;				//host driver version, for backwards compatibility 
+uint8_t sdkVersion = 4;					//host driver version, for backwards compatibility 
 
-uint8_t* frameAddress;				//frame currently being played
-uint8_t* newFrameAddress;			//buffer to receive usb transfer with frame
-uint8_t* usbInterruptBufferAddress;	//usb interrupt transfer buffer
+uint8_t* frameAddress;					//frame currently being played
+uint8_t* newFrameAddress;				//buffer to receive usb transfer with frame
+uint8_t* usbInterruptBufferAddress;		//usb interrupt transfer buffer
 
 //functions
-void speed_set(uint32_t rate);		//sets up the systick interrupt to match the playback rate (in pps)
-void shutter_set(bool level);		//sets the shutter level
-void statusled_set(bool level);		//sets the status LED level
-void point_output(void);			//outputs current point (controlled by framePos and frameAddress variables)
-void stop(void);					//blanks and centers output and stops playback (plus timed safety period)
-void stop_weak(void);				//blanks and centers output and stops playback
-void spi_init(void);				//sets up SPI module
-void dac_init(void);				//sets up DACC module
-void iopins_init(void);				//sets up IO module and pins
-void timer_init(void);				//sets up TC0 module for stop delay timer
-void wdt_setup(void);
-void assign_default_name(void);		//on first ever boot, assign default name and store to flash
-void update_status(void);
+void speed_set(uint32_t rate);			//sets up the systick interrupt to match the playback rate (in pps)
+void shutter_set(bool level);			//sets the shutter level
+void statusled_set(bool level);			//sets the status LED level
+void point_output(void);				//outputs current point (controlled by framePos and frameAddress variables)
+void stop(void);						//blanks and centers output and stops playback (plus timed safety period)
+void stop_weak(void);					//blanks and centers output and stops playback
+void spi_init(void);					//sets up SPI module
+void dac_init(void);					//sets up DACC module
+void iopins_init(void);					//sets up IO module and pins
+void timer_init(void);					//sets up TC0 module for stop delay timer
+void wdt_setup(void);					//initialize watchdog timer
+void assign_default_name(void);			//on first ever boot, assign default name and store to flash
+void update_status(void);				//sends the new status to the host driver
 
 //USB transfer interrupts
 void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep);

@@ -179,10 +179,7 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 				transfer[1] = 1;	
 			}
 			
-			if (sdkVersion < 5)
-				udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
-			else
-				udi_vendor_bulk_in_run(&transfer[0], 2, NULL);
+			udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
 		}
 		else if (usbInterruptBufferAddress[0] == 0x04)	//GET FIRMWARE VERSION
 		{
@@ -190,10 +187,8 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 										(uint8_t)(FIRMWARE_VERSION >> 8),
 										(uint8_t)(FIRMWARE_VERSION >> 16),
 										(uint8_t)(FIRMWARE_VERSION >> 24)};
-			if (sdkVersion < 5)
-				udi_vendor_interrupt_in_run(&transfer[0], 5, NULL);
-			else
-				udi_vendor_bulk_in_run(&transfer[0], 5, NULL);
+										
+			udi_vendor_interrupt_in_run(&transfer[0], 5, NULL);
 		}
 		else if (usbInterruptBufferAddress[0] == 0x05)	//GET NAME
 		{
@@ -209,10 +204,7 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 					break;
 			}
 			
-			if (sdkVersion < 5)
-				udi_vendor_interrupt_in_run(&transfer[0], 32, NULL);
-			else
-				udi_vendor_bulk_in_run(&transfer[0], 32, NULL);
+			udi_vendor_interrupt_in_run(&transfer[0], 32, NULL);
 		}
 		else if (usbInterruptBufferAddress[0] == 0x06)	//WRITE NAME
 		{

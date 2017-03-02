@@ -33,6 +33,8 @@ public:
 	int GetDeviceCount();
 	int CloseDevices();
 	int GetStatus(int devNum);
+	int GetFirmwareVersion(int devNum);
+	char* GetName(int devNum);
 	int SendControl(int devNum, uint8_t* bufferAddress, int length);
 	int GetControlResponse(int devNum, uint8_t* bufferAddress, int length);
 	int SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize);
@@ -46,6 +48,8 @@ private:
 		HeliosDacDevice(libusb_device_handle*);
 		~HeliosDacDevice();
 		int GetStatus();
+		int GetFirmwareVersion();
+		char* GetName();
 		int SendControl(uint8_t* bufferAddress, int length);
 		int GetControlResponse(uint8_t* bufferAddress, int length);
 		int SendFrame(uint8_t* bufferAddress, int bufferSize);
@@ -53,12 +57,14 @@ private:
 
 	private:
 
-		void InterruptTransferHandler(void);
-		int GetDevice(int devNum);
+		void HeliosDac::HeliosDacDevice::WaitForStatus();
 
+		struct libusb_transfer* interruptTransfer = NULL;
 		struct libusb_device_handle* usbHandle;
-		std::mutex threadLock;
+		std::unique_ptr<std::mutex> threadLock;
 		int status = 1;
+		int firmwareVersion = 0;
+		char name[32];
 		bool closed = false;
 	};
 
@@ -67,3 +73,4 @@ private:
 	bool inited = false;
 };
 
+void LIBUSB_CALL HeliosInterruptTransferHandlerWrapper(struct libusb_transfer*);

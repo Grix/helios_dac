@@ -1,6 +1,6 @@
 /*
 Driver API for Helios Laser DAC shared library , HEADER
-By Gitle Mikkelsen, Creative Commons Attribution-NonCommercial 4.0 International Public License
+By Gitle Mikkelsen
 gitlem@gmail.com
 Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
@@ -24,17 +24,13 @@ See OpenLaserShowControllerV1.0.0-Mod.h for documentation on OLSC_* functions. N
 
 #pragma once
 
-#include "stdio.h"
 #include "HeliosDac.h"
-
-#ifdef _WIN32
-	#define HELIOS_EXPORT extern "C" __declspec (dllexport)
-#else
-	#define HELIOS_EXPORT extern "C"
-#endif
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 	#include "OpenLaserShowControllerV1.0.0-Mod.h"
+	#define HELIOS_EXPORT extern "C" __declspec (dllexport)
+#else
+	#define HELIOS_EXPORT extern "C"
 #endif
 
 bool inited = false;
