@@ -42,6 +42,7 @@ bool stopFlag = false;					//delayed stop in effect, won't write new frame durin
 uint32_t stopTimerCounts;				//num of cycles to delay stop, defined in timer_init
 uint32_t posData;						//XY position data
 uint8_t sdkVersion = 4;					//host driver version, for backwards compatibility 
+bool connected = false;					//connected to host driver or not
 
 uint8_t* frameAddress;					//frame currently being played
 uint8_t* newFrameAddress;				//buffer to receive usb transfer with frame

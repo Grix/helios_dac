@@ -60,7 +60,6 @@ int main (void)
 		wdt_restart(WDT);
 		sleepmgr_enter_sleep();
 	}
-		
 }
 
 void SysTick_Handler() //systick timer ISR, called for each point
@@ -119,7 +118,7 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 	//n+2:	frame size in points 16bit little endian
 	//n+4:	flags
 		
-	if ( (status == UDD_EP_TRANSFER_OK) && (length <= MAXFRAMESIZE * 7 + 5) && (!stopFlag)) //if not invalid
+	if ( (status == UDD_EP_TRANSFER_OK) && (length <= MAXFRAMESIZE * 7 + 5) && !stopFlag) //if not invalid
 	{
 		uint16_t numOfPointBytes = length - 5; //from length of received data
 		uint16_t numOfPointBytes2 = ((newFrameAddress[numOfPointBytes + 3] << 8) | newFrameAddress[numOfPointBytes + 2]) * 7; //from control bytes
@@ -152,6 +151,8 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 			cpu_irq_leave_critical();
 		}
 	}
+	else if (!newFrameReady)
+		udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 }
 
 void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep)
@@ -304,19 +305,21 @@ void speed_set(uint32_t rate) //set the output speed in points per second
 
 int callback_vendor_enable(void) //usb connection opened, preparing for activity
 {	
+	connected = true;
 	stop_weak();
 	
 	sleepmgr_unlock_mode(SLEEPMGR_WAIT_FAST);
 	sleepmgr_lock_mode(SLEEPMGR_ACTIVE);
 	
 	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 32, usb_interrupt_out_callback);
-	update_status();
+	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 	
 	return 1;
 }
 
 void callback_vendor_disable(void) //usb connection closed, sleeping to save power
 {
+	connected = false;
 	stop();
 	
 	sleepmgr_unlock_mode(SLEEPMGR_ACTIVE);
@@ -427,16 +430,23 @@ void assign_default_name() //on first ever boot, assign default name and store t
 	}
 }
 
-void update_status() // send an usb transfer telling the host driver the frame buffer status
+void update_status() // send an usb transfer telling the host driver a new frame buffer status
 {
 	newFrameReady = false;
 	uint8_t transfer[2] = {0x83, 1};
-		
+
 	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 		
-	if (udi_vendor_interrupt_in_run(&transfer[0], 2, NULL) == false)
-		if (udi_vendor_interrupt_in_run(&transfer[0], 2, NULL) == false)
-				udi_vendor_interrupt_in_run(&transfer[0], 2, NULL);
+	if (sdkVersion > 4)
+	{
+		int i = 1;
+		while ((!newFrameReady) && (connected) && (i > 0))
+		{
+			if (udi_vendor_interrupt_in_run(&transfer[0], 2, NULL) == true)
+				break;
+			i--;
+		}
+	}
 }
 
 // Below is all to make Windows automatically install driver when plugged in

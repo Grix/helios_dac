@@ -57,12 +57,13 @@ private:
 
 	private:
 
-		void HeliosDac::HeliosDacDevice::WaitForStatus();
+		void WaitForStatus();
+		void InterruptTransferHandler();
 
 		struct libusb_transfer* interruptTransfer = NULL;
 		struct libusb_device_handle* usbHandle;
 		std::unique_ptr<std::mutex> threadLock;
-		int status = 1;
+		int status = 0;
 		int firmwareVersion = 0;
 		char name[32];
 		bool closed = false;

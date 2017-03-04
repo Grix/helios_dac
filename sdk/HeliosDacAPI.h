@@ -51,6 +51,7 @@ typedef struct
 
 //initializes drivers, opens connection to all devices.
 //Returns number of available devices.
+//NB: To re-scan for newly connected DACs after this function has once been called before, you must first call CloseDevices()
 HELIOS_EXPORT int OpenDevices();
 
 //Gets status from the specified dac.
