@@ -236,7 +236,7 @@ OLSC_API int __stdcall OLSC_Pause(int device_number)
 
 OLSC_API int __stdcall OLSC_Shutter(int device_number, int state)
 {
-	return (int)SetShutter(device_number, state); 
+	return SetShutter(device_number, (state == 1)); 
 }
 
 OLSC_API int __stdcall OLSC_WriteFrameEx(int device_number, int display_speed, int point_count, struct LASER_SHOW_DEVICE_POINT *points)
@@ -261,9 +261,18 @@ OLSC_API int __stdcall OLSC_WriteFrame(int device_number, struct LASER_SHOW_DEVI
 	int bufPos = 0;
 	for (int i = 0; i < frame.point_count; i++)
 	{
-		frameBuffer[bufPos++] = (frame.points[i].x >> 8);
-		frameBuffer[bufPos++] = (((frame.points[i].x >> 4) & 0xF) << 4) + (frame.points[i].y >> 12);
-		frameBuffer[bufPos++] = ((frame.points[i].y >> 4) & 0xFF);
+		if (flipX)
+		{
+			frameBuffer[bufPos++] = ((0xFFF - frame.points[i].x) >> 8);
+			frameBuffer[bufPos++] = ((((0xFFF - frame.points[i].x) >> 4) & 0xF) << 4) + (frame.points[i].y >> 12);
+			frameBuffer[bufPos++] = ((frame.points[i].y >> 4) & 0xFF);
+		}
+		else
+		{
+			frameBuffer[bufPos++] = (frame.points[i].x >> 8);
+			frameBuffer[bufPos++] = (((frame.points[i].x >> 4) & 0xF) << 4) + (frame.points[i].y >> 12);
+			frameBuffer[bufPos++] = ((frame.points[i].y >> 4) & 0xFF);
+		}
 		frameBuffer[bufPos++] = (uint8_t)frame.points[i].r;
 		frameBuffer[bufPos++] = (uint8_t)frame.points[i].g;
 		frameBuffer[bufPos++] = (uint8_t)frame.points[i].b;

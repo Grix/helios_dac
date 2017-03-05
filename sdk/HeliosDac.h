@@ -23,6 +23,12 @@
 #define EP_INT_OUT	0x06
 #define EP_INT_IN	0x83
 
+#ifdef _DEBUG
+#define LIBUSB_LOG_LEVEL LIBUSB_LOG_LEVEL_WARNING
+#else
+#define LIBUSB_LOG_LEVEL LIBUSB_LOG_LEVEL_NONE
+#endif
+
 class HeliosDac
 {
 public:
@@ -63,10 +69,11 @@ private:
 		struct libusb_transfer* interruptTransfer = NULL;
 		struct libusb_device_handle* usbHandle;
 		std::unique_ptr<std::mutex> threadLock;
-		int status = 0;
+		bool status = 0;
 		int firmwareVersion = 0;
 		char name[32];
-		bool closed = false;
+		bool closed = true;
+		bool waitingForStatus = false;
 	};
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;
