@@ -42,7 +42,7 @@ public:
 	int GetFirmwareVersion(int devNum);
 	char* GetName(int devNum);
 	int SendControl(int devNum, uint8_t* bufferAddress, int length);
-	int GetControlResponse(int devNum, uint8_t* bufferAddress, int length);
+	int GetControlResponse(int devNum, uint8_t* bufferAddress);
 	int SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize);
 
 private:
@@ -57,7 +57,7 @@ private:
 		int GetFirmwareVersion();
 		char* GetName();
 		int SendControl(uint8_t* bufferAddress, int length);
-		int GetControlResponse(uint8_t* bufferAddress, int length);
+		int GetControlResponse(uint8_t* bufferAddress);
 		int SendFrame(uint8_t* bufferAddress, int bufferSize);
 		int CloseDevice();
 
@@ -73,6 +73,7 @@ private:
 		int firmwareVersion = 0;
 		char name[32];
 		bool closed = true;
+		bool inited = false;
 		bool waitingForStatus = false;
 	};
 

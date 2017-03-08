@@ -172,7 +172,7 @@ int HeliosDac::SendControl(int devNum, uint8_t* bufferAddress, int length)
 
 //Attempts to receive a response to a previous control transfer.
 //Returns 1 and populates bufferAddress if successful
-int HeliosDac::GetControlResponse(int devNum, uint8_t* bufferAddress, int length)
+int HeliosDac::GetControlResponse(int devNum, uint8_t* bufferAddress)
 {
 	if ((!inited) || (devNum >= (int)deviceList.size()))
 		return 0;
@@ -184,7 +184,7 @@ int HeliosDac::GetControlResponse(int devNum, uint8_t* bufferAddress, int length
 	if (dev == NULL)
 		return 0;
 
-	return dev->GetControlResponse(bufferAddress, length);
+	return dev->GetControlResponse(bufferAddress);
 }
 
 //closes and frees all devices
@@ -206,46 +206,49 @@ int HeliosDac::CloseDevices()
 
 HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 {
-	closed = false;
 	usbHandle = handle;
 
 	threadLock = std::make_unique<std::mutex>();
 
 	//get firmware version
 	firmwareVersion = 0;
-	uint8_t ctrlBuffer[32] = { 0x04, 0 };
+	uint8_t ctrlBuffer[2] = { 0x04, 0 };
 
-	if (SendControl(&ctrlBuffer[0], 2) == 1)
+	int actualLength = 0;
+	int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, &ctrlBuffer[0], 2, &actualLength, 32);
+
+	if ((transferResult == LIBUSB_SUCCESS) && (actualLength == 2))
 	{
 		uint8_t ctrlBuffer2[32];
-		if (GetControlResponse(&ctrlBuffer2[0], 5) == 1)
+		transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, &ctrlBuffer2[0], 5, &actualLength, 32);
+
+		if (transferResult == LIBUSB_SUCCESS)
 		{
-			if ((ctrlBuffer2[0]) == 0x84) //if received control byte is as expected
-			{
-				firmwareVersion = ((ctrlBuffer2[1] << 0) |
-					(ctrlBuffer2[2] << 8) |
-					(ctrlBuffer2[3] << 16) |
-					(ctrlBuffer2[4] << 24));
-			}
+			firmwareVersion = ((ctrlBuffer2[1] << 0) |
+				(ctrlBuffer2[2] << 8) |
+				(ctrlBuffer2[3] << 16) |
+				(ctrlBuffer2[4] << 24));
 		}
 	}
 
+	//send sdk firmware version
+	uint8_t ctrlBuffer3[2] = { 0x07, HELIOS_SDK_VERSION };
+	transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, &ctrlBuffer3[0], 2, &actualLength, 32);
 
-	uint8_t ctrlBuffer2[2] = { 0x07, HELIOS_SDK_VERSION };
-	SendControl(&ctrlBuffer2[0], 2);
-
+	//get device name
 	bool gotName = false;
-	uint8_t ctrlBuffer3[32] = { 0x05, 0 }; //getting name
-	if (SendControl(&ctrlBuffer3[0], 2) == 1)
+	uint8_t ctrlBuffer4[32] = { 0x05, 0 }; //getting name
+	transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, &ctrlBuffer4[0], 2, &actualLength, 32);
+	if ((transferResult == LIBUSB_SUCCESS) && (actualLength == 2))
 	{
-		uint8_t ctrlBuffer4[32];
-		if (GetControlResponse(&ctrlBuffer4[0], 32) == 1)
+		uint8_t ctrlBuffer5[32];
+		transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, &ctrlBuffer5[0], 32, &actualLength, 32);
+		
+		if (transferResult == LIBUSB_SUCCESS)
 		{
-			if ((ctrlBuffer4[0]) == 0x85) //if received control byte is as expected
-			{
-				memcpy(name, &ctrlBuffer4[1], 32);
-				gotName = true;
-			}
+			ctrlBuffer5[31] = '\0';
+			memcpy(name, &ctrlBuffer5[1], 31);
+			gotName = true;
 		}
 	}
 
@@ -257,6 +260,7 @@ HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 
 	threadLock->lock();
 	status = true;
+	closed = false;
 	threadLock->unlock();
 }
 
@@ -338,7 +342,7 @@ int HeliosDac::HeliosDacDevice::GetStatus()
 
 		threadLock->lock();
 		bool threadOpen = waitingForStatus;
-		int r = status;
+		bool r = status;
 		threadLock->unlock();
 
 		if (!r && !threadOpen)
@@ -346,11 +350,7 @@ int HeliosDac::HeliosDacDevice::GetStatus()
 			std::thread statusHandlerThread(&HeliosDac::HeliosDacDevice::WaitForStatus, this);
 			statusHandlerThread.detach();
 		}
-		/*if (r == 0)
-		{
-			std::thread statusHandlerThread(&HeliosDac::HeliosDacDevice::WaitForStatus, this);
-			statusHandlerThread.detach();
-		}*/
+
 		return r;
 	}
 	else
@@ -360,7 +360,7 @@ int HeliosDac::HeliosDacDevice::GetStatus()
 		if (tx != 1)
 			return -1;
 
-		tx = GetControlResponse(&ctrlBuffer[0], 2);
+		tx = GetControlResponse(&ctrlBuffer[0]);
 		if (tx == 1)
 		{
 			if ((ctrlBuffer[0]) == 0x83) //if received control byte is as expected
@@ -401,19 +401,19 @@ int HeliosDac::HeliosDacDevice::SendControl(uint8_t* bufferAddress, int length)
 
 //Attempts to receive a response to a previous control transfer.
 //Returns 1 and populates bufferAddress if successful
-int HeliosDac::HeliosDacDevice::GetControlResponse(uint8_t* bufferAddress, int length)
+int HeliosDac::HeliosDacDevice::GetControlResponse(uint8_t* bufferAddress)
 {
 	threadLock->lock();
 	if (closed)
 		return 0;
 	threadLock->unlock();
 
-	if ((bufferAddress == NULL)|| (length > 32) || (length <= 0))
+	if (bufferAddress == NULL)
 		return 0;
 
 	uint8_t data[32];
 	int actualLength = 0; 
-	int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, &data[0], length, &actualLength, 32);
+	int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, &data[0], 32, &actualLength, 32);
 
 	if (transferResult < 0)
 	{
@@ -421,7 +421,7 @@ int HeliosDac::HeliosDacDevice::GetControlResponse(uint8_t* bufferAddress, int l
 	}
 	else
 	{
-		memcpy(bufferAddress, &data[0], length);
+		memcpy(bufferAddress, &data[0], 32);
 		return 1;
 	}
 }
@@ -431,9 +431,6 @@ void HeliosDac::HeliosDacDevice::WaitForStatus()
 	threadLock->lock();
 	if (closed)
 		return;
-	threadLock->unlock();
-
-	threadLock->lock();
 	waitingForStatus = true;
 	threadLock->unlock();
 
@@ -450,7 +447,7 @@ void HeliosDac::HeliosDacDevice::WaitForStatus()
 	while (!ok && !closed)
 	{
 		threadLock->unlock();
-		if (libusb_interrupt_transfer(usbHandle, EP_INT_IN, &ctrlBuffer2[0], 2, &actualLength, 32) == 0)
+		if (libusb_interrupt_transfer(usbHandle, EP_INT_IN, &ctrlBuffer2[0], 32, &actualLength, 32) == 0)
 		{
 			if (ctrlBuffer2[0] == 0x83) //status transfer code
 			{
