@@ -13,6 +13,10 @@ git repo: https://github.com/Grix/helios_dac.git
 
 #include "HeliosDacAPI.h"
 
+#ifdef __linux__
+	#include <memory.h>
+#endif
+
 int OpenDevices()
 {
 	CloseDevices();
@@ -39,7 +43,7 @@ int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numO
 	if ((numOfPoints > HELIOS_MAX_POINTS) || (pps > HELIOS_MAX_RATE) || (pps < HELIOS_MIN_RATE))
 		return 0;
 
-	//prepare frame buffer 
+	//prepare frame buffer
 	uint8_t frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
 	int bufPos = 0;
 	for (int i = 0; i < numOfPoints; i++)
@@ -236,7 +240,7 @@ OLSC_API int __stdcall OLSC_Pause(int device_number)
 
 OLSC_API int __stdcall OLSC_Shutter(int device_number, int state)
 {
-	return SetShutter(device_number, (state == 1)); 
+	return SetShutter(device_number, (state == 1));
 }
 
 OLSC_API int __stdcall OLSC_WriteFrameEx(int device_number, int display_speed, int point_count, struct LASER_SHOW_DEVICE_POINT *points)

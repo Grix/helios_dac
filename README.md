@@ -24,8 +24,8 @@ If you wish to use the shared library, there are ready-made builds for x86 windo
 Steps to compiling shared library (.so) for Linux based systems yourself:
 
 ```shell
-g++ -Wall -fPIC -O2 -c HeliosDacAPI.cpp
-g++ -Wall -fPIC -O2 -c HeliosDac.cpp
+g++ -Wall -std=c++14 -fPIC -O2 -c HeliosDacAPI.cpp
+g++ -Wall -std=c++14 -fPIC -O2 -c HeliosDac.cpp
 g++ -shared -o libHeliosDacAPI.so HeliosDacAPI.o HeliosDac.o libusb-1.0.so
 ```
 
@@ -37,5 +37,3 @@ New firmware can be uploaded to the device over USB. To do this, you must reset 
 * Download the firmware updating tool (only for Windows now, Mac/Linux partially done): firmwareupdater_script.zip
 * Unzip, plug in the DAC and run the file "flash.bat".
 * Follow the instructions on the screen (you will need to unplug and replug the device a couple of times).
-
-
