@@ -33,6 +33,10 @@ See OpenLaserShowControllerV1.0.0-Mod.h for documentation on OLSC_* functions. N
 	#define HELIOS_EXPORT extern "C"
 #endif
 
+#ifdef __linux__
+	#include <memory.h>
+#endif
+
 bool inited = false;
 bool flipX = true;
 

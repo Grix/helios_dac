@@ -11,10 +11,6 @@ git repo: https://github.com/Grix/helios_dac.git
 
 #include "HeliosDac.h"
 
-#ifdef __linux__
-	#include <memory.h>
-#endif
-
 HeliosDac::HeliosDac()
 {
 	inited = false;

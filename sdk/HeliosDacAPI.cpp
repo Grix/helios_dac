@@ -13,10 +13,6 @@ git repo: https://github.com/Grix/helios_dac.git
 
 #include "HeliosDacAPI.h"
 
-#ifdef __linux__
-	#include <memory.h>
-#endif
-
 int OpenDevices()
 {
 	CloseDevices();
