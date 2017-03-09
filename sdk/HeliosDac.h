@@ -2,16 +2,14 @@
 
 #pragma once
 
-#include <stdint.h>
 #include "libusb.h"
+#include <cstring>
+#include <cstdint>
 #include <thread>
 #include <mutex>
 #include <vector>
 #include <memory>
-
-#ifdef __linux__
-	#include <memory.h>
-#endif
+#include <chrono>
 
 #define HELIOS_SDK_VERSION	5
 
@@ -45,9 +43,9 @@ public:
 	int GetStatus(int devNum);
 	int GetFirmwareVersion(int devNum);
 	char* GetName(int devNum);
-	int SendControl(int devNum, uint8_t* bufferAddress, int length);
-	int GetControlResponse(int devNum, uint8_t* bufferAddress);
-	int SendFrame(int devNum, uint8_t* bufferAddress, int bufferSize);
+	int SendControl(int devNum, std::uint8_t* bufferAddress, int length);
+	int GetControlResponse(int devNum, std::uint8_t* bufferAddress);
+	int SendFrame(int devNum, std::uint8_t* bufferAddress, int bufferSize);
 
 private:
 
@@ -60,9 +58,9 @@ private:
 		int GetStatus();
 		int GetFirmwareVersion();
 		char* GetName();
-		int SendControl(uint8_t* bufferAddress, int length);
-		int GetControlResponse(uint8_t* bufferAddress);
-		int SendFrame(uint8_t* bufferAddress, int bufferSize);
+		int SendControl(std::uint8_t* bufferAddress, int length);
+		int GetControlResponse(std::uint8_t* bufferAddress);
+		int SendFrame(std::uint8_t* bufferAddress, int bufferSize);
 		int CloseDevice();
 
 	private:
@@ -73,6 +71,7 @@ private:
 		struct libusb_transfer* interruptTransfer = NULL;
 		struct libusb_device_handle* usbHandle;
 		std::unique_ptr<std::mutex> threadLock;
+		std::mutex initLock;
 		bool status = 0;
 		int firmwareVersion = 0;
 		char name[32];

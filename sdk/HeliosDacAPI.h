@@ -2,10 +2,14 @@
 Driver API for Helios Laser DAC shared library , HEADER
 By Gitle Mikkelsen
 gitlem@gmail.com
+
 Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 HeliosDAC class (part of this driver)
-OpenLaserShowControllerV1.0.0 header and .def file
+OpenLaserShowControllerV1.0.0 header and .def file (only supports windows)
+
+Standard: C++14
+
 BASIC USAGE:
 1.	Call OpenDevices() or OLSC_Initialize() to open devices, returns number of available devices
 2.	To send a new frame, first call GetStatus() or OLSC_GetStatus. If the function returns ready
@@ -45,12 +49,12 @@ HeliosDac* dacController;
 //point data structure
 typedef struct
 {
-	uint16_t x; //12 bit (from 0 to 0xFFF)
-	uint16_t y; //12 bit (from 0 to 0xFFF)
-	uint8_t r;	//8 bit	(from 0 to 0xFF)
-	uint8_t g;	//8 bit (from 0 to 0xFF)
-	uint8_t b;	//8 bit (from 0 to 0xFF)
-	uint8_t i;	//8 bit (from 0 to 0xFF)
+	std::uint16_t x; //12 bit (from 0 to 0xFFF)
+	std::uint16_t y; //12 bit (from 0 to 0xFFF)
+	std::uint8_t r;	//8 bit	(from 0 to 0xFF)
+	std::uint8_t g;	//8 bit (from 0 to 0xFF)
+	std::uint8_t b;	//8 bit (from 0 to 0xFF)
+	std::uint8_t i;	//8 bit (from 0 to 0xFF)
 } HeliosPoint;
 
 //initializes drivers, opens connection to all devices.
@@ -72,7 +76,7 @@ HELIOS_EXPORT int GetStatus(int dacNum);
 //points: pointer to point data. See point structure documentation in main.h
 //numOfPoints: number of points in the frame
 //returns 1 if successful
-HELIOS_EXPORT int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numOfPoints);
+HELIOS_EXPORT int WriteFrame(int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints);
 
 //sets the shutter of the specified dac.
 //value 1 = shutter open, value 0 = shutter closed

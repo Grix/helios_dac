@@ -64,7 +64,7 @@ int main (void)
 
 void SysTick_Handler() //systick timer ISR, called for each point
 {
-	if ((playing) && (!stopFlag))
+	if (playing && !stopFlag && connected)
 	{
 		if (framePos >= frameSize) //if frame reached the end
 		{
@@ -97,7 +97,6 @@ void SysTick_Handler() //systick timer ISR, called for each point
 					stop_weak();
 					update_status();
 				}
-				
 			}
 		}
 		else
@@ -112,6 +111,9 @@ void SysTick_Handler() //systick timer ISR, called for each point
 void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep)
 {
 	UNUSED(ep);
+	
+	if (!connected)
+	return;
 	
 	//0-n:	frame data, each point is 12-bit X+Y packed into 24-bit big-endian, 8bit R, 8bit G, 8bit B, 8bit I
 	//n:	output rate 16bit little endian
@@ -150,9 +152,11 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 				}
 			cpu_irq_leave_critical();
 		}
+		//else if (!newFrameReady)
+			//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 	}
-	else if (!newFrameReady)
-		udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+	//else if (!newFrameReady)
+		//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 }
 
 void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep)
@@ -161,6 +165,10 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 	//MSB: Data
 
 	UNUSED(ep);
+	
+	if (!connected)
+	return;
+	
 	if (status == UDD_EP_TRANSFER_OK)
 	{	
 		if (usbInterruptBufferAddress[0] == 0x01)		//STOP
@@ -289,11 +297,15 @@ void TC0_Handler(void)
 	
 	stopFlag = false;
 	
-	update_status();
+	if (connected)
+		update_status();
 }
 
 void speed_set(uint32_t rate) //set the output speed in points per second
 {
+	if (!connected)
+		return; 
+		
 	if (rate > MAXSPEED)
 		rate = MAXSPEED;
 	else if (rate < MINSPEED)
@@ -320,6 +332,7 @@ int callback_vendor_enable(void) //usb connection opened, preparing for activity
 void callback_vendor_disable(void) //usb connection closed, sleeping to save power
 {
 	connected = false;
+	tc_stop(TC0,0);
 	stop();
 	
 	sleepmgr_unlock_mode(SLEEPMGR_ACTIVE);
@@ -433,20 +446,20 @@ void assign_default_name() //on first ever boot, assign default name and store t
 void update_status() // send an usb transfer telling the host driver a new frame buffer status
 {
 	newFrameReady = false;
-	uint8_t transfer[2] = {0x83, 1};
-
-	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
-		
-	if (sdkVersion > 4)
-	{
-		int i = 1;
-		while ((!newFrameReady) && (connected) && (i > 0))
-		{
-			if (udi_vendor_interrupt_in_run(&transfer[0], 2, NULL) == true)
-				break;
-			i--;
-		}
-	}
+	//uint8_t transfer[2] = {0x83, 1};
+//
+	//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+		//
+	//if (sdkVersion > 4)
+	//{
+		//int i = 1;
+		//while ((!newFrameReady) && (connected) && (i > 0))
+		//{
+			//if (udi_vendor_interrupt_in_run(&transfer[0], 2, NULL) == true)
+				//break;
+			//i--;
+		//}
+	//}
 }
 
 // Below is all to make Windows automatically install driver when plugged in

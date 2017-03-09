@@ -118,12 +118,12 @@ struct LASER_SHOW_DEVICE_CAPABILITIES
 
 struct LASER_SHOW_DEVICE_POINT
 {
-	uint16_t x; //16bit
-	uint16_t y; //16bit
-	uint16_t r; //8bit !!
-	uint16_t g; //8bit !!
-	uint16_t b; //8bit !!
-	uint16_t i; //8bit !!
+	std::uint16_t x; //16bit
+	std::uint16_t y; //16bit
+	std::uint16_t r; //8bit !!
+	std::uint16_t g; //8bit !!
+	std::uint16_t b; //8bit !!
+	std::uint16_t i; //8bit !!
 };
 
 
@@ -305,14 +305,14 @@ OLSC_API int WINAPI OLSC_GetStatus(int device_number, uint32_t &status);
 // Outputs:  Returns success or failure
 // Description:
 // Writes DMX data to a particular device
-	OLSC_API int WINAPI OLSC_WriteDMX(int device_number, int start_address, uint8_t *data_pointer, int length);
+	OLSC_API int WINAPI OLSC_WriteDMX(int device_number, int start_address, std::uint8_t *data_pointer, int length);
 
 // OLSC_ReadDMX()
 // Inputs: device number, start address, data pointer, data length
 // Outputs:  Returns success or failure
 // Description:
 // Reads DMX data from a particular device
-	OLSC_API int WINAPI OLSC_ReadDMX(int device_number, int start_address, uint8_t *data_pointer, int length);
+	OLSC_API int WINAPI OLSC_ReadDMX(int device_number, int start_address, std::uint8_t *data_pointer, int length);
 
 // OLSC_WriteTTL()
 // Inputs: device number, data DWORD (up to 32 bits of TTL outputs)

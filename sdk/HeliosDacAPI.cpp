@@ -32,7 +32,7 @@ int OpenDevices()
 }
 
 
-int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numOfPoints)
+int WriteFrame(int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints)
 {
 	if ((!inited) || (points == NULL))
 		return 0;
@@ -40,7 +40,7 @@ int WriteFrame(int dacNum, int pps, uint8_t flags, HeliosPoint* points, int numO
 		return 0;
 
 	//prepare frame buffer
-	uint8_t frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
+	std::uint8_t frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
 	int bufPos = 0;
 	for (int i = 0; i < numOfPoints; i++)
 	{
@@ -75,7 +75,7 @@ int Stop(int dacNum)
 	if (!inited)
 		return -1;
 
-	uint8_t ctrlBuffer[2] = { 0x01, 0 };
+	std::uint8_t ctrlBuffer[2] = { 0x01, 0 };
 	return (dacController->SendControl(dacNum, &ctrlBuffer[0], 2));
 }
 
@@ -105,7 +105,7 @@ int SetName(int dacNum, char* name)
 	if (!inited)
 		return  -1;
 
-	uint8_t ctrlBuffer[32] = { 0x06 };
+	std::uint8_t ctrlBuffer[32] = { 0x06 };
 	memcpy(&ctrlBuffer[1], name, 31);
 	return dacController->SendControl(dacNum, &ctrlBuffer[0], 32);
 }
@@ -125,7 +125,7 @@ int SetShutter(int dacNum, bool value)
 	if (!inited)
 		return 0;
 
-	uint8_t ctrlBuffer[2] = { 0x02, value };
+	std::uint8_t ctrlBuffer[2] = { 0x02, value };
 	return dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
 }
 
@@ -142,7 +142,7 @@ int EraseFirmware(int dacNum)
 	if (!inited)
 		return  -1;
 
-	uint8_t ctrlBuffer[2] = { 0xDE, 0 };
+	std::uint8_t ctrlBuffer[2] = { 0xDE, 0 };
 	return dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
 }
 
@@ -257,7 +257,7 @@ OLSC_API int __stdcall OLSC_WriteFrame(int device_number, struct LASER_SHOW_DEVI
 		return OLSC_ERROR_INVALID_PARAMETER;
 
 	//prepare frame buffer, 16-bit values are explicitly split into 8-bit to avoid endianness-problems across any architecture
-	uint8_t frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
+	std::uint8_t frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
 	int bufPos = 0;
 	for (int i = 0; i < frame.point_count; i++)
 	{
@@ -273,10 +273,10 @@ OLSC_API int __stdcall OLSC_WriteFrame(int device_number, struct LASER_SHOW_DEVI
 			frameBuffer[bufPos++] = (((frame.points[i].x >> 4) & 0xF) << 4) + (frame.points[i].y >> 12);
 			frameBuffer[bufPos++] = ((frame.points[i].y >> 4) & 0xFF);
 		}
-		frameBuffer[bufPos++] = (uint8_t)frame.points[i].r;
-		frameBuffer[bufPos++] = (uint8_t)frame.points[i].g;
-		frameBuffer[bufPos++] = (uint8_t)frame.points[i].b;
-		frameBuffer[bufPos++] = (uint8_t)frame.points[i].i;
+		frameBuffer[bufPos++] = (std::uint8_t)frame.points[i].r;
+		frameBuffer[bufPos++] = (std::uint8_t)frame.points[i].g;
+		frameBuffer[bufPos++] = (std::uint8_t)frame.points[i].b;
+		frameBuffer[bufPos++] = (std::uint8_t)frame.points[i].i;
 	}
 	frameBuffer[bufPos++] = (frame.display_speed & 0xFF);
 	frameBuffer[bufPos++] = (frame.display_speed >> 8);
@@ -294,7 +294,7 @@ OLSC_API int __stdcall OLSC_GetStatus(int device_number, DWORD& status)
 	if (!inited)
 		return OLSC_ERROR_NONE;
 
-	uint8_t statusResult = GetStatus(device_number);
+	std::uint8_t statusResult = GetStatus(device_number);
 	if (statusResult == -1)
 		return OLSC_ERROR_FAILED;
 
@@ -316,13 +316,13 @@ OLSC_API int __stdcall OLSC_GetStatus(int device_number, DWORD& status)
 	}
 #endif
 
-OLSC_API int __stdcall OLSC_WriteDMX(int device_number, int start_address, uint8_t *data_pointer, int length)
+OLSC_API int __stdcall OLSC_WriteDMX(int device_number, int start_address, std::uint8_t *data_pointer, int length)
 {
 	//not supported
 	return OLSC_ERROR_NONE;
 }
 
-OLSC_API int __stdcall OLSC_ReadDMX(int device_number, int start_address, uint8_t *data_pointer, int length)
+OLSC_API int __stdcall OLSC_ReadDMX(int device_number, int start_address, std::uint8_t *data_pointer, int length)
 {
 	//not supported
 	return OLSC_ERROR_NONE;
