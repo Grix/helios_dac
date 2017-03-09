@@ -9,6 +9,10 @@
 #include <vector>
 #include <memory>
 
+#ifdef __linux__
+	#include <memory.h>
+#endif
+
 #define HELIOS_SDK_VERSION	5
 
 #define HELIOS_MAX_POINTS	0x1000

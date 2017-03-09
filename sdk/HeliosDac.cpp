@@ -243,7 +243,7 @@ HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 	{
 		uint8_t ctrlBuffer5[32];
 		transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, &ctrlBuffer5[0], 32, &actualLength, 32);
-		
+
 		if (transferResult == LIBUSB_SUCCESS)
 		{
 			ctrlBuffer5[31] = '\0';
@@ -284,7 +284,7 @@ int HeliosDac::HeliosDacDevice::SendFrame(uint8_t* bufferAddress, int bufferSize
 		threadLock->lock();
 		status = false;
 		threadLock->unlock();
-				
+
 		std::thread statusHandlerThread(&HeliosDac::HeliosDacDevice::WaitForStatus, this);
 		statusHandlerThread.detach();
 
@@ -371,7 +371,7 @@ int HeliosDac::HeliosDacDevice::GetStatus()
 					return 0;
 			}
 		}
-				
+
 		return -1;
 	}
 }
@@ -412,7 +412,7 @@ int HeliosDac::HeliosDacDevice::GetControlResponse(uint8_t* bufferAddress)
 		return 0;
 
 	uint8_t data[32];
-	int actualLength = 0; 
+	int actualLength = 0;
 	int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, &data[0], 32, &actualLength, 32);
 
 	if (transferResult < 0)
@@ -509,7 +509,7 @@ void HeliosDac::HeliosDacDevice::WaitForStatus()
 //		//		status = (data[1] == 1);
 //		//		threadLock->unlock();
 //		//	}
-//		//}	
+//		//}
 //	}
 //	catch(...)
 //	{
