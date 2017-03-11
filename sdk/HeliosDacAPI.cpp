@@ -15,7 +15,8 @@ git repo: https://github.com/Grix/helios_dac.git
 
 int OpenDevices()
 {
-	CloseDevices();
+	if (inited)
+		return dacController->GetDeviceCount();
 
 	dacController = new HeliosDac();
 
@@ -26,64 +27,30 @@ int OpenDevices()
 	else
 		inited = true;
 
-	//printf("OpenDevices() found: %d", result);
-
 	return result;
 }
 
-
-int WriteFrame(int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints)
-{
-	if ((!inited) || (points == NULL))
-		return 0;
-	if ((numOfPoints > HELIOS_MAX_POINTS) || (pps > HELIOS_MAX_RATE) || (pps < HELIOS_MIN_RATE))
-		return 0;
-
-	//prepare frame buffer
-	std::uint8_t frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
-	int bufPos = 0;
-	for (int i = 0; i < numOfPoints; i++)
-	{
-		if (flipX)
-		{
-			frameBuffer[bufPos++] = ((0xFFF - points[i].x) >> 4);
-			frameBuffer[bufPos++] = (((0xFFF - points[i].x) & 0x0F) << 4) | (points[i].y >> 8);
-			frameBuffer[bufPos++] = (points[i].y & 0xFF);
-		}
-		else
-		{
-			frameBuffer[bufPos++] = (points[i].x >> 4);
-			frameBuffer[bufPos++] = ((points[i].x & 0x0F) << 4) | (points[i].y >> 8);
-			frameBuffer[bufPos++] = (points[i].y & 0xFF);
-		}
-		frameBuffer[bufPos++] = points[i].r;
-		frameBuffer[bufPos++] = points[i].g;
-		frameBuffer[bufPos++] = points[i].b;
-		frameBuffer[bufPos++] = points[i].i;
-	}
-	frameBuffer[bufPos++] = (pps & 0xFF);
-	frameBuffer[bufPos++] = (pps >> 8);
-	frameBuffer[bufPos++] = (numOfPoints & 0xFF);
-	frameBuffer[bufPos++] = (numOfPoints >> 8);
-	frameBuffer[bufPos++] = flags;
-
-	return dacController->SendFrame(dacNum, &frameBuffer[0], bufPos);
-}
-
-int Stop(int dacNum)
+int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints)
 {
 	if (!inited)
-		return -1;
+		return HELIOS_ERROR;
 
-	std::uint8_t ctrlBuffer[2] = { 0x01, 0 };
-	return (dacController->SendControl(dacNum, &ctrlBuffer[0], 2));
+	return dacController->SendFrame(dacNum, pps, flags, points, numOfPoints);
+}
+
+int Stop(unsigned int dacNum)
+{
+	if (!inited)
+		return HELIOS_ERROR;
+
+	return dacController->Stop(dacNum);
 }
 
 
-int GetName(int dacNum, char* name)
+int GetName(unsigned int dacNum, char* name)
 {
 	if (!inited)
-		return  -1;
+		return  HELIOS_ERROR;
 
 	char* tempName = dacController->GetName(dacNum);
 	//if the above failed, fallback name:
@@ -100,50 +67,46 @@ int GetName(int dacNum, char* name)
 	return 0;
 }
 
-int SetName(int dacNum, char* name)
+int SetName(unsigned int dacNum, char* name)
 {
 	if (!inited)
-		return  -1;
+		return  HELIOS_ERROR;
 
-	std::uint8_t ctrlBuffer[32] = { 0x06 };
-	memcpy(&ctrlBuffer[1], name, 31);
-	return dacController->SendControl(dacNum, &ctrlBuffer[0], 32);
+	return dacController->SetName(dacNum, name);
 }
 
 
-int GetStatus(int dacNum)
+int GetStatus(unsigned int dacNum)
 {
 	if (!inited)
-		return -1;
+		return HELIOS_ERROR;
 
 	return (int)dacController->GetStatus(dacNum);
 }
 
 
-int SetShutter(int dacNum, bool value)
+int SetShutter(unsigned int dacNum, bool value)
 {
 	if (!inited)
-		return 0;
+		return HELIOS_ERROR;
 
-	std::uint8_t ctrlBuffer[2] = { 0x02, value };
-	return dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
+	return dacController->SetShutter(dacNum, value);
 }
 
-int GetFirmwareVersion(int dacNum)
+int GetFirmwareVersion(unsigned int dacNum)
 {
 	if (!inited)
-		return -1;
+		return HELIOS_ERROR;
 
 	return dacController->GetFirmwareVersion(dacNum);
 }
 
-int EraseFirmware(int dacNum)
+int EraseFirmware(unsigned int dacNum)
 {
 	if (!inited)
-		return  -1;
+		return  HELIOS_ERROR;
 
-	std::uint8_t ctrlBuffer[2] = { 0xDE, 0 };
-	return dacController->SendControl(dacNum, &ctrlBuffer[0], 2);
+	return dacController->EraseFirmware(dacNum);
 }
 
 int CloseDevices()
@@ -152,10 +115,10 @@ int CloseDevices()
 	{
 		inited = false;
 		delete dacController;
-		return 1;
+		return HELIOS_SUCCESS;
 	}
 	else
-		return 0;
+		return HELIOS_ERROR;
 }
 
 
@@ -253,40 +216,21 @@ OLSC_API int __stdcall OLSC_WriteFrame(int device_number, struct LASER_SHOW_DEVI
 {
 	if (!inited)
 		return OLSC_ERROR_FAILED;
-	if ((frame.point_count > HELIOS_MAX_POINTS) || (frame.display_speed > HELIOS_MAX_RATE) || (frame.display_speed < HELIOS_MIN_RATE))
-		return OLSC_ERROR_INVALID_PARAMETER;
 
-	//prepare frame buffer, 16-bit values are explicitly split into 8-bit to avoid endianness-problems across any architecture
-	std::uint8_t frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
-	int bufPos = 0;
+	//convert frame structure
+	HeliosPoint frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
 	for (int i = 0; i < frame.point_count; i++)
 	{
-		if (flipX)
-		{
-			frameBuffer[bufPos++] = ((0xFFF - frame.points[i].x) >> 8);
-			frameBuffer[bufPos++] = ((((0xFFF - frame.points[i].x) >> 4) & 0xF) << 4) + (frame.points[i].y >> 12);
-			frameBuffer[bufPos++] = ((frame.points[i].y >> 4) & 0xFF);
-		}
-		else
-		{
-			frameBuffer[bufPos++] = (frame.points[i].x >> 8);
-			frameBuffer[bufPos++] = (((frame.points[i].x >> 4) & 0xF) << 4) + (frame.points[i].y >> 12);
-			frameBuffer[bufPos++] = ((frame.points[i].y >> 4) & 0xFF);
-		}
-		frameBuffer[bufPos++] = (std::uint8_t)frame.points[i].r;
-		frameBuffer[bufPos++] = (std::uint8_t)frame.points[i].g;
-		frameBuffer[bufPos++] = (std::uint8_t)frame.points[i].b;
-		frameBuffer[bufPos++] = (std::uint8_t)frame.points[i].i;
+		frameBuffer[i].x = (frame.points[i].x >> 4);
+		frameBuffer[i].y = (frame.points[i].y >> 4);
+		frameBuffer[i].r = (std::uint8_t)frame.points[i].r;
+		frameBuffer[i].g = (std::uint8_t)frame.points[i].g;
+		frameBuffer[i].b = (std::uint8_t)frame.points[i].b;
+		frameBuffer[i].i = (std::uint8_t)frame.points[i].i;
 	}
-	frameBuffer[bufPos++] = (frame.display_speed & 0xFF);
-	frameBuffer[bufPos++] = (frame.display_speed >> 8);
-	frameBuffer[bufPos++] = (frame.point_count & 0xFF);
-	frameBuffer[bufPos++] = (frame.point_count >> 8);
-	frameBuffer[bufPos++] = 0;
-
 
 	//send frame to dac
-	return dacController->SendFrame(device_number, &frameBuffer[0], bufPos);
+	return dacController->SendFrame(device_number, frame.display_speed, HELIOS_FLAGS_DEFAULT, frameBuffer, frame.point_count);
 }
 
 OLSC_API int __stdcall OLSC_GetStatus(int device_number, DWORD& status)
@@ -295,7 +239,7 @@ OLSC_API int __stdcall OLSC_GetStatus(int device_number, DWORD& status)
 		return OLSC_ERROR_NONE;
 
 	std::uint8_t statusResult = GetStatus(device_number);
-	if (statusResult == -1)
+	if (statusResult == HELIOS_ERROR)
 		return OLSC_ERROR_FAILED;
 
 	if (statusResult == 1)

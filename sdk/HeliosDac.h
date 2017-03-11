@@ -10,12 +10,20 @@
 #include <vector>
 #include <memory>
 #include <chrono>
+#include <future>
 
 #define HELIOS_SDK_VERSION	5
 
 #define HELIOS_MAX_POINTS	0x1000
 #define HELIOS_MAX_RATE		0xFFFF
 #define HELIOS_MIN_RATE		7
+
+#define HELIOS_SUCCESS		1
+#define HELIOS_ERROR		-1
+
+#define HELIOS_FLAGS_DEFAULT			0
+#define HELIOS_FLAGS_START_IMMEDIATELY	(1 << 1)
+#define HELIOS_FLAGS_SINGLE_MODE		(1 << 2)
 
 //usb properties
 #define HELIOS_VID	0x1209
@@ -31,6 +39,17 @@
 #define LIBUSB_LOG_LEVEL LIBUSB_LOG_LEVEL_NONE
 #endif
 
+//point data structure
+typedef struct
+{
+	std::uint16_t x; //12 bit (from 0 to 0xFFF)
+	std::uint16_t y; //12 bit (from 0 to 0xFFF)
+	std::uint8_t r;	//8 bit	(from 0 to 0xFF)
+	std::uint8_t g;	//8 bit (from 0 to 0xFF)
+	std::uint8_t b;	//8 bit (from 0 to 0xFF)
+	std::uint8_t i;	//8 bit (from 0 to 0xFF)
+} HeliosPoint;
+
 class HeliosDac
 {
 public:
@@ -40,12 +59,14 @@ public:
 	int OpenDevices();
 	int GetDeviceCount();
 	int CloseDevices();
-	int GetStatus(int devNum);
-	int GetFirmwareVersion(int devNum);
-	char* GetName(int devNum);
-	int SendControl(int devNum, std::uint8_t* bufferAddress, int length);
-	int GetControlResponse(int devNum, std::uint8_t* bufferAddress);
-	int SendFrame(int devNum, std::uint8_t* bufferAddress, int bufferSize);
+	int GetStatus(unsigned int devNum);
+	int GetFirmwareVersion(unsigned int  devNum);
+	char* GetName(unsigned int devNum);
+	int SetName(unsigned int devNum, char* name);
+	int SendFrame(unsigned int devNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints);
+	int Stop(unsigned int devNum);
+	int SetShutter(unsigned int devNum, bool level);
+	int EraseFirmware(unsigned int devNum);
 
 private:
 
@@ -55,34 +76,30 @@ private:
 
 		HeliosDacDevice(libusb_device_handle*);
 		~HeliosDacDevice();
+		int SendFrame(std::uint8_t* buffer, int bufferSize);
 		int GetStatus();
 		int GetFirmwareVersion();
 		char* GetName();
-		int SendControl(std::uint8_t* bufferAddress, int length);
-		int GetControlResponse(std::uint8_t* bufferAddress);
-		int SendFrame(std::uint8_t* bufferAddress, int bufferSize);
-		int CloseDevice();
+		int SetName(char* name);
+		int SetShutter(bool level);
+		int Stop();
+		int EraseFirmware();
 
 	private:
 
-		void WaitForStatus();
+		void DoFrame(std::uint8_t* buffer, int bufferSize);
 		void InterruptTransferHandler();
+		int SendControl(std::uint8_t* buffer, int bufferSize);
 
 		struct libusb_transfer* interruptTransfer = NULL;
 		struct libusb_device_handle* usbHandle;
-		std::unique_ptr<std::mutex> threadLock;
-		std::mutex initLock;
-		bool status = 0;
+		std::mutex frameLock;
 		int firmwareVersion = 0;
 		char name[32];
 		bool closed = true;
-		bool inited = false;
-		bool waitingForStatus = false;
 	};
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;
 	std::mutex threadLock;
 	bool inited = false;
 };
-
-void LIBUSB_CALL HeliosInterruptTransferHandlerWrapper(struct libusb_transfer*);

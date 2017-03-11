@@ -37,25 +37,10 @@ See OpenLaserShowControllerV1.0.0-Mod.h for documentation on OLSC_* functions. N
 	#define HELIOS_EXPORT extern "C"
 #endif
 
-#ifdef __linux__
-	#include <memory.h>
-#endif
-
 bool inited = false;
 bool flipX = true;
 
 HeliosDac* dacController;
-
-//point data structure
-typedef struct
-{
-	std::uint16_t x; //12 bit (from 0 to 0xFFF)
-	std::uint16_t y; //12 bit (from 0 to 0xFFF)
-	std::uint8_t r;	//8 bit	(from 0 to 0xFF)
-	std::uint8_t g;	//8 bit (from 0 to 0xFF)
-	std::uint8_t b;	//8 bit (from 0 to 0xFF)
-	std::uint8_t i;	//8 bit (from 0 to 0xFF)
-} HeliosPoint;
 
 //initializes drivers, opens connection to all devices.
 //Returns number of available devices.
@@ -64,7 +49,7 @@ HELIOS_EXPORT int OpenDevices();
 
 //Gets status from the specified dac.
 //Return 1 if ready to receive new frame, 0 if not, -1 if communcation failed
-HELIOS_EXPORT int GetStatus(int dacNum);
+HELIOS_EXPORT int GetStatus(unsigned int dacNum);
 
 //writes and outputs a frame to the speficied dac
 //dacNum: dac number (0 to n where n+1 is the return value from OpenDevices() )
@@ -76,31 +61,31 @@ HELIOS_EXPORT int GetStatus(int dacNum);
 //points: pointer to point data. See point structure documentation in main.h
 //numOfPoints: number of points in the frame
 //returns 1 if successful
-HELIOS_EXPORT int WriteFrame(int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints);
+HELIOS_EXPORT int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints);
 
 //sets the shutter of the specified dac.
 //value 1 = shutter open, value 0 = shutter closed
 //returns 1 if successful
-HELIOS_EXPORT int SetShutter(int dacNum, bool shutterValue);
+HELIOS_EXPORT int SetShutter(unsigned int dacNum, bool shutterValue);
 
 //Returns the firmware version number. Returns -1 if communcation failed.
-HELIOS_EXPORT int GetFirmwareVersion(int dacNum);
+HELIOS_EXPORT int GetFirmwareVersion(unsigned int dacNum);
 
 //gets a descriptive name of the specified dac
 //name is max 32 bytes long, char needs to be able to hold 32 bytes
 //returns 1 if successful, return 0 if the proper name couldn't be fetched from the DAC, but name is
 //still populated with a fallback numbered name based on order of discovery by the library
 //return -1 if unsuccessful and name is not populated.
-HELIOS_EXPORT int GetName(int dacNum, char* name);
+HELIOS_EXPORT int GetName(unsigned int dacNum, char* name);
 
 //gets a descriptive name of the specified dac
 //name is max 31 bytes long including null terminator
 //returns 1 if successful, return 0 if the transfer failed
-HELIOS_EXPORT int SetName(int dacNum, char* name);
+HELIOS_EXPORT int SetName(unsigned int dacNum, char* name);
 
 //stops, blanks and centers output on the specified dac
 //returns 1 if successful
-HELIOS_EXPORT int Stop(int dacNum);
+HELIOS_EXPORT int Stop(unsigned int dacNum);
 
 //closes connection to all dacs and frees resources
 //should be called when library is no longer needed (program exit for example)
@@ -108,4 +93,4 @@ HELIOS_EXPORT int CloseDevices();
 
 //Clears the GPNVM1 bit on the DACs microcontroller. This will cause the DAC to boot into SAM-BA bootloader
 //which allows new firmware to be uploaded over USB.
-HELIOS_EXPORT int EraseFirmware(int dacNum);
+HELIOS_EXPORT int EraseFirmware(unsigned int dacNum);
