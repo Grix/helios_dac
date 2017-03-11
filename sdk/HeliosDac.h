@@ -60,10 +60,10 @@ public:
 	int GetDeviceCount();
 	int CloseDevices();
 	int GetStatus(unsigned int devNum);
-	int GetFirmwareVersion(unsigned int  devNum);
+	int GetFirmwareVersion(unsigned int devNum);
 	char* GetName(unsigned int devNum);
 	int SetName(unsigned int devNum, char* name);
-	int SendFrame(unsigned int devNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints);
+	int SendFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
 	int Stop(unsigned int devNum);
 	int SetShutter(unsigned int devNum, bool level);
 	int EraseFirmware(unsigned int devNum);
@@ -76,7 +76,7 @@ private:
 
 		HeliosDacDevice(libusb_device_handle*);
 		~HeliosDacDevice();
-		int SendFrame(std::uint8_t* buffer, int bufferSize);
+		int SendFrame(std::uint8_t* buffer, unsigned int bufferSize);
 		int GetStatus();
 		int GetFirmwareVersion();
 		char* GetName();
@@ -87,9 +87,9 @@ private:
 
 	private:
 
-		void DoFrame(std::uint8_t* buffer, int bufferSize);
+		void DoFrame(std::uint8_t* buffer, unsigned int bufferSize);
 		void InterruptTransferHandler();
-		int SendControl(std::uint8_t* buffer, int bufferSize);
+		int SendControl(std::uint8_t* buffer, unsigned int bufferSize);
 
 		struct libusb_transfer* interruptTransfer = NULL;
 		struct libusb_device_handle* usbHandle;

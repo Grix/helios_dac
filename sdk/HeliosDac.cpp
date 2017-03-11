@@ -91,7 +91,7 @@ int HeliosDac::GetDeviceCount()
 
 //sends a raw frame buffer (implemented as bulk transfer) to a dac device
 //returns 1 if transfer succeeds
-int HeliosDac::SendFrame(unsigned int devNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints)
+int HeliosDac::SendFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints)
 {
 	if (!inited)
 		return 0;
@@ -110,8 +110,8 @@ int HeliosDac::SendFrame(unsigned int devNum, int pps, std::uint8_t flags, Helio
 
 	//prepare frame buffer
 	std::uint8_t frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
-	int bufPos = 0;
-	for (int i = 0; i < numOfPoints; i++)
+	unsigned int bufPos = 0;
+	for (unsigned int i = 0; i < numOfPoints; i++)
 	{
 		frameBuffer[bufPos++] = (points[i].x >> 4);
 		frameBuffer[bufPos++] = ((points[i].x & 0x0F) << 4) | (points[i].y >> 8);
@@ -272,17 +272,21 @@ HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 	usbHandle = handle;
 	std::lock_guard<std::mutex>lock(frameLock);
 
+	int actualLength = 0;
+	std::uint8_t ctrlBuffer0[32];
+	//catch lingering transfers
+	while (libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer0, 2, &actualLength, 2) == LIBUSB_SUCCESS);
+
 	//get firmware version
 	firmwareVersion = 0;
 	std::uint8_t ctrlBuffer[2] = { 0x04, 0 };
 
-	int actualLength = 0;
-	int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, &ctrlBuffer[0], 2, &actualLength, 32);
+	int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, ctrlBuffer, 2, &actualLength, 32);
 
 	if ((transferResult == LIBUSB_SUCCESS) && (actualLength == 2))
 	{
 		std::uint8_t ctrlBuffer2[32];
-		transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, &ctrlBuffer2[0], 5, &actualLength, 32);
+		transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer2, 5, &actualLength, 32);
 
 		if (transferResult == LIBUSB_SUCCESS)
 		{
@@ -296,23 +300,23 @@ HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 
 	//send sdk firmware version
 	std::uint8_t ctrlBuffer3[2] = { 0x07, HELIOS_SDK_VERSION };
-	transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, &ctrlBuffer3[0], 2, &actualLength, 32);
+	transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, ctrlBuffer3, 2, &actualLength, 32);
 
 	//get device name
 	bool gotName = false;
 	std::uint8_t ctrlBuffer4[32] = { 0x05, 0 }; //getting name
-	transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, &ctrlBuffer4[0], 2, &actualLength, 32);
+	transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, ctrlBuffer4, 2, &actualLength, 32);
 
 	if ((transferResult == LIBUSB_SUCCESS) && (actualLength == 2))
 	{
 		std::uint8_t ctrlBuffer5[32];
-		transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, &ctrlBuffer5[0], 32, &actualLength, 32);
+		transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer5, 32, &actualLength, 32);
 
 		if (transferResult == LIBUSB_SUCCESS)
 		{
 			//todo check for id
 			ctrlBuffer5[31] = '\0';
-			memcpy(name, &ctrlBuffer5[1], 31);
+			memcpy(name, ctrlBuffer5, 31);
 			gotName = true;
 		}
 	}
@@ -328,7 +332,7 @@ HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 
 //sends a raw frame buffer (implemented as bulk transfer) to a dac device
 //returns 1 if success
-int HeliosDac::HeliosDacDevice::SendFrame(std::uint8_t* bufferAddress, int bufferSize)
+int HeliosDac::HeliosDacDevice::SendFrame(std::uint8_t* bufferAddress, unsigned int bufferSize)
 {
 	if (closed)
 		return HELIOS_ERROR;
@@ -343,17 +347,16 @@ int HeliosDac::HeliosDacDevice::SendFrame(std::uint8_t* bufferAddress, int buffe
 		return HELIOS_ERROR;
 }
 
-void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, int bufferSize)
+void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, unsigned int bufferSize)
 {
 	std::lock_guard<std::mutex> lock(frameLock);
 	int actualLength = 0;
 	int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, buffer, bufferSize, &actualLength, 256);
 
-	bool quit = false;
-
-	while (!quit && !closed)
-	{
-		if ((transferResult == LIBUSB_SUCCESS) && (actualLength == bufferSize))
+	if ((transferResult == LIBUSB_SUCCESS) && (actualLength == bufferSize))
+	{	
+		bool quit = false;
+		while (!quit && !closed)
 		{
 			std::uint8_t ctrlBuffer[32] = { 0x03, 0 };
 			if (SendControl(&ctrlBuffer[0], 2))
@@ -526,9 +529,9 @@ int HeliosDac::HeliosDacDevice::EraseFirmware()
 
 //sends a raw control signal (implemented as interrupt transfer) to a dac device
 //returns 1 if successful
-int HeliosDac::HeliosDacDevice::SendControl(std::uint8_t* bufferAddress, int length)
+int HeliosDac::HeliosDacDevice::SendControl(std::uint8_t* bufferAddress, unsigned int length)
 {
-	if ((bufferAddress == NULL) || (length > 32) || (length <= 0))
+	if ((bufferAddress == NULL) || (length > 32))
 		return HELIOS_ERROR;
 
 	int actualLength = 0;

@@ -332,7 +332,6 @@ int callback_vendor_enable(void) //usb connection opened, preparing for activity
 void callback_vendor_disable(void) //usb connection closed, sleeping to save power
 {
 	connected = false;
-	tc_stop(TC0,0);
 	stop();
 	
 	sleepmgr_unlock_mode(SLEEPMGR_ACTIVE);
