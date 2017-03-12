@@ -1,4 +1,21 @@
-//Header for lower level Helios DAC functions. See HeliosDacAPI.h or HeliosDacClass.h instead for top level functions
+/*
+Driver API for Helios Laser DAC class, HEADER
+By Gitle Mikkelsen
+gitlem@gmail.com
+
+Dependencies:
+Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
+
+Standard: C++14
+
+BASIC USAGE:
+1.	Call OpenDevices() to open devices, returns number of available devices.
+2.	To send a new frame, first call GetStatus() or OLSC_GetStatus. If the function returns ready (1), 
+	then you can call WriteFrame(). The status should be polled until it returns ready. 
+	It can and sometimes will fail to return ready on the first try.
+3.  To stop output, use Stop(). To restart output you must send a new frame as described above.
+4.	When the DAC is no longer needed, destroy the instance (destructors will free everything and close the connection)
+*/
 
 #pragma once
 

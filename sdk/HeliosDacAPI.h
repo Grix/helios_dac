@@ -15,12 +15,7 @@ BASIC USAGE:
 2.	To send a new frame, first call GetStatus() or OLSC_GetStatus. If the function returns ready
 	(1 for GetStatus, OLSC_STATUS_BUFFER_EMPTY for OLSC_GetStatus), then you can call WriteFrame()
 	or OLSC_WriteFrame() / OLSC_WriteFrameEx().
-	You must get the status every time before a frame is written. The status will usually take about 2 ms to fetch.
 	The status should be polled until it returns ready. It can and sometimes will fail to return ready on the first try.
-	Care should be taken not to have multiple status requests or frame transfers run at the same time. Use a
-	mutex or something similar to force correct order and timing when interfacing with the DAC.
-	Both the status getters and frame write functions are BLOCKING and can take many milliseconds to finish if the frame is large.
-	It is recommended to run them in a separate thread from your main program.
 3.  To stop output, use Stop() or OLSC_Pause(). To restart output you must send a new frame as described above.
 4.	When the DAC is no longer needed, free it using CloseDevices() or OLSC_Shutdown()
 See OpenLaserShowControllerV1.0.0-Mod.h for documentation on OLSC_* functions. Not recommended for cross-platform apps
