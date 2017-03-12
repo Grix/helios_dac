@@ -270,62 +270,75 @@ HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 {
 	closed = true;
 	usbHandle = handle;
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	std::lock_guard<std::mutex>lock(frameLock);
 
 	int actualLength = 0;
+	bool ok = false;
 	std::uint8_t ctrlBuffer0[32];
 	//catch lingering transfers
-	while (libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer0, 2, &actualLength, 2) == LIBUSB_SUCCESS);
+	while (libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer0, 32, &actualLength, 5) == LIBUSB_SUCCESS);
 
 	//get firmware version
 	firmwareVersion = 0;
-	std::uint8_t ctrlBuffer[2] = { 0x04, 0 };
-
-	int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, ctrlBuffer, 2, &actualLength, 32);
-
-	if ((transferResult == LIBUSB_SUCCESS) && (actualLength == 2))
+	bool repeat = true;
+	for (int i = 0; ((i < 2) && repeat); i++) //retry command if necessary
 	{
-		std::uint8_t ctrlBuffer2[32];
-		transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer2, 5, &actualLength, 32);
-
-		if (transferResult == LIBUSB_SUCCESS)
+		std::uint8_t ctrlBuffer[2] = { 0x04, 0 };
+		int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, ctrlBuffer, 2, &actualLength, 32);
+		if ((transferResult == LIBUSB_SUCCESS) && (actualLength == 2))
 		{
-			//todo check for id
-			firmwareVersion = ((ctrlBuffer2[1] << 0) |
-				(ctrlBuffer2[2] << 8) |
-				(ctrlBuffer2[3] << 16) |
-				(ctrlBuffer2[4] << 24));
+			for (int j = 0; ((j < 3) && repeat); j++) //retry response getting if necessary
+			{
+				std::uint8_t ctrlBuffer2[32];
+				transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer2, 32, &actualLength, 32);
+				if (transferResult == LIBUSB_SUCCESS)
+				{
+					if (ctrlBuffer2[0] == 0x84)
+					{
+						firmwareVersion = ((ctrlBuffer2[1] << 0) |
+							(ctrlBuffer2[2] << 8) |
+							(ctrlBuffer2[3] << 16) |
+							(ctrlBuffer2[4] << 24));
+						repeat = false;
+					}
+				}
+			}
 		}
 	}
+
 
 	//send sdk firmware version
-	std::uint8_t ctrlBuffer3[2] = { 0x07, HELIOS_SDK_VERSION };
-	transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, ctrlBuffer3, 2, &actualLength, 32);
-
-	//get device name
-	bool gotName = false;
-	std::uint8_t ctrlBuffer4[32] = { 0x05, 0 }; //getting name
-	transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, ctrlBuffer4, 2, &actualLength, 32);
-
-	if ((transferResult == LIBUSB_SUCCESS) && (actualLength == 2))
+	repeat = true;
+	for (int i = 0; ((i < 2) && repeat); i++) //retry command if necessary
 	{
-		std::uint8_t ctrlBuffer5[32];
-		transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer5, 32, &actualLength, 32);
-
-		if (transferResult == LIBUSB_SUCCESS)
-		{
-			//todo check for id
-			ctrlBuffer5[31] = '\0';
-			memcpy(name, ctrlBuffer5, 31);
-			gotName = true;
-		}
+		std::uint8_t ctrlBuffer3[2] = { 0x07, HELIOS_SDK_VERSION };
+		int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, ctrlBuffer3, 2, &actualLength, 32);
+		if ((transferResult == LIBUSB_SUCCESS) && (actualLength == 2))
+			repeat = false;
 	}
 
-	//if the above failed, fallback name:
-	if (!gotName)
-	{
-		memcpy(name, "", 1);
-	}
+	//get status
+	//bool quit = false;
+	//while (!quit)
+	//{
+	//	std::uint8_t ctrlBuffer4[32] = { 0x03, 0 };
+	//	if (SendControl(ctrlBuffer4, 2))
+	//	{
+	//		std::uint8_t ctrlBuffer2[32];
+	//		int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer2, 32, &actualLength, 32);
+	//		if (transferResult == LIBUSB_SUCCESS)
+	//		{
+	//			if (ctrlBuffer2[0] == 0x83) //STATUS ID
+	//			{
+	//				if (ctrlBuffer2[1] == 1)
+	//				{
+	//					quit = true; //lock will be freed on returning, effectively setting status to 1
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
 
 	closed = false;
 }
@@ -351,7 +364,7 @@ void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, unsigned int buff
 {
 	std::lock_guard<std::mutex> lock(frameLock);
 	int actualLength = 0;
-	int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, buffer, bufferSize, &actualLength, 256);
+	int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, buffer, bufferSize, &actualLength, 128);
 
 	if ((transferResult == LIBUSB_SUCCESS) && (actualLength == bufferSize))
 	{	
@@ -359,17 +372,67 @@ void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, unsigned int buff
 		while (!quit && !closed)
 		{
 			std::uint8_t ctrlBuffer[32] = { 0x03, 0 };
-			if (SendControl(&ctrlBuffer[0], 2))
+			if (SendControl(ctrlBuffer, 2))
 			{
 				std::uint8_t ctrlBuffer2[32];
-				transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, &ctrlBuffer2[0], 32, &actualLength, 32);
+				transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer2, 32, &actualLength, 32);
 				if (transferResult == LIBUSB_SUCCESS)
 				{
-					if (ctrlBuffer2[0] == 0x83) //STATUS
+					if (ctrlBuffer2[0] == 0x83) //STATUS ID
 					{
 						if (ctrlBuffer2[1] == 1)
 						{
 							quit = true; //lock will be freed on returning, effectively setting status to 1
+						}
+					}
+				}
+			}
+		}
+	}
+	else //get status and then try again
+	{
+		bool quit = false;
+		while (!quit && !closed)
+		{
+			std::uint8_t ctrlBuffer[32] = { 0x03, 0 };
+			if (SendControl(ctrlBuffer, 2))
+			{
+				std::uint8_t ctrlBuffer2[32];
+				transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer2, 32, &actualLength, 32);
+				if (transferResult == LIBUSB_SUCCESS)
+				{
+					if (ctrlBuffer2[0] == 0x83) //STATUS ID
+					{
+						if (ctrlBuffer2[1] == 1)
+						{
+							quit = true; //lock will be freed on returning, effectively setting status to 1
+						}
+					}
+				}
+			}
+		}
+
+		int actualLength = 0;
+		int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, buffer, bufferSize, &actualLength, 256);
+
+		if ((transferResult == LIBUSB_SUCCESS) && (actualLength == bufferSize))
+		{
+			bool quit = false;
+			while (!quit && !closed)
+			{
+				std::uint8_t ctrlBuffer[32] = { 0x03, 0 };
+				if (SendControl(ctrlBuffer, 2))
+				{
+					std::uint8_t ctrlBuffer2[32];
+					transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer2, 32, &actualLength, 32);
+					if (transferResult == LIBUSB_SUCCESS)
+					{
+						if (ctrlBuffer2[0] == 0x83) //STATUS ID
+						{
+							if (ctrlBuffer2[1] == 1)
+							{
+								quit = true; //lock will be freed on returning, effectively setting status to 1
+							}
 						}
 					}
 				}
@@ -392,6 +455,44 @@ char* HeliosDac::HeliosDacDevice::GetName()
 {
 	if (closed)
 		return "";
+
+	std::lock_guard<std::mutex> lock(frameLock);
+
+	bool gotName = false;
+	
+	bool repeat = true;
+	for (int i = 0; ((i < 2) && repeat); i++) //retry command if necessary
+	{
+		int actualLength = 0;
+		std::uint8_t ctrlBuffer4[32] = { 0x05, 0 };
+		int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, ctrlBuffer4, 2, &actualLength, 32);
+
+		if ((transferResult == LIBUSB_SUCCESS) && (actualLength == 2))
+		{
+			for (int i = 0; ((i < 3) && repeat); i++) //retry response if necessary
+			{
+				std::uint8_t ctrlBuffer5[32];
+				transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer5, 32, &actualLength, 32);
+
+				if (transferResult == LIBUSB_SUCCESS)
+				{
+					if (ctrlBuffer5[0] == 0x85)
+					{
+						ctrlBuffer5[31] = '\0';
+						memcpy(name, &ctrlBuffer5[1], 31);
+						gotName = true;
+						repeat = false;
+					}
+				}
+			}
+		}
+	}
+
+	//if the above failed, fallback name:
+	if (!gotName)
+	{
+		return "";
+	}
 
 	return name;
 }
@@ -490,7 +591,10 @@ int HeliosDac::HeliosDacDevice::Stop()
 
 	std::uint8_t txBuffer[2] = { 0x01, 0 };
 	if (SendControl(txBuffer, 2) == HELIOS_SUCCESS)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		return HELIOS_SUCCESS;
+	}
 	else
 		return HELIOS_ERROR;
 }
@@ -535,12 +639,18 @@ int HeliosDac::HeliosDacDevice::SendControl(std::uint8_t* bufferAddress, unsigne
 		return HELIOS_ERROR;
 
 	int actualLength = 0;
-	int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, bufferAddress, length, &actualLength, 32);
+	int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, bufferAddress, length, &actualLength, 16);
 
 	if ((transferResult == 0) && (actualLength == length))
 		return HELIOS_SUCCESS;
 	else
-		return transferResult;
+	{
+		transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, bufferAddress, length, &actualLength, 32);
+		if ((transferResult == 0) && (actualLength == length))
+			return HELIOS_SUCCESS;
+		else
+			return HELIOS_ERROR;
+	}
 }
 
 //Attempts to receive a response to a previous control transfer.
@@ -714,7 +824,7 @@ int HeliosDac::HeliosDacDevice::SendControl(std::uint8_t* bufferAddress, unsigne
 HeliosDac::HeliosDacDevice::~HeliosDacDevice()
 {
 	closed = true;
-	std::lock_guard<std::mutex>lock(frameLock);
+	std::lock_guard<std::mutex>lock(frameLock); //wait until all threads have closed
 
 	libusb_close(usbHandle);
 }
