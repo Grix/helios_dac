@@ -16,7 +16,7 @@ git repo: https://github.com/Grix/helios_dac.git
 int OpenDevices()
 {
 	if (inited)
-		return dacController->GetDeviceCount();
+		return dacController->OpenDevices();
 
 	dacController = new HeliosDac();
 
@@ -35,7 +35,7 @@ int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPoint* po
 	if (!inited)
 		return HELIOS_ERROR;
 
-	return dacController->SendFrame(dacNum, pps, flags, points, numOfPoints);
+	return dacController->WriteFrame(dacNum, pps, flags, points, numOfPoints);
 }
 
 int Stop(unsigned int dacNum)
@@ -46,25 +46,12 @@ int Stop(unsigned int dacNum)
 	return dacController->Stop(dacNum);
 }
 
-
 int GetName(unsigned int dacNum, char* name)
 {
 	if (!inited)
 		return  HELIOS_ERROR;
 
-	char* tempName = dacController->GetName(dacNum);
-	//if the above failed, fallback name:
-	if (tempName[0] == '/0')
-	{
-		memcpy(name, "Helios ", 8);
-		name[7] = (char)((int)(dacNum >= 10) + 48);
-		name[8] = (char)((int)(dacNum % 10) + 48);
-		name[9] = '\0';
-	}
-	else
-		memcpy(name, tempName, 32);
-
-	return 0;
+	return dacController->GetName(dacNum, name);
 }
 
 int SetName(unsigned int dacNum, char* name)
@@ -75,7 +62,6 @@ int SetName(unsigned int dacNum, char* name)
 	return dacController->SetName(dacNum, name);
 }
 
-
 int GetStatus(unsigned int dacNum)
 {
 	if (!inited)
@@ -83,7 +69,6 @@ int GetStatus(unsigned int dacNum)
 
 	return (int)dacController->GetStatus(dacNum);
 }
-
 
 int SetShutter(unsigned int dacNum, bool value)
 {
@@ -154,7 +139,7 @@ OLSC_API int __stdcall OLSC_GetDeviceCount(void)
 	if (!inited)
 		return OLSC_ERROR_NONE;
 	else
-		return dacController->GetDeviceCount();
+		return dacController->OpenDevices();
 }
 
 OLSC_API int __stdcall OLSC_GetDeviceCapabilities(int device_number, struct LASER_SHOW_DEVICE_CAPABILITIES& device_capabilities)
@@ -230,7 +215,7 @@ OLSC_API int __stdcall OLSC_WriteFrame(int device_number, struct LASER_SHOW_DEVI
 	}
 
 	//send frame to dac
-	return dacController->SendFrame(device_number, frame.display_speed, HELIOS_FLAGS_DEFAULT, frameBuffer, frame.point_count);
+	return dacController->WriteFrame(device_number, frame.display_speed, HELIOS_FLAGS_DEFAULT, frameBuffer, frame.point_count);
 }
 
 OLSC_API int __stdcall OLSC_GetStatus(int device_number, DWORD& status)

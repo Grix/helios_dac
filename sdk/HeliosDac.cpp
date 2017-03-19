@@ -1,14 +1,17 @@
 /*
-Class controlling lower-level communication with Helios Laser DACs.
+Driver API for Helios Laser DAC class, SOURCE
 By Gitle Mikkelsen
+gitlem@gmail.com
 
-See HeliosDacAPI.h or HeliosDacClass.h instead for top level functions
+Dependencies:
+Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 
-Dependencies: Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 Standard: C++14
-
 git repo: https://github.com/Grix/helios_dac.git
+
+See header HeliosDac.h for function and usage documentation
 */
+
 
 #include "HeliosDac.h"
 
@@ -22,9 +25,6 @@ HeliosDac::~HeliosDac()
 	CloseDevices();
 }
 
-
-//attempts to open connection and initialize dacs
-//returns number of connected devices
 int HeliosDac::OpenDevices()
 {
 	if (inited)
@@ -81,17 +81,18 @@ int HeliosDac::OpenDevices()
 	return devNum;
 }
 
-int HeliosDac::GetDeviceCount()
+int HeliosDac::CloseDevices()
 {
-	if (!inited)
-		return 0;
+	std::lock_guard<std::mutex> lock(threadLock);
+	inited = false;
+	deviceList.clear(); //various destructors will clean all devices
 
-	return deviceList.size();
+	libusb_exit(NULL);
+
+	return 1;
 }
 
-//sends a raw frame buffer (implemented as bulk transfer) to a dac device
-//returns 1 if transfer succeeds
-int HeliosDac::SendFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints)
+int HeliosDac::WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints)
 {
 	if (!inited)
 		return 0;
@@ -130,8 +131,7 @@ int HeliosDac::SendFrame(unsigned int devNum, unsigned int pps, std::uint8_t fla
 	return dev->SendFrame(frameBuffer, bufPos);
 }
 
-//Gets status of DAC, true means DAC is ready to receive frame
-int HeliosDac::GetStatus(unsigned int  devNum)
+int HeliosDac::GetStatus(unsigned int devNum)
 {
 	if (!inited)
 		return -1;
@@ -147,8 +147,7 @@ int HeliosDac::GetStatus(unsigned int  devNum)
 	return dev->GetStatus();
 }
 
-//Gets firmware version of DAC
-int HeliosDac::GetFirmwareVersion(unsigned int  devNum)
+int HeliosDac::GetFirmwareVersion(unsigned int devNum)
 {
 	if (!inited)
 		return -1;
@@ -164,11 +163,10 @@ int HeliosDac::GetFirmwareVersion(unsigned int  devNum)
 	return dev->GetFirmwareVersion();
 }
 
-//Gets name of DAC ("" if error)
-char* HeliosDac::GetName(unsigned int devNum)
+int HeliosDac::GetName(unsigned int devNum, char* name)
 {
 	if (!inited)
-		return "";
+		return HELIOS_ERROR;
 
 	std::unique_lock<std::mutex> lock(threadLock);
 	HeliosDacDevice* dev = NULL;
@@ -176,12 +174,23 @@ char* HeliosDac::GetName(unsigned int devNum)
 		dev = deviceList[devNum].get();
 	lock.unlock();
 	if (dev == NULL)
-		return "";
+		return HELIOS_ERROR;
 
-	return dev->GetName();
+	char* dacName = dev->GetName();
+	if (dacName == "")
+	{
+		memcpy(name, "Helios ", 8);
+		name[7] = (char)((int)(devNum >= 10) + 48);
+		name[8] = (char)((int)(devNum % 10) + 48);
+		name[9] = '\0';
+	}
+	else
+	{
+		memcpy(name, dacName, 32);
+	}
+	return HELIOS_SUCCESS;
 }
 
-//Sets name of DAC
 int HeliosDac::SetName(unsigned int devNum, char* name)
 {
 	if (!inited)
@@ -198,7 +207,6 @@ int HeliosDac::SetName(unsigned int devNum, char* name)
 	return dev->SetName(name);
 }
 
-//Stops output of DAC
 int HeliosDac::Stop(unsigned int devNum)
 {
 	if (!inited)
@@ -215,7 +223,6 @@ int HeliosDac::Stop(unsigned int devNum)
 	return dev->Stop();
 }
 
-//Sets shutter level of DAC
 int HeliosDac::SetShutter(unsigned int devNum, bool level)
 {
 	if (!inited)
@@ -232,7 +239,6 @@ int HeliosDac::SetShutter(unsigned int devNum, bool level)
 	return dev->SetShutter(level);
 }
 
-//Erase the firmware of the DAC, allowing it to be updated
 int HeliosDac::EraseFirmware(unsigned int devNum)
 {
 	if (!inited)
@@ -249,18 +255,6 @@ int HeliosDac::EraseFirmware(unsigned int devNum)
 	return dev->EraseFirmware();
 }
 
-//closes and frees all devices
-//returns true if successful
-int HeliosDac::CloseDevices()
-{
-	std::lock_guard<std::mutex> lock(threadLock);
-	inited = false;
-	deviceList.clear(); //various destructors will clean all devices
-
-	libusb_exit(NULL);
-
-	return 1;
-}
 
 /// -----------------------------------------------------------------------
 /// HELIOSDACDEVICE START
@@ -276,7 +270,7 @@ HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 	int actualLength = 0;
 	bool ok = false;
 	std::uint8_t ctrlBuffer0[32];
-	//catch lingering transfers
+	//catch any lingering transfers
 	while (libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer0, 32, &actualLength, 5) == LIBUSB_SUCCESS);
 
 	//get firmware version
@@ -318,28 +312,6 @@ HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 			repeat = false;
 	}
 
-	//get status
-	//bool quit = false;
-	//while (!quit)
-	//{
-	//	std::uint8_t ctrlBuffer4[32] = { 0x03, 0 };
-	//	if (SendControl(ctrlBuffer4, 2))
-	//	{
-	//		std::uint8_t ctrlBuffer2[32];
-	//		int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer2, 32, &actualLength, 32);
-	//		if (transferResult == LIBUSB_SUCCESS)
-	//		{
-	//			if (ctrlBuffer2[0] == 0x83) //STATUS ID
-	//			{
-	//				if (ctrlBuffer2[1] == 1)
-	//				{
-	//					quit = true; //lock will be freed on returning, effectively setting status to 1
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
-
 	closed = false;
 }
 
@@ -363,11 +335,14 @@ int HeliosDac::HeliosDacDevice::SendFrame(std::uint8_t* bufferAddress, unsigned 
 void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, unsigned int bufferSize)
 {
 	std::lock_guard<std::mutex> lock(frameLock);
+
+	//send frame
 	int actualLength = 0;
 	int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, buffer, bufferSize, &actualLength, 128);
 
 	if ((transferResult == LIBUSB_SUCCESS) && (actualLength == bufferSize))
 	{	
+		//wait for status
 		bool quit = false;
 		while (!quit && !closed)
 		{
@@ -412,11 +387,13 @@ void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, unsigned int buff
 			}
 		}
 
+		//send frame
 		int actualLength = 0;
 		int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, buffer, bufferSize, &actualLength, 256);
 
 		if ((transferResult == LIBUSB_SUCCESS) && (actualLength == bufferSize))
 		{
+			//wait for status
 			bool quit = false;
 			while (!quit && !closed)
 			{
