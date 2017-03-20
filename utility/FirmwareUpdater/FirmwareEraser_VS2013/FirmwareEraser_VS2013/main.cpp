@@ -1,43 +1,21 @@
-
-#include "main.h"
+#include "HeliosDac.h"
+#include <cstdio>
 
 int main()
 {
 	HeliosDac dac = HeliosDac();
 	int numDacs = dac.OpenDevices();
+
+	printf("\nFound %d DACs.\n", numDacs);
 	
-	if (numDacs >= 1)
+	for (int i = 0; i < numDacs; i++)
 	{
-		uint8_t ctrlBuffer[2] = { 0x04, 0 };
-		int result = dac.SendControl(0, &ctrlBuffer[0], 2);
-		if (result)
-		{
-			uint8_t response[32];
-			result = dac.GetControlResponse(0, &response[0], 5);
-			if ((result > 4) && (response[0] == 0x84))
-			{	
-				uint32_t version = (	response[1] << 0 |
-												response[2] << 8 |
-												response[3] << 16 |
-												response[4] << 24 );
-				std::cout << "\nCurrent firmware version: " << version << "\n";
-			}
-			else 
-				std::cout << "\nCould not get current firmware version.\n";
-		}
-		else
-			std::cout << "\nECould not get current firmware version.\n";
-
-		ctrlBuffer[0] = 0xDE;
-
-		dac.SendControl(0, &ctrlBuffer[0], 2);
-		std::cout << "Sent firmware erase command.\n";
+		char name[32];
+		int fw = dac.GetFirmwareVersion(i);
+		dac.GetName(i, name);
+		printf("Erasing DAC %d: Name: %s , Current Firmware version: %d\n", numDacs, name, fw);
+		dac.EraseFirmware(i);
 	}
-	else
-	{
-		std::cout << "ERROR: Could not connect to Helios.";
-	}
-		
 
 	dac.CloseDevices();
 

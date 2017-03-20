@@ -17,7 +17,6 @@
   <ItemGroup>
     <ClInclude Include="HeliosDac.h" />
     <ClInclude Include="libusb.h" />
-    <ClInclude Include="main.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DD8A9F0B-6F75-4BF1-BD6B-99057AD7DFB2}</ProjectGuid>
