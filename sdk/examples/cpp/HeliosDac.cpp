@@ -83,6 +83,9 @@ int HeliosDac::OpenDevices()
 
 int HeliosDac::CloseDevices()
 {
+	if (!inited)
+		return HELIOS_ERROR;
+
 	std::lock_guard<std::mutex> lock(threadLock);
 	inited = false;
 	deviceList.clear(); //various destructors will clean all devices
