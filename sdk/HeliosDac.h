@@ -93,6 +93,8 @@ public:
 	//	Bit 1 = if 1, play frame only once, instead of repeating until another frame is written
 	//	Bit 2-7 = reserved
 	//points: pointer to point data. See point structure declaration earlier in this document
+	//NB! This function is asynchronous, so the points buffer must not be freed immediately after calling this function. It is safe to free
+	//the points buffer once the status (GetStatus()) has returned to 1.
 	//numOfPoints: number of points in the frame
 	int WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
 

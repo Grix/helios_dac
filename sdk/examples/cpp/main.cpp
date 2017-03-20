@@ -5,7 +5,7 @@
 int main(void)
 {
 	//make frames
-	HeliosDacClass::HeliosPoint frame[30][1000];
+	HeliosPoint frame[30][1000];
 	int x = 0;
 	int y = 0;
 	for (int i = 0; i < 30; i++)
@@ -28,7 +28,7 @@ int main(void)
 	}
 
 	//connect to DACs and output frames
-	HeliosDacClass helios;
+	HeliosDac helios;
 	int numDevs = helios.OpenDevices();
 
 	int i = 0;

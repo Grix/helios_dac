@@ -53,7 +53,9 @@ HELIOS_EXPORT int GetStatus(unsigned int dacNum);
 //	Bit 0 (LSB) = if true, start output immediately, instead of waiting for current frame (if there is one) to finish playing
 //	Bit 1 = if true, play frame only once, instead of repeating until another frame is written
 //	Bit 2-7 = reserved
-//points: pointer to point data. See point structure documentation in main.h
+//points: pointer to point data. See point structure documentation in HeliosDac.h
+//NB! This function is asynchronous, so the points buffer must not be freed immediately after calling this function. It is safe to free
+//the points buffer once the status (GetStatus()) has returned to 1.
 //numOfPoints: number of points in the frame
 //returns 1 if successful
 HELIOS_EXPORT int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints);
