@@ -155,7 +155,6 @@ extern bool usb_device_specific_request(void);
 
 //@}
 
-
 /**
  * USB Device Driver Configuration
  * @{

@@ -93,8 +93,6 @@ public:
 	//	Bit 1 = if 1, play frame only once, instead of repeating until another frame is written
 	//	Bit 2-7 = reserved
 	//points: pointer to point data. See point structure declaration earlier in this document
-	//NB! This function is asynchronous, so the points buffer must not be freed immediately after calling this function. It is safe to free
-	//the points buffer once the status (GetStatus()) has returned to 1.
 	//numOfPoints: number of points in the frame
 	int WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
 
@@ -121,13 +119,13 @@ public:
 
 private:
 
-	class HeliosDacDevice
+	class HeliosDacDevice //individual dac
 	{
 	public:
 
 		HeliosDacDevice(libusb_device_handle*);
 		~HeliosDacDevice();
-		int SendFrame(std::uint8_t* buffer, unsigned int bufferSize);
+		int SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
 		int GetStatus();
 		int GetFirmwareVersion();
 		char* GetName();
@@ -147,6 +145,9 @@ private:
 		int firmwareVersion = 0;
 		char name[32];
 		bool closed = true;
+		std::uint8_t* frameBuffer1;
+		std::uint8_t* frameBuffer2;
+		int currentFrameBuffer;
 	};
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;

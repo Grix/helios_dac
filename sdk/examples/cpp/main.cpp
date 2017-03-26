@@ -1,6 +1,6 @@
 //Example program scanning a line from top to bottom on the Helios
 
-#include "main.h"
+#include "HeliosDac.h"
 
 int main(void)
 {
@@ -39,10 +39,8 @@ int main(void)
 
 		for (int j = 0; j < numDevs; j++)
 		{
-			if (helios.GetStatus(j) == 1)
-			{
-				helios.WriteFrame(j, 30000, 0, &frame[i++ % 30][0], 1000);
-			}
+			while (helios.GetStatus(j) == 0); //wait for ready status
+			helios.WriteFrame(j, 30000, 0, &frame[i++ % 30][0], 1000); //send the next frame
 		}
 	}
 

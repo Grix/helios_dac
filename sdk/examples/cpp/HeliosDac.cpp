@@ -85,7 +85,7 @@ int HeliosDac::CloseDevices()
 {
 	if (!inited)
 		return HELIOS_ERROR;
-
+	
 	std::lock_guard<std::mutex> lock(threadLock);
 	inited = false;
 	deviceList.clear(); //various destructors will clean all devices
@@ -112,26 +112,7 @@ int HeliosDac::WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t fl
 	if (dev == NULL)
 		return 0;
 
-	//prepare frame buffer
-	std::uint8_t frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
-	unsigned int bufPos = 0;
-	for (unsigned int i = 0; i < numOfPoints; i++)
-	{
-		frameBuffer[bufPos++] = (points[i].x >> 4);
-		frameBuffer[bufPos++] = ((points[i].x & 0x0F) << 4) | (points[i].y >> 8);
-		frameBuffer[bufPos++] = (points[i].y & 0xFF);
-		frameBuffer[bufPos++] = points[i].r;
-		frameBuffer[bufPos++] = points[i].g;
-		frameBuffer[bufPos++] = points[i].b;
-		frameBuffer[bufPos++] = points[i].i;
-	}
-	frameBuffer[bufPos++] = (pps & 0xFF);
-	frameBuffer[bufPos++] = (pps >> 8);
-	frameBuffer[bufPos++] = (numOfPoints & 0xFF);
-	frameBuffer[bufPos++] = (numOfPoints >> 8);
-	frameBuffer[bufPos++] = flags;
-
-	return dev->SendFrame(frameBuffer, bufPos);
+	return dev->SendFrame(pps, flags, points, numOfPoints);
 }
 
 int HeliosDac::GetStatus(unsigned int devNum)
@@ -315,19 +296,53 @@ HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 			repeat = false;
 	}
 
+	frameBuffer1 = new std::uint8_t[HELIOS_MAX_POINTS * 7 + 5];
+	frameBuffer2 = new std::uint8_t[HELIOS_MAX_POINTS * 7 + 5];
+	currentFrameBuffer = 0;
+
 	closed = false;
 }
 
 //sends a raw frame buffer (implemented as bulk transfer) to a dac device
 //returns 1 if success
-int HeliosDac::HeliosDacDevice::SendFrame(std::uint8_t* bufferAddress, unsigned int bufferSize)
+int HeliosDac::HeliosDacDevice::SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints)
 {
 	if (closed)
 		return HELIOS_ERROR;
 
 	if (GetStatus() == 1)
 	{
-		std::thread statusHandlerThread(&HeliosDac::HeliosDacDevice::DoFrame, this, bufferAddress, bufferSize);
+		//prepare frame buffer
+		std::uint8_t* frameBuffer;
+		if (currentFrameBuffer == 1)
+		{
+			frameBuffer = frameBuffer1;
+			currentFrameBuffer = 0;
+		}
+		else
+		{
+			frameBuffer = frameBuffer2;
+			currentFrameBuffer = 1;
+		}
+
+		unsigned int bufPos = 0;
+		for (unsigned int i = 0; i < numOfPoints; i++)
+		{
+			frameBuffer[bufPos++] = (points[i].x >> 4);
+			frameBuffer[bufPos++] = ((points[i].x & 0x0F) << 4) | (points[i].y >> 8);
+			frameBuffer[bufPos++] = (points[i].y & 0xFF);
+			frameBuffer[bufPos++] = points[i].r;
+			frameBuffer[bufPos++] = points[i].g;
+			frameBuffer[bufPos++] = points[i].b;
+			frameBuffer[bufPos++] = points[i].i;
+		}
+		frameBuffer[bufPos++] = (pps & 0xFF);
+		frameBuffer[bufPos++] = (pps >> 8);
+		frameBuffer[bufPos++] = (numOfPoints & 0xFF);
+		frameBuffer[bufPos++] = (numOfPoints >> 8);
+		frameBuffer[bufPos++] = flags;
+
+		std::thread statusHandlerThread(&HeliosDac::HeliosDacDevice::DoFrame, this, frameBuffer, bufPos);
 		statusHandlerThread.detach();
 		return HELIOS_SUCCESS;
 	}
@@ -611,4 +626,6 @@ HeliosDac::HeliosDacDevice::~HeliosDacDevice()
 	std::lock_guard<std::mutex>lock(frameLock); //wait until all threads have closed
 
 	libusb_close(usbHandle);
+	delete frameBuffer1;
+	delete frameBuffer2;
 }
