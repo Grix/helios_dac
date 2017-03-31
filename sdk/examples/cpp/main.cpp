@@ -39,8 +39,11 @@ int main(void)
 
 		for (int j = 0; j < numDevs; j++)
 		{
+			printf("Start");
 			while (helios.GetStatus(j) == 0); //wait for ready status
+			printf("Ready");
 			helios.WriteFrame(j, 30000, 0, &frame[i++ % 30][0], 1000); //send the next frame
+			printf("Sent");
 		}
 	}
 

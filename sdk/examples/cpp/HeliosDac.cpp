@@ -358,11 +358,16 @@ void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, unsigned int buff
 	int actualLength = 0;
 	int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, buffer, bufferSize, &actualLength, 128);
 
+	std::chrono::time_point<std::chrono::system_clock> startTime = std::chrono::system_clock::now();
+	std::chrono::time_point<std::chrono::system_clock> currentTime = startTime;
+	auto timeSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime);
+	auto timeoutTime = std::chrono::milliseconds(500);
+
 	if ((transferResult == LIBUSB_SUCCESS) && (actualLength == bufferSize))
 	{	
 		//wait for status
 		bool quit = false;
-		while (!quit && !closed)
+		while (!quit && !closed && (timeSinceStart < timeoutTime))
 		{
 			std::uint8_t ctrlBuffer[32] = { 0x03, 0 };
 			if (SendControl(ctrlBuffer, 2) == HELIOS_SUCCESS)
@@ -380,12 +385,15 @@ void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, unsigned int buff
 					}
 				}
 			}
+			currentTime = std::chrono::system_clock::now();
+			timeSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime);
+			printf(".");
 		}
 	}
 	else //get status and then try again
 	{
 		bool quit = false;
-		while (!quit && !closed)
+		while (!quit && !closed && (timeSinceStart < timeoutTime))
 		{
 			std::uint8_t ctrlBuffer[32] = { 0x03, 0 };
 			if (SendControl(ctrlBuffer, 2) == HELIOS_SUCCESS)
@@ -403,6 +411,9 @@ void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, unsigned int buff
 					}
 				}
 			}
+			currentTime = std::chrono::system_clock::now();
+			timeSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime);
+			printf(",");
 		}
 
 		//send frame
@@ -413,7 +424,7 @@ void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, unsigned int buff
 		{
 			//wait for status
 			bool quit = false;
-			while (!quit && !closed)
+			while (!quit && !closed && (timeSinceStart < timeoutTime))
 			{
 				std::uint8_t ctrlBuffer[32] = { 0x03, 0 };
 				if (SendControl(ctrlBuffer, 2) == HELIOS_SUCCESS)
@@ -431,6 +442,9 @@ void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, unsigned int buff
 						}
 					}
 				}
+				currentTime = std::chrono::system_clock::now();
+				timeSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime);
+				printf("-");
 			}
 		}
 	}
@@ -584,40 +598,19 @@ int HeliosDac::HeliosDacDevice::SendControl(std::uint8_t* bufferAddress, unsigne
 	{
 		if (actualLength == length)
 			return HELIOS_SUCCESS;
-		else
-			return HELIOS_ERROR;
 	}
-	else
-	{
-		if ((transferResult == LIBUSB_ERROR_NO_DEVICE) || (transferResult == LIBUSB_ERROR_NOT_FOUND) || (transferResult == LIBUSB_ERROR_IO)) //critical errors
-		{
-			for (int i = 0; i < 5; i++) //try again a few times, if not successful, the device is probably plugged out so close it
-			{
-				int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, bufferAddress, length, &actualLength, 16);
-				if (transferResult == LIBUSB_SUCCESS)
-				{
-					if (actualLength == length)
-						return HELIOS_SUCCESS;
-					else
-						return HELIOS_ERROR;
-				}
-				else
-				{
-					if ((transferResult != LIBUSB_ERROR_NO_DEVICE) && (transferResult != LIBUSB_ERROR_NOT_FOUND) && (transferResult != LIBUSB_ERROR_IO))
-						return HELIOS_ERROR;
-				}
-			}
-			closed = true;
-			return HELIOS_ERROR;
-		}
 
-		//if another error (likely timeout), try again once just in case
-		transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, bufferAddress, length, &actualLength, 32);
-		if ((transferResult == LIBUSB_SUCCESS) && (actualLength == length))
-			return HELIOS_SUCCESS;
-		else
-			return HELIOS_ERROR;
+	for (int i = 0; i < 5; i++)
+	{
+		int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, bufferAddress, length, &actualLength, 16);
+		if (transferResult == LIBUSB_SUCCESS)
+		{
+			if (actualLength == length)
+				return HELIOS_SUCCESS;
+		}
 	}
+
+	return HELIOS_ERROR;
 }
 
 HeliosDac::HeliosDacDevice::~HeliosDacDevice()
