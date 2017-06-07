@@ -241,7 +241,7 @@ int HeliosDac::EraseFirmware(unsigned int devNum)
 
 
 /// -----------------------------------------------------------------------
-/// HELIOSDACDEVICE START
+/// HELIOSDACDEVICE START (one instance for each connected DAC)
 /// -----------------------------------------------------------------------
 
 HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
@@ -253,8 +253,9 @@ HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 
 	int actualLength = 0;
 	bool ok = false;
-	std::uint8_t ctrlBuffer0[32];
+
 	//catch any lingering transfers
+	std::uint8_t ctrlBuffer0[32];
 	while (libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer0, 32, &actualLength, 5) == LIBUSB_SUCCESS);
 
 	//get firmware version
@@ -296,11 +297,12 @@ HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 			repeat = false;
 	}
 
-	frameBuffer1 = new std::uint8_t[HELIOS_MAX_POINTS * 7 + 5];
-	frameBuffer2 = new std::uint8_t[HELIOS_MAX_POINTS * 7 + 5];
-	currentFrameBuffer = 0;
+	frameBuffer = new std::uint8_t[HELIOS_MAX_POINTS * 7 + 5];
 
 	closed = false;
+
+	std::thread frameHandlerThread(&HeliosDac::HeliosDacDevice::FrameHandler, this);
+	frameHandlerThread.detach();
 }
 
 //sends a raw frame buffer (implemented as bulk transfer) to a dac device
@@ -312,19 +314,6 @@ int HeliosDac::HeliosDacDevice::SendFrame(unsigned int pps, std::uint8_t flags, 
 
 	if (GetStatus() == 1)
 	{
-		//prepare frame buffer
-		std::uint8_t* frameBuffer;
-		if (currentFrameBuffer == 1)
-		{
-			frameBuffer = frameBuffer1;
-			currentFrameBuffer = 0;
-		}
-		else
-		{
-			frameBuffer = frameBuffer2;
-			currentFrameBuffer = 1;
-		}
-
 		unsigned int bufPos = 0;
 		for (unsigned int i = 0; i < numOfPoints; i++)
 		{
@@ -342,29 +331,44 @@ int HeliosDac::HeliosDacDevice::SendFrame(unsigned int pps, std::uint8_t flags, 
 		frameBuffer[bufPos++] = (numOfPoints >> 8);
 		frameBuffer[bufPos++] = flags;
 
-		std::thread statusHandlerThread(&HeliosDac::HeliosDacDevice::DoFrame, this, frameBuffer, bufPos);
-		statusHandlerThread.detach();
+		frameBufferSize = bufPos;
+
+		frameReady = true;
 		return HELIOS_SUCCESS;
 	}
 	else
 		return HELIOS_ERROR;
 }
 
-void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, unsigned int bufferSize)
-{
-	std::lock_guard<std::mutex> lock(frameLock);
+//continually running thread, when a frame is ready, it is sent to the DAC
+void HeliosDac::HeliosDacDevice::FrameHandler()
+{ 
+	while (!closed)
+	{
+		//wait until frame is ready to be sent
+		while (!frameReady)
+			std::this_thread::sleep_for(std::chrono::microseconds(100));
 
-	//send frame
+		DoFrame();
+
+		frameReady = false;
+	}
+}
+
+//sends frame to DAC
+void HeliosDac::HeliosDacDevice::DoFrame()
+{
+	
 	int actualLength = 0;
-	int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, buffer, bufferSize, &actualLength, 128);
+	int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, frameBuffer, frameBufferSize, &actualLength, 128);
 
 	std::chrono::time_point<std::chrono::system_clock> startTime = std::chrono::system_clock::now();
 	std::chrono::time_point<std::chrono::system_clock> currentTime = startTime;
 	auto timeSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime);
 	auto timeoutTime = std::chrono::milliseconds(500);
 
-	if ((transferResult == LIBUSB_SUCCESS) && (actualLength == bufferSize))
-	{	
+	if ((transferResult == LIBUSB_SUCCESS) && (actualLength == frameBufferSize))
+	{
 		//wait for status
 		bool quit = false;
 		while (!quit && !closed && (timeSinceStart < timeoutTime))
@@ -385,15 +389,14 @@ void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, unsigned int buff
 					}
 				}
 			}
-			currentTime = std::chrono::system_clock::now();
-			timeSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime);
-			printf(".");
+			std::chrono::time_point<std::chrono::system_clock> currentTime = std::chrono::system_clock::now();
+			auto timeSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime);
 		}
 	}
 	else //get status and then try again
 	{
 		bool quit = false;
-		while (!quit && !closed && (timeSinceStart < timeoutTime))
+		while (!quit && !closed)
 		{
 			std::uint8_t ctrlBuffer[32] = { 0x03, 0 };
 			if (SendControl(ctrlBuffer, 2) == HELIOS_SUCCESS)
@@ -411,20 +414,19 @@ void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, unsigned int buff
 					}
 				}
 			}
-			currentTime = std::chrono::system_clock::now();
-			timeSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime);
-			printf(",");
+			std::chrono::time_point<std::chrono::system_clock> currentTime = std::chrono::system_clock::now();
+			auto timeSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime);
 		}
 
 		//send frame
 		int actualLength = 0;
-		int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, buffer, bufferSize, &actualLength, 256);
+		int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, frameBuffer, frameBufferSize, &actualLength, 256);
 
-		if ((transferResult == LIBUSB_SUCCESS) && (actualLength == bufferSize))
+		if ((transferResult == LIBUSB_SUCCESS) && (actualLength == frameBufferSize))
 		{
 			//wait for status
 			bool quit = false;
-			while (!quit && !closed && (timeSinceStart < timeoutTime))
+			while (!quit && !closed)
 			{
 				std::uint8_t ctrlBuffer[32] = { 0x03, 0 };
 				if (SendControl(ctrlBuffer, 2) == HELIOS_SUCCESS)
@@ -442,9 +444,8 @@ void HeliosDac::HeliosDacDevice::DoFrame(std::uint8_t* buffer, unsigned int buff
 						}
 					}
 				}
-				currentTime = std::chrono::system_clock::now();
-				timeSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime);
-				printf("-");
+				std::chrono::time_point<std::chrono::system_clock> currentTime = std::chrono::system_clock::now();
+				auto timeSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime);
 			}
 		}
 	}
@@ -512,8 +513,10 @@ int HeliosDac::HeliosDacDevice::GetStatus()
 	if (closed)
 		return HELIOS_ERROR;
 
-	std::unique_lock<std::mutex> lock(frameLock, std::try_to_lock);
-	return lock.owns_lock();
+	//this delay prevents 100% cpu usage in the case of constantly polling for the status
+	std::this_thread::sleep_for(std::chrono::microseconds(100)); 
+
+	return (int)(!frameReady);
 }
 
 //Set shutter level of DAc
@@ -598,19 +601,24 @@ int HeliosDac::HeliosDacDevice::SendControl(std::uint8_t* bufferAddress, unsigne
 	{
 		if (actualLength == length)
 			return HELIOS_SUCCESS;
+		else
+			return HELIOS_ERROR;
 	}
-
-	for (int i = 0; i < 5; i++)
+	else
 	{
-		int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, bufferAddress, length, &actualLength, 16);
-		if (transferResult == LIBUSB_SUCCESS)
+		for (int i = 0; i < 5; i++)
 		{
-			if (actualLength == length)
-				return HELIOS_SUCCESS;
+			int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, bufferAddress, length, &actualLength, 16);
+			if (transferResult == LIBUSB_SUCCESS)
+			{
+				if (actualLength == length)
+					return HELIOS_SUCCESS;
+				else
+					return HELIOS_ERROR;
+			}
 		}
+		return HELIOS_ERROR;
 	}
-
-	return HELIOS_ERROR;
 }
 
 HeliosDac::HeliosDacDevice::~HeliosDacDevice()
@@ -619,6 +627,5 @@ HeliosDac::HeliosDacDevice::~HeliosDacDevice()
 	std::lock_guard<std::mutex>lock(frameLock); //wait until all threads have closed
 
 	libusb_close(usbHandle);
-	delete frameBuffer1;
-	delete frameBuffer2;
+	delete frameBuffer;
 }

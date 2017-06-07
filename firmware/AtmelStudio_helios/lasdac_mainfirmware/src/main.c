@@ -113,8 +113,8 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 	UNUSED(ep);
 	
 	if (!connected)
-	return;
-	
+		return;
+
 	//0-n:	frame data, each point is 12-bit X+Y packed into 24-bit big-endian, 8bit R, 8bit G, 8bit B, 8bit I
 	//n:	output rate 16bit little endian
 	//n+2:	frame size in points 16bit little endian
@@ -142,7 +142,7 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 					playing = true;
 					notRepeat = newNotRepeat;
 					speed_set(outputSpeed);
-					
+
 					update_status();
 				} 
 				else

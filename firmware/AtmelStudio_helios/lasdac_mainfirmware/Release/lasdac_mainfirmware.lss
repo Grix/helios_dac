@@ -9,7 +9,7 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, CODE
   2 .bss          0000038c  20000204  00403d40  00020204  2**2
                   ALLOC
-  3 .stack        00001000  20000590  004040cc  00020204  2**0
+  3 .stack        00001200  20000590  004040cc  00020204  2**0
                   ALLOC
   4 .ARM.attributes 0000002a  00000000  00000000  00020204  2**0
                   CONTENTS, READONLY
@@ -21,7 +21,7 @@ Idx Name          Size      VMA       LMA       File off  Algn
 Disassembly of section .text:
 
 00400000 <exception_table>:
-  400000:	90 15 00 20 7d 26 40 00 79 26 40 00 79 26 40 00     ... }&@.y&@.y&@.
+  400000:	90 17 00 20 7d 26 40 00 79 26 40 00 79 26 40 00     ... }&@.y&@.y&@.
   400010:	79 26 40 00 79 26 40 00 79 26 40 00 00 00 00 00     y&@.y&@.y&@.....
 	...
   40002c:	79 26 40 00 79 26 40 00 00 00 00 00 79 26 40 00     y&@.y&@.....y&@.
@@ -4314,7 +4314,7 @@ Disassembly of section .text:
   40282c:	4770      	bx	lr
   40282e:	bf00      	nop
   402830:	2000053c 	.word	0x2000053c
-  402834:	20001590 	.word	0x20001590
+  402834:	20001790 	.word	0x20001790
   402838:	2000fffc 	.word	0x2000fffc
 
 0040283c <sleepmgr_unlock_mode>:
@@ -6407,7 +6407,7 @@ Disassembly of section .relocate:
 20000154 <SystemCoreClock>:
 20000154:	0900 003d                                   ..=.
 
-20000158 <extra_strings_desc.9208>:
+20000158 <extra_strings_desc.9220>:
 20000158:	0300 0000 0000 0000 0000 0000 0000 0000     ................
 20000168:	0000 0000                                   ....
 

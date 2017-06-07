@@ -30,7 +30,7 @@ BASIC USAGE:
 #include <chrono>
 #include <future>
 
-#define HELIOS_SDK_VERSION	5
+#define HELIOS_SDK_VERSION	6
 
 #define HELIOS_MAX_POINTS	0x1000
 #define HELIOS_MAX_RATE		0xFFFF
@@ -136,18 +136,25 @@ private:
 
 	private:
 
-		void DoFrame(std::uint8_t* buffer, unsigned int bufferSize);
+		void DoFrame2(std::uint8_t* buffer, unsigned int bufferSize);
+		void DoFrame();
+		void HeliosDac::HeliosDacDevice::FrameHandler();
 		int SendControl(std::uint8_t* buffer, unsigned int bufferSize);
 
 		struct libusb_transfer* interruptTransfer = NULL;
 		struct libusb_device_handle* usbHandle;
 		std::mutex frameLock;
+		std::mutex frameLock2;
+		bool frameReady = false;
 		int firmwareVersion = 0;
 		char name[32];
 		bool closed = true;
-		std::uint8_t* frameBuffer1;
-		std::uint8_t* frameBuffer2;
-		int currentFrameBuffer;
+		std::uint8_t* frameBuffer;
+		unsigned int frameBufferSize;
+		/*std::uint8_t* frameBuffer2;
+		int bufferSize;
+		int bufferSize2;
+		int currentFrameBuffer;*/
 	};
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;
