@@ -42,6 +42,7 @@ BASIC USAGE:
 #define HELIOS_FLAGS_DEFAULT			0
 #define HELIOS_FLAGS_START_IMMEDIATELY	(1 << 1)
 #define HELIOS_FLAGS_SINGLE_MODE		(1 << 2)
+#define HELIOS_FLAGS_DONT_BLOCK			(1 << 3)
 
 //usb properties
 #define HELIOS_VID	0x1209
@@ -91,7 +92,9 @@ public:
 	//flags: (default is 0)
 	//	Bit 0 (LSB) = if 1, start output immediately, instead of waiting for current frame (if there is one) to finish playing
 	//	Bit 1 = if 1, play frame only once, instead of repeating until another frame is written
-	//	Bit 2-7 = reserved
+	//  Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
+	//			(NB: then the function might return 1 even if it fails)
+	//	Bit 3-7 = reserved
 	//points: pointer to point data. See point structure declaration earlier in this document
 	//numOfPoints: number of points in the frame
 	int WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
@@ -119,7 +122,7 @@ public:
 
 private:
 
-	class HeliosDacDevice //individual dac
+	class HeliosDacDevice //individual dac, interal use
 	{
 	public:
 
@@ -136,7 +139,6 @@ private:
 
 	private:
 
-		void DoFrame2(std::uint8_t* buffer, unsigned int bufferSize);
 		void DoFrame();
 		void HeliosDac::HeliosDacDevice::FrameHandler();
 		int SendControl(std::uint8_t* buffer, unsigned int bufferSize);
@@ -144,17 +146,13 @@ private:
 		struct libusb_transfer* interruptTransfer = NULL;
 		struct libusb_device_handle* usbHandle;
 		std::mutex frameLock;
-		std::mutex frameLock2;
 		bool frameReady = false;
 		int firmwareVersion = 0;
 		char name[32];
 		bool closed = true;
 		std::uint8_t* frameBuffer;
 		unsigned int frameBufferSize;
-		/*std::uint8_t* frameBuffer2;
-		int bufferSize;
-		int bufferSize2;
-		int currentFrameBuffer;*/
+		int frameResult = -1;
 	};
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;

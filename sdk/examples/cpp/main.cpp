@@ -34,16 +34,27 @@ int main(void)
 	int i = 0;
 	while (1)
 	{
-		if (i > 150) //cancel after 5 animations
+		if (i > 150) //cancel after 5 cycles, 30 frames each
 			break;
 
 		for (int j = 0; j < numDevs; j++)
 		{
-			printf("Start");
-			while (helios.GetStatus(j) == 0); //wait for ready status
-			printf("Ready");
-			helios.WriteFrame(j, 30000, 0, &frame[i++ % 30][0], 1000); //send the next frame
-			printf("Sent");
+			//wait for ready status
+			for (unsigned int k = 0; k < 512; k++)
+			{
+				if (helios.GetStatus(j) == 1)
+					break;
+
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
+
+			if (helios.WriteFrame(j, 30000, HELIOS_FLAGS_DEFAULT, &frame[i++ % 30][0], 1000) == HELIOS_SUCCESS) //send the next frame
+				printf("\nSent a frame.");
+			else
+			{
+				printf("\nFailed to send frame.");
+				helios.CloseDevices();
+			}
 		}
 	}
 
