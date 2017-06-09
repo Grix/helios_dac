@@ -111,6 +111,9 @@ void SysTick_Handler() //systick timer ISR, called for each point
 void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep)
 {
 	UNUSED(ep);
+
+	//ioport_set_pin_level(PIN_POWERLED,debugVal);
+	//debugVal = !debugVal;
 	
 	if (!connected)
 		return;

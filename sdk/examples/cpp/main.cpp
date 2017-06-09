@@ -48,9 +48,7 @@ int main(void)
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			}
 
-			if (helios.WriteFrame(j, 30000, HELIOS_FLAGS_DEFAULT, &frame[i++ % 30][0], 1000) == HELIOS_SUCCESS) //send the next frame
-				printf("\nSent a frame.");
-			else
+			if (helios.WriteFrame(j, 30000, HELIOS_FLAGS_DEFAULT, &frame[i++ % 30][0], 1000) != HELIOS_SUCCESS) //send the next frame
 			{
 				printf("\nFailed to send frame.");
 				helios.CloseDevices();

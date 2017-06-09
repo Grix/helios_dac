@@ -648,6 +648,7 @@ Discarded input sections
                 0x00000000        0x4 src/main.o
  .bss.cpu_irq_prev_interrupt_state
                 0x00000000        0x1 src/main.o
+ .bss.debugVal  0x00000000        0x1 src/main.o
  .text          0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.2.1/../../../../arm-none-eabi/lib/thumb/v7e-m\libc_nano.a(lib_a-exit.o)
  .data          0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.2.1/../../../../arm-none-eabi/lib/thumb/v7e-m\libc_nano.a(lib_a-exit.o)
  .bss           0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.2.1/../../../../arm-none-eabi/lib/thumb/v7e-m\libc_nano.a(lib_a-exit.o)
@@ -942,7 +943,7 @@ START GROUP
 LOAD ../src/ASF/thirdparty/CMSIS/Lib/GCC\libarm_cortexM4l_math.a
 LOAD c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.2.1/../../../../arm-none-eabi/lib/thumb/v7e-m\libm.a
 END GROUP
-                0x00001200                __stack_size__ = 0x1200
+                0x00001000                __stack_size__ = 0x1000
 START GROUP
 LOAD c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.2.1/thumb/v7e-m\libgcc.a
 LOAD c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin/../lib/gcc/arm-none-eabi/6.2.1/../../../../arm-none-eabi/lib/thumb/v7e-m\libc_nano.a
@@ -1588,7 +1589,7 @@ LOAD c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin
  .data.SystemCoreClock
                 0x20000154        0x4 src/ASF/sam/utils/cmsis/sam4s/source/templates/system_sam4s.o
                 0x20000154                SystemCoreClock
- .data.extra_strings_desc.9220
+ .data.extra_strings_desc.9221
                 0x20000158       0x14 src/main.o
  .data.msft_compatible
                 0x2000016c       0x28 src/main.o
@@ -1715,15 +1716,15 @@ LOAD c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin
                 0x20000590                _ebss = .
                 0x20000590                _ezero = .
 
-.stack          0x20000590     0x1200 load address 0x004040cc
+.stack          0x20000590     0x1000 load address 0x004040cc
                 0x20000590                . = ALIGN (0x8)
                 0x20000590                _sstack = .
-                0x20001790                . = (. + __stack_size__)
- *fill*         0x20000590     0x1200 
-                0x20001790                . = ALIGN (0x8)
-                0x20001790                _estack = .
-                0x20001790                . = ALIGN (0x4)
-                0x20001790                _end = .
+                0x20001590                . = (. + __stack_size__)
+ *fill*         0x20000590     0x1000 
+                0x20001590                . = ALIGN (0x8)
+                0x20001590                _estack = .
+                0x20001590                . = ALIGN (0x4)
+                0x20001590                _end = .
 OUTPUT(lasdac_mainfirmware.elf elf32-littlearm)
 
 .ARM.attributes
@@ -2129,6 +2130,7 @@ dacc_set_trigger                                  src/ASF/sam/drivers/dacc/dacc.
 dacc_set_writeprotect                             src/ASF/sam/drivers/dacc/dacc.o
 dacc_write_conversion_data                        src/ASF/sam/drivers/dacc/dacc.o
                                                   src/main.o
+debugVal                                          src/main.o
 efc_disable_cloe                                  src/ASF/sam/drivers/efc/efc.o
 efc_disable_frdy_interrupt                        src/ASF/sam/drivers/efc/efc.o
 efc_enable_cloe                                   src/ASF/sam/drivers/efc/efc.o

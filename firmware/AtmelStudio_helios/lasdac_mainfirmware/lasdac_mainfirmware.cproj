@@ -314,7 +314,7 @@
   </armgcc.linker.libraries.LibrarySearchPaths>
   <armgcc.linker.optimization.GarbageCollectUnusedSections>True</armgcc.linker.optimization.GarbageCollectUnusedSections>
   <armgcc.linker.memorysettings.ExternalRAM />
-  <armgcc.linker.miscellaneous.LinkerFlags>-Wl,--defsym,__stack_size__=0x1200 -Wl,--entry=Reset_Handler -Wl,--cref -mthumb -T../src/ASF/sam/utils/linker_scripts/sam4s/sam4s2/gcc/flash.ld</armgcc.linker.miscellaneous.LinkerFlags>
+  <armgcc.linker.miscellaneous.LinkerFlags>-Wl,--defsym,__stack_size__=0x1100 -Wl,--entry=Reset_Handler -Wl,--cref -mthumb -T../src/ASF/sam/utils/linker_scripts/sam4s/sam4s2/gcc/flash.ld</armgcc.linker.miscellaneous.LinkerFlags>
   <armgcc.assembler.general.IncludePaths>
     <ListValues>
       <Value>../src/ASF/sam/drivers/tc</Value>

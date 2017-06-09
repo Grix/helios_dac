@@ -43,6 +43,7 @@ uint32_t stopTimerCounts;				//num of cycles to delay stop, defined in timer_ini
 uint32_t posData;						//XY position data
 uint8_t sdkVersion = 4;					//host driver version, for backwards compatibility 
 bool connected = false;					//connected to host driver or not
+bool debugVal = LOW;
 
 uint8_t* frameAddress;					//frame currently being played
 uint8_t* newFrameAddress;				//buffer to receive usb transfer with frame

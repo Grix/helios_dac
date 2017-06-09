@@ -153,6 +153,7 @@ private:
 		std::uint8_t* frameBuffer;
 		unsigned int frameBufferSize;
 		int frameResult = -1;
+
 	};
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;

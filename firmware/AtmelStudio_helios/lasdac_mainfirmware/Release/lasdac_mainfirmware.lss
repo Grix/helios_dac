@@ -9,7 +9,7 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, CODE
   2 .bss          0000038c  20000204  00403d40  00020204  2**2
                   ALLOC
-  3 .stack        00001200  20000590  004040cc  00020204  2**0
+  3 .stack        00001000  20000590  004040cc  00020204  2**0
                   ALLOC
   4 .ARM.attributes 0000002a  00000000  00000000  00020204  2**0
                   CONTENTS, READONLY
@@ -21,7 +21,7 @@ Idx Name          Size      VMA       LMA       File off  Algn
 Disassembly of section .text:
 
 00400000 <exception_table>:
-  400000:	90 17 00 20 7d 26 40 00 79 26 40 00 79 26 40 00     ... }&@.y&@.y&@.
+  400000:	90 15 00 20 7d 26 40 00 79 26 40 00 79 26 40 00     ... }&@.y&@.y&@.
   400010:	79 26 40 00 79 26 40 00 79 26 40 00 00 00 00 00     y&@.y&@.y&@.....
 	...
   40002c:	79 26 40 00 79 26 40 00 00 00 00 00 79 26 40 00     y&@.y&@.....y&@.
@@ -729,7 +729,7 @@ Disassembly of section .text:
   400708:	f402 6270 	and.w	r2, r2, #3840	; 0xf00
   40070c:	f041 6180 	orr.w	r1, r1, #67108864	; 0x4000000
   400710:	4311      	orrs	r1, r2
-  400712:	f003 fa05 	bl	403b20 <__efc_write_fmr_veneer>
+  400712:	f003 fa0d 	bl	403b30 <__efc_write_fmr_veneer>
   400716:	2000      	movs	r0, #0
   400718:	bd08      	pop	{r3, pc}
 	...
@@ -750,7 +750,7 @@ Disassembly of section .text:
   40073c:	f042 42b4 	orr.w	r2, r2, #1509949440	; 0x5a000000
   400740:	b2c9      	uxtb	r1, r1
   400742:	4311      	orrs	r1, r2
-  400744:	f003 f9f0 	bl	403b28 <__efc_perform_fcr_veneer>
+  400744:	f003 f9ec 	bl	403b20 <__efc_perform_fcr_veneer>
   400748:	b93c      	cbnz	r4, 40075a <efc_perform_command+0x3e>
   40074a:	2301      	movs	r3, #1
   40074c:	702b      	strb	r3, [r5, #0]
@@ -3229,7 +3229,7 @@ Disassembly of section .text:
   401e38:	462b      	mov	r3, r5
   401e3a:	210e      	movs	r1, #14
   401e3c:	4809      	ldr	r0, [pc, #36]	; (401e64 <flash_read_unique_id+0x3c>)
-  401e3e:	f001 fe77 	bl	403b30 <__efc_perform_read_sequence_veneer>
+  401e3e:	f001 fe73 	bl	403b28 <__efc_perform_read_sequence_veneer>
   401e42:	b968      	cbnz	r0, 401e60 <flash_read_unique_id+0x38>
   401e44:	2c04      	cmp	r4, #4
   401e46:	bf28      	it	cs
@@ -3257,7 +3257,7 @@ Disassembly of section .text:
   401e74:	2215      	movs	r2, #21
   401e76:	2114      	movs	r1, #20
   401e78:	4804      	ldr	r0, [pc, #16]	; (401e8c <flash_read_user_signature+0x24>)
-  401e7a:	f001 fe59 	bl	403b30 <__efc_perform_read_sequence_veneer>
+  401e7a:	f001 fe55 	bl	403b28 <__efc_perform_read_sequence_veneer>
   401e7e:	2800      	cmp	r0, #0
   401e80:	bf14      	ite	ne
   401e82:	2010      	movne	r0, #16
@@ -4314,7 +4314,7 @@ Disassembly of section .text:
   40282c:	4770      	bx	lr
   40282e:	bf00      	nop
   402830:	2000053c 	.word	0x2000053c
-  402834:	20001790 	.word	0x20001790
+  402834:	20001590 	.word	0x20001590
   402838:	2000fffc 	.word	0x2000fffc
 
 0040283c <sleepmgr_unlock_mode>:
@@ -6286,17 +6286,17 @@ Disassembly of section .text:
   403b1c:	0000      	movs	r0, r0
 	...
 
-00403b20 <__efc_write_fmr_veneer>:
-  403b20:	f85f f000 	ldr.w	pc, [pc]	; 403b24 <__efc_write_fmr_veneer+0x4>
-  403b24:	2000005d 	.word	0x2000005d
+00403b20 <__efc_perform_fcr_veneer>:
+  403b20:	f85f f000 	ldr.w	pc, [pc]	; 403b24 <__efc_perform_fcr_veneer+0x4>
+  403b24:	20000061 	.word	0x20000061
 
-00403b28 <__efc_perform_fcr_veneer>:
-  403b28:	f85f f000 	ldr.w	pc, [pc]	; 403b2c <__efc_perform_fcr_veneer+0x4>
-  403b2c:	20000061 	.word	0x20000061
+00403b28 <__efc_perform_read_sequence_veneer>:
+  403b28:	f85f f000 	ldr.w	pc, [pc]	; 403b2c <__efc_perform_read_sequence_veneer+0x4>
+  403b2c:	20000001 	.word	0x20000001
 
-00403b30 <__efc_perform_read_sequence_veneer>:
-  403b30:	f85f f000 	ldr.w	pc, [pc]	; 403b34 <__efc_perform_read_sequence_veneer+0x4>
-  403b34:	20000001 	.word	0x20000001
+00403b30 <__efc_write_fmr_veneer>:
+  403b30:	f85f f000 	ldr.w	pc, [pc]	; 403b34 <__efc_write_fmr_veneer+0x4>
+  403b34:	2000005d 	.word	0x2000005d
 
 00403b38 <__fini_array_start>:
   403b38:	004000cd 	.word	0x004000cd
@@ -6407,7 +6407,7 @@ Disassembly of section .relocate:
 20000154 <SystemCoreClock>:
 20000154:	0900 003d                                   ..=.
 
-20000158 <extra_strings_desc.9220>:
+20000158 <extra_strings_desc.9221>:
 20000158:	0300 0000 0000 0000 0000 0000 0000 0000     ................
 20000168:	0000 0000                                   ....
 
