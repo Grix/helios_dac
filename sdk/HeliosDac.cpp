@@ -309,11 +309,17 @@ HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 //returns 1 if success
 int HeliosDac::HeliosDacDevice::SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints)
 {
-	if (closed)
+	if (closed || frameReady)
 		return HELIOS_ERROR;
 
 	unsigned int bufPos = 0;
-	for (unsigned int i = 0; i < numOfPoints; i++)
+	unsigned int numOfPointsActual = numOfPoints;
+	if ((((int)numOfPoints-45) % 64) == 0)
+	{
+		numOfPointsActual--;
+	}
+
+	for (unsigned int i = 0; i < numOfPointsActual; i++)
 	{
 		frameBuffer[bufPos++] = (points[i].x >> 4);
 		frameBuffer[bufPos++] = ((points[i].x & 0x0F) << 4) | (points[i].y >> 8);
@@ -325,17 +331,8 @@ int HeliosDac::HeliosDacDevice::SendFrame(unsigned int pps, std::uint8_t flags, 
 	}
 	frameBuffer[bufPos++] = (pps & 0xFF);
 	frameBuffer[bufPos++] = (pps >> 8);
-	if (numOfPoints != 45)
-	{
-		frameBuffer[bufPos++] = (numOfPoints & 0xFF);
-		frameBuffer[bufPos++] = (numOfPoints >> 8);
-	}
-	else
-	{
-		//workaround for bug when DAC receives a frame with 45 points
-		frameBuffer[bufPos++] = ((numOfPoints-1) & 0xFF);
-		frameBuffer[bufPos++] = ((numOfPoints-1) >> 8);
-	}
+	frameBuffer[bufPos++] = (numOfPointsActual & 0xFF);
+	frameBuffer[bufPos++] = (numOfPointsActual >> 8);
 	frameBuffer[bufPos++] = flags;
 
 	frameBufferSize = bufPos;
@@ -347,12 +344,7 @@ int HeliosDac::HeliosDacDevice::SendFrame(unsigned int pps, std::uint8_t flags, 
 	}
 	else
 	{
-		DoFrame();
-
-		if (frameResult = 0)
-			return HELIOS_ERROR;
-		else if (frameResult = 1)
-			return HELIOS_SUCCESS;
+		return DoFrame();
 	}
 }
 
@@ -375,19 +367,18 @@ void HeliosDac::HeliosDacDevice::FrameHandler()
 }
 
 //sends frame to DAC
-void HeliosDac::HeliosDacDevice::DoFrame()
+int HeliosDac::HeliosDacDevice::DoFrame()
 {
 	if (closed)
-		return;
+		return HELIOS_ERROR;
 
 	int actualLength = 0;
 	int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, frameBuffer, frameBufferSize, &actualLength, 8 + (frameBufferSize >> 5));
 
 	if (transferResult == LIBUSB_SUCCESS)
-		frameResult = 1;
+		return HELIOS_SUCCESS;
 	else
-		frameResult = 0;
-	
+		return HELIOS_ERROR;
 }
 
 //Gets firmware version of DAC

@@ -111,9 +111,6 @@ void SysTick_Handler() //systick timer ISR, called for each point
 void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep)
 {
 	UNUSED(ep);
-
-	//ioport_set_pin_level(PIN_POWERLED,debugVal);
-	//debugVal = !debugVal;
 	
 	if (!connected)
 		return;
@@ -155,11 +152,7 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 				}
 			cpu_irq_leave_critical();
 		}
-		//else if (!newFrameReady)
-			//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 	}
-	//else if (!newFrameReady)
-		//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 }
 
 void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep)
@@ -180,7 +173,7 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 		}
 		else if (usbInterruptBufferAddress[0] == 0x02)	//SHUTTER
 		{
-			shutter_set( (usbInterruptBufferAddress[1] && true) );
+			shutter_set( (usbInterruptBufferAddress[1] != 0) );
 		}
 		else if (usbInterruptBufferAddress[0] == 0x03)	//STATUS/NEW FRAME POLL (deprecated)
 		{
@@ -268,7 +261,7 @@ void stop_weak(void) //outputs a blanked and centered point and stops playback
 	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk; //disable systick IRQ
 	playing = false;
 	framePos = 0;
-	newFrameReady = false;
+	update_status();
 	statusled_set(LOW);
 	
 	spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
@@ -445,23 +438,10 @@ void assign_default_name() //on first ever boot, assign default name and store t
 	}
 }
 
-void update_status() // send an usb transfer telling the host driver a new frame buffer status
+inline void update_status() //ready to receive new frame
 {
 	newFrameReady = false;
-	//uint8_t transfer[2] = {0x83, 1};
-//
-	//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
-		//
-	//if (sdkVersion > 4)
-	//{
-		//int i = 1;
-		//while ((!newFrameReady) && (connected) && (i > 0))
-		//{
-			//if (udi_vendor_interrupt_in_run(&transfer[0], 2, NULL) == true)
-				//break;
-			//i--;
-		//}
-	//}
+	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 }
 
 // Below is all to make Windows automatically install driver when plugged in
@@ -531,7 +511,7 @@ bool usb_device_specific_request(void) {
 	uint8_t* ptr = 0;
 	uint16_t size = 0;
 	
-	if (Udd_setup_type() == USB_REQ_TYPE_VENDOR) {//ioport_set_pin_level(PIN_POWERLED, LOW);
+	if (Udd_setup_type() == USB_REQ_TYPE_VENDOR) {
 		switch (udd_g_ctrlreq.req.bRequest) {
 			/// windows compatible ID handling for auto install
 			case 0x30: {

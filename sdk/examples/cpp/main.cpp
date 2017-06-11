@@ -20,9 +20,9 @@ int main(void)
 
 			frame[i][j].x = x;
 			frame[i][j].y = y;
-			frame[i][j].r = 0xFF;
-			frame[i][j].g = 0xFF;
-			frame[i][j].b = 0xFF;
+			frame[i][j].r = 0x80;
+			frame[i][j].g = 0xC0;
+			frame[i][j].b = 0x80;
 			frame[i][j].i = 0xFF;
 		}
 	}
@@ -34,6 +34,7 @@ int main(void)
 	int i = 0;
 	while (1)
 	{
+		i++;
 		if (i > 150) //cancel after 5 cycles, 30 frames each
 			break;
 
@@ -44,15 +45,8 @@ int main(void)
 			{
 				if (helios.GetStatus(j) == 1)
 					break;
-
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			}
-
-			if (helios.WriteFrame(j, 30000, HELIOS_FLAGS_DEFAULT, &frame[i++ % 30][0], 1000) != HELIOS_SUCCESS) //send the next frame
-			{
-				printf("\nFailed to send frame.");
-				helios.CloseDevices();
-			}
+			helios.WriteFrame(j, 20000, HELIOS_FLAGS_DEFAULT, &frame[i % 30][0], 1000); //send the next frame
 		}
 	}
 

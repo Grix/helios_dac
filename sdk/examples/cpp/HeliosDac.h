@@ -40,9 +40,9 @@ BASIC USAGE:
 #define HELIOS_ERROR		-1		//functions return this if something went wrong
 	
 #define HELIOS_FLAGS_DEFAULT			0
-#define HELIOS_FLAGS_START_IMMEDIATELY	(1 << 1)
-#define HELIOS_FLAGS_SINGLE_MODE		(1 << 2)
-#define HELIOS_FLAGS_DONT_BLOCK			(1 << 3)
+#define HELIOS_FLAGS_START_IMMEDIATELY	(1 << 0)
+#define HELIOS_FLAGS_SINGLE_MODE		(1 << 1)
+#define HELIOS_FLAGS_DONT_BLOCK			(1 << 2)
 
 //usb properties
 #define HELIOS_VID	0x1209
@@ -139,7 +139,7 @@ private:
 
 	private:
 
-		void DoFrame();
+		int DoFrame();
 		void HeliosDac::HeliosDacDevice::FrameHandler();
 		int SendControl(std::uint8_t* buffer, unsigned int bufferSize);
 
@@ -153,6 +153,7 @@ private:
 		std::uint8_t* frameBuffer;
 		unsigned int frameBufferSize;
 		int frameResult = -1;
+
 	};
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;
