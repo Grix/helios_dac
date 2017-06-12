@@ -28,7 +28,6 @@ BASIC USAGE:
 #include <vector>
 #include <memory>
 #include <chrono>
-#include <future>
 
 #define HELIOS_SDK_VERSION	6
 
