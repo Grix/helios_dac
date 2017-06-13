@@ -1,12 +1,13 @@
 /*
-Driver API for Helios Laser DACs
+Helios Laser DAC SDK shared library
 By Gitle Mikkelsen
 
 See HeliosDacAPI.h for documentation
 
 Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
-HeliosDAC class (part of this driver)
+HeliosDAC class
+OpenLaserShowControllerV1.0.0 header and .def file (only on windows)
 
 git repo: https://github.com/Grix/helios_dac.git
 */

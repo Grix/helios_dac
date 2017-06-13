@@ -1,5 +1,5 @@
 /*
-Driver API for Helios Laser DAC class, SOURCE
+SDK for Helios Laser DAC class, SOURCE
 By Gitle Mikkelsen
 gitlem@gmail.com
 
@@ -313,12 +313,18 @@ int HeliosDac::HeliosDacDevice::SendFrame(unsigned int pps, std::uint8_t flags, 
 		return HELIOS_ERROR;
 
 	unsigned int bufPos = 0;
+	
+	//this is a bug workaround, the mcu won't correctly receive transfers with these sizes
+	unsigned int ppsActual = pps;
 	unsigned int numOfPointsActual = numOfPoints;
 	if ((((int)numOfPoints-45) % 64) == 0)
 	{
 		numOfPointsActual--;
+		//adjust pps to keep the same frame duration even with one less point
+		ppsActual = (unsigned int)((pps * (double)numOfPointsActual / (double)numOfPoints) + 0.5); 
 	}
 
+	//prepare frame buffer
 	for (unsigned int i = 0; i < numOfPointsActual; i++)
 	{
 		frameBuffer[bufPos++] = (points[i].x >> 4);
@@ -329,8 +335,8 @@ int HeliosDac::HeliosDacDevice::SendFrame(unsigned int pps, std::uint8_t flags, 
 		frameBuffer[bufPos++] = points[i].b;
 		frameBuffer[bufPos++] = points[i].i;
 	}
-	frameBuffer[bufPos++] = (pps & 0xFF);
-	frameBuffer[bufPos++] = (pps >> 8);
+	frameBuffer[bufPos++] = (ppsActual & 0xFF);
+	frameBuffer[bufPos++] = (ppsActual >> 8);
 	frameBuffer[bufPos++] = (numOfPointsActual & 0xFF);
 	frameBuffer[bufPos++] = (numOfPointsActual >> 8);
 	frameBuffer[bufPos++] = flags;
@@ -348,7 +354,23 @@ int HeliosDac::HeliosDacDevice::SendFrame(unsigned int pps, std::uint8_t flags, 
 	}
 }
 
+//sends frame to DAC
+int HeliosDac::HeliosDacDevice::DoFrame()
+{
+	if (closed)
+		return HELIOS_ERROR;
+
+	int actualLength = 0;
+	int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, frameBuffer, frameBufferSize, &actualLength, 8 + (frameBufferSize >> 5));
+
+	if (transferResult == LIBUSB_SUCCESS)
+		return HELIOS_SUCCESS;
+	else
+		return HELIOS_ERROR;
+}
+
 //continually running thread, when a frame is ready, it is sent to the DAC
+//only used if HELIOS_FLAGS_DONT_BLOCK is used with writeframe
 void HeliosDac::HeliosDacDevice::FrameHandler()
 { 
 	while (!closed)
@@ -366,20 +388,6 @@ void HeliosDac::HeliosDacDevice::FrameHandler()
 	}
 }
 
-//sends frame to DAC
-int HeliosDac::HeliosDacDevice::DoFrame()
-{
-	if (closed)
-		return HELIOS_ERROR;
-
-	int actualLength = 0;
-	int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, frameBuffer, frameBufferSize, &actualLength, 8 + (frameBufferSize >> 5));
-
-	if (transferResult == LIBUSB_SUCCESS)
-		return HELIOS_SUCCESS;
-	else
-		return HELIOS_ERROR;
-}
 
 //Gets firmware version of DAC
 int HeliosDac::HeliosDacDevice::GetFirmwareVersion()
