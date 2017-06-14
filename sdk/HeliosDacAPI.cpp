@@ -148,7 +148,7 @@ OLSC_API int __stdcall OLSC_GetDeviceCapabilities(int device_number, struct LASE
 		return OLSC_ERROR_NONE;
 
 	device_capabilities.color_resolution = 8;
-	device_capabilities.xy_resolution = 12;
+	device_capabilities.xy_resolution = 16;
 	device_capabilities.has_dmx_in = false;
 	device_capabilities.has_dmx_out = false;
 	device_capabilities.has_ttl_in = false;
@@ -206,8 +206,8 @@ OLSC_API int __stdcall OLSC_WriteFrame(int device_number, struct LASER_SHOW_DEVI
 	HeliosPoint frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
 	for (int i = 0; i < frame.point_count; i++)
 	{
-		frameBuffer[i].x = (frame.points[i].x >> 4);
-		frameBuffer[i].y = (frame.points[i].y >> 4);
+		frameBuffer[i].x = (frame.points[i].x);
+		frameBuffer[i].y = (frame.points[i].y);
 		frameBuffer[i].r = (std::uint8_t)frame.points[i].r;
 		frameBuffer[i].g = (std::uint8_t)frame.points[i].g;
 		frameBuffer[i].b = (std::uint8_t)frame.points[i].b;

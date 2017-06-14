@@ -317,19 +317,20 @@ int HeliosDac::HeliosDacDevice::SendFrame(unsigned int pps, std::uint8_t flags, 
 	//this is a bug workaround, the mcu won't correctly receive transfers with these sizes
 	unsigned int ppsActual = pps;
 	unsigned int numOfPointsActual = numOfPoints;
-	if ((((int)numOfPoints-45) % 64) == 0)
-	{
-		numOfPointsActual--;
-		//adjust pps to keep the same frame duration even with one less point
-		ppsActual = (unsigned int)((pps * (double)numOfPointsActual / (double)numOfPoints) + 0.5); 
-	}
+	//if ((((int)numOfPoints-45) % 64) == 0)
+	//{
+	//	numOfPointsActual--;
+	//	//adjust pps to keep the same frame duration even with one less point
+	//	ppsActual = (unsigned int)((pps * (double)numOfPointsActual / (double)numOfPoints) + 0.5); 
+	//}
 
 	//prepare frame buffer
 	for (unsigned int i = 0; i < numOfPointsActual; i++)
 	{
-		frameBuffer[bufPos++] = (points[i].x >> 4);
-		frameBuffer[bufPos++] = ((points[i].x & 0x0F) << 4) | (points[i].y >> 8);
+		frameBuffer[bufPos++] = (points[i].x & 0xFF);
+		frameBuffer[bufPos++] = (points[i].x >> 8);
 		frameBuffer[bufPos++] = (points[i].y & 0xFF);
+		frameBuffer[bufPos++] = (points[i].y >> 8);
 		frameBuffer[bufPos++] = points[i].r;
 		frameBuffer[bufPos++] = points[i].g;
 		frameBuffer[bufPos++] = points[i].b;
@@ -361,7 +362,7 @@ int HeliosDac::HeliosDacDevice::DoFrame()
 		return HELIOS_ERROR;
 
 	int actualLength = 0;
-	int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, frameBuffer, frameBufferSize, &actualLength, 8 + (frameBufferSize >> 5));
+	int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, frameBuffer, frameBufferSize, &actualLength, 16 + (frameBufferSize >> 5));
 
 	if (transferResult == LIBUSB_SUCCESS)
 		return HELIOS_SUCCESS;

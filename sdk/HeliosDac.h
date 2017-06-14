@@ -68,8 +68,8 @@ cannot receive a new frame until the currently playing frame finishes, freeing u
 //point data structure
 typedef struct
 {
-	std::uint16_t x; //12 bit (from 0 to 0xFFF)
-	std::uint16_t y; //12 bit (from 0 to 0xFFF)
+	std::uint16_t x; //16 bit (from 0 to 0xFFFF)
+	std::uint16_t y; //16 bit (from 0 to 0xFFFF)
 	std::uint8_t r;	//8 bit	(from 0 to 0xFF)
 	std::uint8_t g;	//8 bit (from 0 to 0xFF)
 	std::uint8_t b;	//8 bit (from 0 to 0xFF)
