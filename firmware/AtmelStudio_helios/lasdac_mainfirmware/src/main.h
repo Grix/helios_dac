@@ -24,9 +24,9 @@ Required Atmel Software Framework modules:
 
 //macros
 #define FIRMWARE_VERSION 5			//firmware version number
-#define MAXSPEED 0xFFFF				//in pps	(65535)
+#define MAXSPEED 0xFFFF				//in pps
 #define MINSPEED 7					//in pps
-#define MAXFRAMESIZE 0x1000			//in points (4096)
+#define MAXFRAMESIZE 0xE00			//in points
 #define WDT_PERIOD 500				//watchdog timer period in ms
 
 //global variables

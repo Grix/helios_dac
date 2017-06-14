@@ -21,8 +21,8 @@ Required Atmel Software Framework modules:
 int main (void)
 {
 	//allocate memory to buffers
-	frameAddress = malloc(MAXFRAMESIZE * 7 + 5);
-	newFrameAddress = malloc(MAXFRAMESIZE * 7 + 5);
+	frameAddress = malloc(MAXFRAMESIZE * 8 + 5);
+	newFrameAddress = malloc(MAXFRAMESIZE * 8 + 5);
 	usbInterruptBufferAddress = malloc(32);
 	
 	//start modules
@@ -78,7 +78,7 @@ void SysTick_Handler() //systick timer ISR, called for each point
 				frameSize = newFrameSize;
 				notRepeat = newNotRepeat;
 				point_output();
-				framePos += 7;
+				framePos += 8;
 				speed_set(outputSpeed);
 				
 				update_status();
@@ -90,7 +90,7 @@ void SysTick_Handler() //systick timer ISR, called for each point
 					//loop frame
 					framePos = 0;
 					point_output();
-					framePos += 7;
+					framePos += 8;
 				}
 				else
 				{
@@ -103,7 +103,7 @@ void SysTick_Handler() //systick timer ISR, called for each point
 		{
 			//output current point
 			point_output();
-			framePos += 7;
+			framePos += 8;
 		}
 	}
 }
@@ -115,15 +115,15 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 	if (!connected)
 	return;
 	
-	//0-n:	frame data, each point is 12-bit X+Y packed into 24-bit big-endian, 8bit R, 8bit G, 8bit B, 8bit I
+	//0-n:	frame data, each point is 16-bit X little endian, 16bit Y little endian, 8bit R, 8bit G, 8bit B, 8bit I
 	//n:	output rate 16bit little endian
 	//n+2:	frame size in points 16bit little endian
 	//n+4:	flags
 		
-	if ( (status == UDD_EP_TRANSFER_OK) && (length <= MAXFRAMESIZE * 7 + 5) && !stopFlag) //if not invalid
+	if ( (status == UDD_EP_TRANSFER_OK) && (length <= MAXFRAMESIZE * 8 + 5) && !stopFlag) //if not invalid
 	{
 		uint16_t numOfPointBytes = length - 5; //from length of received data
-		uint16_t numOfPointBytes2 = ((newFrameAddress[numOfPointBytes + 3] << 8) | newFrameAddress[numOfPointBytes + 2]) * 7; //from control bytes
+		uint16_t numOfPointBytes2 = ((newFrameAddress[numOfPointBytes + 3] << 8) | newFrameAddress[numOfPointBytes + 2]) * 8; //from control bytes
 		
 		if (numOfPointBytes == numOfPointBytes2) //sanity check, skip frame if conflicting frame size information
 		{
@@ -153,10 +153,10 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 			cpu_irq_leave_critical();
 		}
 		//else if (!newFrameReady)
-			//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+			//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 8 + 5, usb_bulk_out_callback);
 	}
 	//else if (!newFrameReady)
-		//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+		//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 8 + 5, usb_bulk_out_callback);
 }
 
 void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep)
@@ -184,7 +184,7 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 			uint8_t transfer[2] = {0x83, 0};
 			if (!newFrameReady)
 			{
-				udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+				udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 8 + 5, usb_bulk_out_callback);
 				transfer[1] = 1;	
 			}
 			
@@ -246,18 +246,16 @@ inline void point_output(void) //sends point data to the DACs, data is point num
 {
 	uint8_t* currentPoint = frameAddress + framePos;
 	
-	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	{
-		posData = ((((currentPoint[0] << 4) | (currentPoint[1] >> 4)) << 16)) | ((1 << 12) | ((currentPoint[1] & 0x0F) << 8) | currentPoint[2]);
-		dacc_write_conversion_data(DACC, posData );
-	}
+	uint16_t x = (currentPoint[0] << 8) | currentPoint[1];
+	uint16_t y = (currentPoint[2] << 8) | currentPoint[3];
+	//output x and y to DAC here....
 	
-	spi_write(SPI, (currentPoint[3] << 4) | (0b1101 << 12), 0, 0); //R
-	spi_write(SPI, (currentPoint[4] << 4) | (0b1001 << 12), 0, 0); //G
-	spi_write(SPI, (currentPoint[5] << 4) | (0b0101 << 12), 0, 0); //B
-	spi_write(SPI, (currentPoint[6] << 4) | (0b0001 << 12), 0, 0); //I
+	spi_write(SPI, (currentPoint[4] << 4) | (0b1101 << 12), 0, 0); //R
+	spi_write(SPI, (currentPoint[5] << 4) | (0b1001 << 12), 0, 0); //G
+	spi_write(SPI, (currentPoint[6] << 4) | (0b0101 << 12), 0, 0); //B
+	spi_write(SPI, (currentPoint[7] << 4) | (0b0001 << 12), 0, 0); //I
 	
-	statusled_set( (currentPoint[6] != 0) ); //turn on status led if not blanked
+	statusled_set( (currentPoint[7] != 0) ); //turn on status led if not blanked
 }
 
 void stop_weak(void) //outputs a blanked and centered point and stops playback
@@ -288,12 +286,8 @@ void TC0_Handler(void)
 	tc_stop(TC0,0);
 	
 	stop_weak();
-	
-	if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
-	{
-		posData = (0x800 << 16) | ((1 << 12) | 0x800);
-		dacc_write_conversion_data(DACC, posData ); //center XY
-	}
+
+	//output 0x8000 and 0x8000 to XY dac here (centering)	
 	
 	stopFlag = false;
 	
@@ -324,7 +318,7 @@ int callback_vendor_enable(void) //usb connection opened, preparing for activity
 	sleepmgr_lock_mode(SLEEPMGR_ACTIVE);
 	
 	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 32, usb_interrupt_out_callback);
-	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 8 + 5, usb_bulk_out_callback);
 	
 	return 1;
 }
@@ -445,20 +439,6 @@ void assign_default_name() //on first ever boot, assign default name and store t
 void update_status() // send an usb transfer telling the host driver a new frame buffer status
 {
 	newFrameReady = false;
-	//uint8_t transfer[2] = {0x83, 1};
-//
-	//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
-		//
-	//if (sdkVersion > 4)
-	//{
-		//int i = 1;
-		//while ((!newFrameReady) && (connected) && (i > 0))
-		//{
-			//if (udi_vendor_interrupt_in_run(&transfer[0], 2, NULL) == true)
-				//break;
-			//i--;
-		//}
-	//}
 }
 
 // Below is all to make Windows automatically install driver when plugged in
