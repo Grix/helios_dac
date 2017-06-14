@@ -1,5 +1,5 @@
 /*
-Driver API for Helios Laser DAC class, HEADER
+SDK for Helios Laser DAC class, HEADER
 By Gitle Mikkelsen
 gitlem@gmail.com
 
@@ -11,11 +11,19 @@ git repo: https://github.com/Grix/helios_dac.git
 
 BASIC USAGE:
 1.	Call OpenDevices() to open devices, returns number of available devices.
-2.	To send a new frame, first call GetStatus(). If the function returns ready (1), 
+2.	To send a frame to the DAC, first call GetStatus(). If the function returns ready (1), 
 	then you can call WriteFrame(). The status should be polled until it returns ready. 
 	It can and sometimes will fail to return ready on the first try.
 3.  To stop output, use Stop(). To restart output you must send a new frame as described above.
 4.	When the DAC is no longer needed, destroy the instance (destructors will free everything and close the connection)
+
+The DAC is double-buffered. When it receives its first frame, it starts outputting it. When a second frame is sent to 
+the DAC while the first frame is being played, the second frame is stored in the DACs memory until the first frame 
+finishes playback, at which point the second, buffered frame will start playing. If the DAC finished playback of a frame
+without having received and buffered a second frame, it will by default loop the first frame until a new frame is
+received (but the flag HELIOS_FLAG_SINGLE_MODE will make it stop playback instead).
+The GetStatus() function actually checks whether or not the buffer on the DAC is empty or full. If it is full, the DAC
+cannot receive a new frame until the currently playing frame finishes, freeing up the buffer.
 */
 
 #pragma once
@@ -28,9 +36,8 @@ BASIC USAGE:
 #include <vector>
 #include <memory>
 #include <chrono>
-#include <future>
 
-#define HELIOS_SDK_VERSION	5
+#define HELIOS_SDK_VERSION	6
 
 #define HELIOS_MAX_POINTS	0x1000
 #define HELIOS_MAX_RATE		0xFFFF
@@ -40,8 +47,9 @@ BASIC USAGE:
 #define HELIOS_ERROR		-1		//functions return this if something went wrong
 	
 #define HELIOS_FLAGS_DEFAULT			0
-#define HELIOS_FLAGS_START_IMMEDIATELY	(1 << 1)
-#define HELIOS_FLAGS_SINGLE_MODE		(1 << 2)
+#define HELIOS_FLAGS_START_IMMEDIATELY	(1 << 0)
+#define HELIOS_FLAGS_SINGLE_MODE		(1 << 1)
+#define HELIOS_FLAGS_DONT_BLOCK			(1 << 2)
 
 //usb properties
 #define HELIOS_VID	0x1209
@@ -91,7 +99,9 @@ public:
 	//flags: (default is 0)
 	//	Bit 0 (LSB) = if 1, start output immediately, instead of waiting for current frame (if there is one) to finish playing
 	//	Bit 1 = if 1, play frame only once, instead of repeating until another frame is written
-	//	Bit 2-7 = reserved
+	//  Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
+	//			(NB: then the function might return 1 even if it fails)
+	//	Bit 3-7 = reserved
 	//points: pointer to point data. See point structure declaration earlier in this document
 	//numOfPoints: number of points in the frame
 	int WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
@@ -119,7 +129,7 @@ public:
 
 private:
 
-	class HeliosDacDevice //individual dac
+	class HeliosDacDevice //individual dac, interal use
 	{
 	public:
 
@@ -136,18 +146,21 @@ private:
 
 	private:
 
-		void DoFrame(std::uint8_t* buffer, unsigned int bufferSize);
+		int DoFrame();
+		void HeliosDac::HeliosDacDevice::FrameHandler();
 		int SendControl(std::uint8_t* buffer, unsigned int bufferSize);
 
 		struct libusb_transfer* interruptTransfer = NULL;
 		struct libusb_device_handle* usbHandle;
 		std::mutex frameLock;
+		bool frameReady = false;
 		int firmwareVersion = 0;
 		char name[32];
 		bool closed = true;
-		std::uint8_t* frameBuffer1;
-		std::uint8_t* frameBuffer2;
-		int currentFrameBuffer;
+		std::uint8_t* frameBuffer;
+		unsigned int frameBufferSize;
+		int frameResult = -1;
+
 	};
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;
