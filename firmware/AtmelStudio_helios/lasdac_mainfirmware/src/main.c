@@ -113,8 +113,8 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 	UNUSED(ep);
 	
 	if (!connected)
-		return;
-
+	return;
+	
 	//0-n:	frame data, each point is 12-bit X+Y packed into 24-bit big-endian, 8bit R, 8bit G, 8bit B, 8bit I
 	//n:	output rate 16bit little endian
 	//n+2:	frame size in points 16bit little endian
@@ -142,7 +142,7 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 					playing = true;
 					notRepeat = newNotRepeat;
 					speed_set(outputSpeed);
-
+					
 					update_status();
 				} 
 				else
@@ -152,7 +152,11 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 				}
 			cpu_irq_leave_critical();
 		}
+		//else if (!newFrameReady)
+			//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 	}
+	//else if (!newFrameReady)
+		//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
 }
 
 void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep)
@@ -173,7 +177,7 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 		}
 		else if (usbInterruptBufferAddress[0] == 0x02)	//SHUTTER
 		{
-			shutter_set( (usbInterruptBufferAddress[1] != 0) );
+			shutter_set( (usbInterruptBufferAddress[1] && true) );
 		}
 		else if (usbInterruptBufferAddress[0] == 0x03)	//STATUS/NEW FRAME POLL (deprecated)
 		{
@@ -261,7 +265,7 @@ void stop_weak(void) //outputs a blanked and centered point and stops playback
 	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk; //disable systick IRQ
 	playing = false;
 	framePos = 0;
-	update_status();
+	newFrameReady = false;
 	statusled_set(LOW);
 	
 	spi_write(SPI, (0b0010 << 12), 0, 0); //blank all colors
@@ -438,10 +442,23 @@ void assign_default_name() //on first ever boot, assign default name and store t
 	}
 }
 
-inline void update_status() //ready to receive new frame
+void update_status() // send an usb transfer telling the host driver a new frame buffer status
 {
 	newFrameReady = false;
-	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+	//uint8_t transfer[2] = {0x83, 1};
+//
+	//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 7 + 5, usb_bulk_out_callback);
+		//
+	//if (sdkVersion > 4)
+	//{
+		//int i = 1;
+		//while ((!newFrameReady) && (connected) && (i > 0))
+		//{
+			//if (udi_vendor_interrupt_in_run(&transfer[0], 2, NULL) == true)
+				//break;
+			//i--;
+		//}
+	//}
 }
 
 // Below is all to make Windows automatically install driver when plugged in
@@ -511,7 +528,7 @@ bool usb_device_specific_request(void) {
 	uint8_t* ptr = 0;
 	uint16_t size = 0;
 	
-	if (Udd_setup_type() == USB_REQ_TYPE_VENDOR) {
+	if (Udd_setup_type() == USB_REQ_TYPE_VENDOR) {//ioport_set_pin_level(PIN_POWERLED, LOW);
 		switch (udd_g_ctrlreq.req.bRequest) {
 			/// windows compatible ID handling for auto install
 			case 0x30: {

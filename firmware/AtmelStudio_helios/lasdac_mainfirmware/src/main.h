@@ -23,7 +23,7 @@ Required Atmel Software Framework modules:
 #include <string.h> //for memcpy
 
 //macros
-#define FIRMWARE_VERSION 6			//firmware version number
+#define FIRMWARE_VERSION 5			//firmware version number
 #define MAXSPEED 0xFFFF				//in pps	(65535)
 #define MINSPEED 7					//in pps
 #define MAXFRAMESIZE 0x1000			//in points (4096)
@@ -43,7 +43,6 @@ uint32_t stopTimerCounts;				//num of cycles to delay stop, defined in timer_ini
 uint32_t posData;						//XY position data
 uint8_t sdkVersion = 4;					//host driver version, for backwards compatibility 
 bool connected = false;					//connected to host driver or not
-bool debugVal = LOW;
 
 uint8_t* frameAddress;					//frame currently being played
 uint8_t* newFrameAddress;				//buffer to receive usb transfer with frame

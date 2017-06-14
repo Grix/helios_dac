@@ -20,9 +20,9 @@ int main(void)
 
 			frame[i][j].x = x;
 			frame[i][j].y = y;
-			frame[i][j].r = 0x80;
-			frame[i][j].g = 0xC0;
-			frame[i][j].b = 0x80;
+			frame[i][j].r = 0xFF;
+			frame[i][j].g = 0xFF;
+			frame[i][j].b = 0xFF;
 			frame[i][j].i = 0xFF;
 		}
 	}
@@ -34,19 +34,16 @@ int main(void)
 	int i = 0;
 	while (1)
 	{
-		i++;
-		if (i > 150) //cancel after 5 cycles, 30 frames each
+		if (i > 150) //cancel after 5 animations
 			break;
 
 		for (int j = 0; j < numDevs; j++)
 		{
-			//wait for ready status
-			for (unsigned int k = 0; k < 512; k++)
-			{
-				if (helios.GetStatus(j) == 1)
-					break;
-			}
-			helios.WriteFrame(j, 20000, HELIOS_FLAGS_DEFAULT, &frame[i % 30][0], 1000); //send the next frame
+			printf("Start");
+			while (helios.GetStatus(j) == 0); //wait for ready status
+			printf("Ready");
+			helios.WriteFrame(j, 30000, 0, &frame[i++ % 30][0], 1000); //send the next frame
+			printf("Sent");
 		}
 	}
 
