@@ -20,9 +20,9 @@ int main(void)
 
 			frame[i][j].x = x;
 			frame[i][j].y = y;
-			frame[i][j].r = 0x80;
-			frame[i][j].g = 0xC0;
-			frame[i][j].b = 0x80;
+			frame[i][j].r = 0xD0;
+			frame[i][j].g = 0xFF;
+			frame[i][j].b = 0xD0;
 			frame[i][j].i = 0xFF;
 		}
 	}
@@ -46,7 +46,7 @@ int main(void)
 				if (helios.GetStatus(j) == 1)
 					break;
 			}
-			helios.WriteFrame(j, 20000, HELIOS_FLAGS_DEFAULT, &frame[i % 30][0], 1000); //send the next frame
+			helios.WriteFrame(j, 30000, HELIOS_FLAGS_DEFAULT, &frame[i % 30][0], 1000); //send the next frame
 		}
 	}
 

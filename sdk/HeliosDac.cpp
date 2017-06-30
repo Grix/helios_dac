@@ -161,7 +161,7 @@ int HeliosDac::GetName(unsigned int devNum, char* name)
 		return HELIOS_ERROR;
 
 	char* dacName = dev->GetName();
-	if (dacName == "")
+	if (dacName[0] == '\0')
 	{
 		memcpy(name, "Helios ", 8);
 		name[7] = (char)((int)(devNum >= 10) + 48);
@@ -402,7 +402,10 @@ int HeliosDac::HeliosDacDevice::GetFirmwareVersion()
 char* HeliosDac::HeliosDacDevice::GetName()
 {
 	if (closed)
-		return "";
+	{
+		char retVal[32] = { '\0' };
+		return retVal;
+	}
 
 	std::lock_guard<std::mutex> lock(frameLock);
 
@@ -434,7 +437,8 @@ char* HeliosDac::HeliosDacDevice::GetName()
 	//if the above failed, fallback name:
 	if (!gotName)
 	{
-		return "";
+		char retVal[32] = { '\0' };
+		return retVal;
 	}
 
 	return name;

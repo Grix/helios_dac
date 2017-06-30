@@ -147,7 +147,7 @@ private:
 	private:
 
 		int DoFrame();
-		void HeliosDac::HeliosDacDevice::FrameHandler();
+		void FrameHandler();
 		int SendControl(std::uint8_t* buffer, unsigned int bufferSize);
 
 		struct libusb_transfer* interruptTransfer = NULL;
