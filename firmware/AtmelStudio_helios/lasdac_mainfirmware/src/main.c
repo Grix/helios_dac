@@ -21,8 +21,8 @@ Required Atmel Software Framework modules:
 int main (void)
 {
 	//allocate memory to buffers
-	frameAddress = malloc(MAXFRAMESIZE * 8 + 5);
-	newFrameAddress = malloc(MAXFRAMESIZE * 8 + 5);
+	frameAddress = malloc(MAXFRAMESIZE * 8 + 9);
+	newFrameAddress = malloc(MAXFRAMESIZE * 8 + 9);
 	usbInterruptBufferAddress = malloc(32);
 	
 	//start modules
@@ -166,11 +166,7 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 				}
 			cpu_irq_leave_critical();
 		}
-		//else if (!newFrameReady)
-			//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 8 + 5, usb_bulk_out_callback);
 	}
-	//else if (!newFrameReady)
-		//udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 8 + 5, usb_bulk_out_callback);
 }
 
 void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id_t ep)
@@ -198,7 +194,7 @@ void usb_interrupt_out_callback(udd_ep_status_t status, iram_size_t length, udd_
 			uint8_t transfer[2] = {0x83, 0};
 			if (!newFrameReady)
 			{
-				udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 8 + 5, usb_bulk_out_callback);
+				udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 8 + 9, usb_bulk_out_callback);
 				transfer[1] = 1;	
 			}
 			
@@ -332,7 +328,7 @@ int callback_vendor_enable(void) //usb connection opened, preparing for activity
 	sleepmgr_lock_mode(SLEEPMGR_ACTIVE);
 	
 	udi_vendor_interrupt_out_run(usbInterruptBufferAddress, 32, usb_interrupt_out_callback);
-	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 8 + 5, usb_bulk_out_callback);
+	udi_vendor_bulk_out_run(newFrameAddress, MAXFRAMESIZE * 8 + 9, usb_bulk_out_callback);
 	
 	return 1;
 }
