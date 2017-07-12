@@ -120,9 +120,9 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 	//n+2:	frame size in points 16bit little endian
 	//n+4:	flags
 		
-	if ( (status == UDD_EP_TRANSFER_OK) && (length <= MAXFRAMESIZE * 8 + 5) && !stopFlag) //if not invalid
+	if ( (status == UDD_EP_TRANSFER_OK) && (length <= MAXFRAMESIZE * 8 + 9) && !stopFlag) //if not invalid
 	{
-		uint16_t numOfPointBytes = length - 5; //from length of received data
+		uint16_t numOfPointBytes = length - 9; //from length of received data
 		uint16_t numOfPointBytes2 = ((newFrameAddress[numOfPointBytes + 3] << 8) | newFrameAddress[numOfPointBytes + 2]) * 8; //from control bytes
 		
 		if (numOfPointBytes == numOfPointBytes2) //sanity check, skip frame if conflicting frame size information
@@ -130,7 +130,14 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 			cpu_irq_enter_critical();
 				uint8_t flags = newFrameAddress[numOfPointBytes + 4];
 				newNotRepeat = (flags & (1 << 1));
-				outputSpeed = (newFrameAddress[numOfPointBytes + 1] << 8) | newFrameAddress[numOfPointBytes + 0];			
+				outputSpeed = (newFrameAddress[numOfPointBytes + 1] << 8) | newFrameAddress[numOfPointBytes + 0];		
+				
+				//voltage references, 12 bit up to 0xFFF	
+				uint16_t vRefA = (newFrameAddress[numOfPointBytes + 1] << 8) | newFrameAddress[numOfPointBytes + 0];	
+				if (vRefA > 0xFFF) vRefA = 0xFFF;
+				uint16_t vRefB = (newFrameAddress[numOfPointBytes + 1] << 8) | newFrameAddress[numOfPointBytes + 0];
+				if (vRefB > 0xFFF) vRefB = 0xFFF;	
+
 			
 				if ( (!playing) || (flags & (1 << 0)) ) //if frame is to start playing immediately
 				{
@@ -142,6 +149,13 @@ void usb_bulk_out_callback(udd_ep_status_t status, iram_size_t length, udd_ep_id
 					playing = true;
 					notRepeat = newNotRepeat;
 					speed_set(outputSpeed);
+
+					//update voltage ref dacs
+					if ((dacc_get_interrupt_status(DACC) & DACC_ISR_TXRDY) == DACC_ISR_TXRDY) //if DAC ready
+					{
+						posData = ((vRefA << 16)) | ((1 << 12) | vRefB);
+						dacc_write_conversion_data(DACC, posData );
+					}
 					
 					update_status();
 				} 

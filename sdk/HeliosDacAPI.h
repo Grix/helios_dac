@@ -1,5 +1,6 @@
 /*
 Driver API for Helios Laser DAC shared library , HEADER
+16 BIT VERSION
 By Gitle Mikkelsen
 gitlem@gmail.com
 
@@ -56,7 +57,7 @@ HELIOS_EXPORT int GetStatus(unsigned int dacNum);
 //points: pointer to point data. See point structure documentation in HeliosDac.h
 //numOfPoints: number of points in the frame
 //returns 1 if successful
-HELIOS_EXPORT int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints);
+HELIOS_EXPORT int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints, unsigned int vRefA, unsigned int vRefB);
 
 //sets the shutter of the specified dac.
 //value 1 = shutter open, value 0 = shutter closed

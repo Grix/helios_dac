@@ -1,5 +1,6 @@
 /*
 SDK for Helios Laser DAC class, SOURCE
+16 BIT VERSION
 By Gitle Mikkelsen
 gitlem@gmail.com
 
@@ -95,7 +96,7 @@ int HeliosDac::CloseDevices()
 	return HELIOS_SUCCESS;
 }
 
-int HeliosDac::WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints)
+int HeliosDac::WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints, unsigned int vRefA, unsigned int vRefB)
 {
 	if (!inited)
 		return HELIOS_ERROR;
@@ -112,7 +113,7 @@ int HeliosDac::WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t fl
 	if (dev == NULL)
 		return HELIOS_ERROR;
 
-	return dev->SendFrame(pps, flags, points, numOfPoints);
+	return dev->SendFrame(pps, flags, points, numOfPoints, vRefA, vRefB);
 }
 
 int HeliosDac::GetStatus(unsigned int devNum)
@@ -306,7 +307,7 @@ HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 
 //sends a raw frame buffer (implemented as bulk transfer) to a dac device
 //returns 1 if success
-int HeliosDac::HeliosDacDevice::SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints)
+int HeliosDac::HeliosDacDevice::SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints, unsigned int vRefA, unsigned int vRefB)
 {
 	if (closed || frameReady)
 		return HELIOS_ERROR;
@@ -339,6 +340,10 @@ int HeliosDac::HeliosDacDevice::SendFrame(unsigned int pps, std::uint8_t flags, 
 	frameBuffer[bufPos++] = (ppsActual >> 8);
 	frameBuffer[bufPos++] = (numOfPointsActual & 0xFF);
 	frameBuffer[bufPos++] = (numOfPointsActual >> 8);
+	frameBuffer[bufPos++] = (vRefA & 0xFF);
+	frameBuffer[bufPos++] = (vRefA >> 8);
+	frameBuffer[bufPos++] = (vRefB & 0xFF);
+	frameBuffer[bufPos++] = (vRefB >> 8);
 	frameBuffer[bufPos++] = flags;
 
 	frameBufferSize = bufPos;

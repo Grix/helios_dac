@@ -1,5 +1,6 @@
 /*
 SDK for Helios Laser DAC class, HEADER
+16 BIT VERSION
 By Gitle Mikkelsen
 gitlem@gmail.com
 
@@ -104,7 +105,7 @@ public:
 	//	Bit 3-7 = reserved
 	//points: pointer to point data. See point structure declaration earlier in this document
 	//numOfPoints: number of points in the frame
-	int WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
+	int WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints, unsigned int vRefA, unsigned int vRefB);
 
 	//Gets status of DAC, 1 means DAC is ready to receive frame, 0 means it is not
 	int GetStatus(unsigned int devNum);
@@ -135,7 +136,7 @@ private:
 
 		HeliosDacDevice(libusb_device_handle*);
 		~HeliosDacDevice();
-		int SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
+		int SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints, unsigned int vRefA, unsigned int vRefB);
 		int GetStatus();
 		int GetFirmwareVersion();
 		int GetName(char* name);

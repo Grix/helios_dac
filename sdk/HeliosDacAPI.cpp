@@ -1,5 +1,6 @@
 /*
 Driver API for Helios Laser DACs
+16 BIT VERSION
 By Gitle Mikkelsen
 
 See HeliosDacAPI.h for documentation
@@ -30,12 +31,12 @@ int OpenDevices()
 	return result;
 }
 
-int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints)
+int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints, unsigned int vRefA, unsigned int vRefB)
 {
 	if (!inited)
 		return HELIOS_ERROR;
 
-	return dacController->WriteFrame(dacNum, pps, flags, points, numOfPoints);
+	return dacController->WriteFrame(dacNum, pps, flags, points, numOfPoints, vRefA, vRefB);
 }
 
 int Stop(unsigned int dacNum)
@@ -215,7 +216,7 @@ OLSC_API int __stdcall OLSC_WriteFrame(int device_number, struct LASER_SHOW_DEVI
 	}
 
 	//send frame to dac
-	return dacController->WriteFrame(device_number, frame.display_speed, HELIOS_FLAGS_DEFAULT, frameBuffer, frame.point_count);
+	return dacController->WriteFrame(device_number, frame.display_speed, HELIOS_FLAGS_DEFAULT, frameBuffer, frame.point_count, 0xFFFF, 0xFFFF);
 }
 
 OLSC_API int __stdcall OLSC_GetStatus(int device_number, DWORD& status)
