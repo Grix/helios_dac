@@ -160,8 +160,8 @@ int HeliosDac::GetName(unsigned int devNum, char* name)
 	if (dev == NULL)
 		return HELIOS_ERROR;
 
-	char* dacName = dev->GetName();
-	if (dacName == "")
+	char dacName[32];
+	if (dev->GetName(dacName) == HELIOS_ERROR)
 	{
 		memcpy(name, "Helios ", 8);
 		name[7] = (char)((int)(devNum >= 10) + 48);
@@ -252,7 +252,6 @@ HeliosDac::HeliosDacDevice::HeliosDacDevice(libusb_device_handle* handle)
 	std::lock_guard<std::mutex>lock(frameLock);
 
 	int actualLength = 0;
-	bool ok = false;
 
 	//catch any lingering transfers
 	std::uint8_t ctrlBuffer0[32];
@@ -400,17 +399,16 @@ int HeliosDac::HeliosDacDevice::GetFirmwareVersion()
 }
 
 //Gets firmware version of DAC
-char* HeliosDac::HeliosDacDevice::GetName()
+int HeliosDac::HeliosDacDevice::GetName(char* dacName)
 {
 	if (closed)
-		return "";
+	{
+		return HELIOS_ERROR;
+	}
 
 	std::lock_guard<std::mutex> lock(frameLock);
 
-	bool gotName = false;
-	
-	bool repeat = true;
-	for (int i = 0; ((i < 2) && repeat); i++) //retry command if necessary
+	for (int i = 0; (i < 2); i++) //retry command if necessary
 	{
 		int actualLength = 0;
 		std::uint8_t ctrlBuffer4[2] = { 0x05, 0 };
@@ -425,20 +423,14 @@ char* HeliosDac::HeliosDacDevice::GetName()
 				{
 					ctrlBuffer5[31] = '\0';
 					memcpy(name, &ctrlBuffer5[1], 31);
-					gotName = true;
-					repeat = false;
+					memcpy(dacName, &ctrlBuffer5[1], 31);
+					return HELIOS_SUCCESS;
 				}
 			}
 		}
 	}
 
-	//if the above failed, fallback name:
-	if (!gotName)
-	{
-		return "";
-	}
-
-	return name;
+	return HELIOS_ERROR;
 }
 
 //Gets status of DAC, 1 means DAC is ready to receive frame, 0 means it's not

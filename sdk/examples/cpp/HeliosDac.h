@@ -138,7 +138,7 @@ private:
 		int SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
 		int GetStatus();
 		int GetFirmwareVersion();
-		char* GetName();
+		int GetName(char* name);
 		int SetName(char* name);
 		int SetShutter(bool level);
 		int Stop();
@@ -147,7 +147,7 @@ private:
 	private:
 
 		int DoFrame();
-		void HeliosDac::HeliosDacDevice::FrameHandler();
+		void FrameHandler();
 		int SendControl(std::uint8_t* buffer, unsigned int bufferSize);
 
 		struct libusb_transfer* interruptTransfer = NULL;
