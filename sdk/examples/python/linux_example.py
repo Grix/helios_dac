@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Example for using Helios DAC libraries in python (using C library with ctypes)
+
+NB: If you haven't set up udev rules you need to use sudo to run the program for it to detect the DAC.
 """
 
 import ctypes
