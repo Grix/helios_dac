@@ -16,7 +16,7 @@ class HeliosPoint(ctypes.Structure):
                 ('i', ctypes.c_uint8)]
 
 #Load and initialize library
-HeliosLib = ctypes.cdll.LoadLibrary("HeliosLaserDAC.dll")
+HeliosLib = ctypes.cdll.LoadLibrary(".\HeliosLaserDAC.dll")
 numDevices = HeliosLib.OpenDevices()
 
 #Create sample frames
