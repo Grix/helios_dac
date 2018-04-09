@@ -18,4 +18,9 @@ EXPORTS
 	OLSC_WriteFrame
 	OLSC_WriteFrameEx
 	OLSC_WriteTTL
-	
+	EzAudDacWriteFrame
+	EzAudDacWriteFrameNR
+	EzAudDacGetCardNum
+	EzAudDacGetStatus
+	EzAudDacClose
+	EzAudDacStop
