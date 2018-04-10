@@ -115,29 +115,6 @@ HELIOS_EXPORT int EraseFirmware(unsigned int dacNum);
 		int16_t AR;
 	};
 
-	struct EL_Pnt_s {
-		uint16_t X;
-		uint16_t Y;
-		uint8_t	R;
-		uint8_t	G;
-		uint8_t	B;
-		uint8_t	I;
-	};
-
-	/*HELIOS_EXPORT int STDCALL NetLaseGetCardNum(void);
-	HELIOS_EXPORT bool STDCALL NetLaseWriteFrame(const int *CardNum, const struct EL_Pnt_s* data, int Bytes, uint16_t PPS);
-	HELIOS_EXPORT bool STDCALL NetLaseWriteFrameNR(const int *CardNum, const struct EL_Pnt_s* data, int Bytes, uint16_t PPS, uint16_t Reps);
-	HELIOS_EXPORT int STDCALL NetLaseGetLastError(const int *CardNum);
-	HELIOS_EXPORT int STDCALL NetLaseGetStatus(const int *CardNum);
-	HELIOS_EXPORT bool STDCALL NetLaseStop(const int *CardNum);
-	HELIOS_EXPORT bool STDCALL NetLaseClose(void);
-	HELIOS_EXPORT bool STDCALL NetLaseWriteDMX(const int *CardNum, unsigned char * data);
-	HELIOS_EXPORT bool STDCALL NetLaseGetDMX(const int *CardNum, unsigned char * data);
-	HELIOS_EXPORT bool STDCALL NetLaseDMXOut(const int *CardNum, unsigned char * data, uint16_t Baseaddress, uint16_t ChannelCount);
-	HELIOS_EXPORT bool STDCALL NetLaseDMXIn(const int *CardNum, unsigned char * data, uint16_t Baseaddress, uint16_t ChannelCount);
-	HELIOS_EXPORT bool STDCALL NetLaseWriteTTL(const int *CardNum, uint16_t TTLValue);
-	HELIOS_EXPORT bool STDCALL NetLaseGetDebugInfo(const int *CardNum, void * data, uint16_t count);*/
-
 	HELIOS_EXPORT int STDCALL EzAudDacGetCardNum(void);
 	HELIOS_EXPORT bool STDCALL EzAudDacWriteFrame(const int *CardNum, const struct EAD_Pnt_s* data, int Bytes, uint16_t PPS);
 	HELIOS_EXPORT bool STDCALL EzAudDacWriteFrameNR(const int *CardNum, const struct EAD_Pnt_s* data, int Bytes, uint16_t PPS, uint16_t Reps);

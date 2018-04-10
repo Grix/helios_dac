@@ -312,7 +312,6 @@ bool STDCALL EzAudDacWriteFrame(const int *CardNum, const struct EAD_Pnt_s* data
 int STDCALL EzAudDacGetCardNum(void)
 {
 	return OpenDevices();
-	return 1;
 }
 
 int STDCALL EzAudDacGetStatus(const int *CardNum)
@@ -331,96 +330,5 @@ bool STDCALL EzAudDacStop(const int *CardNum)
 	unsigned int dacNum = *CardNum;
 	return Stop(dacNum);
 }
-
-
-//bool STDCALL NetLaseWriteFrameNR(const int *CardNum, const struct EL_Pnt_s* data, int Bytes, uint16_t PPS, uint16_t Reps)
-//{
-//	unsigned int dacNum = *CardNum;
-//	unsigned int numPoints = Bytes / sizeof(*data);
-//	HeliosPoint frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
-//	for (unsigned int i = 0; i < numPoints; i++)
-//	{
-//		frameBuffer[i].x = data[i].X;
-//		frameBuffer[i].y = data[i].Y;
-//		frameBuffer[i].r = data[i].R;
-//		frameBuffer[i].g = data[i].G;
-//		frameBuffer[i].b = data[i].B;
-//		frameBuffer[i].i = data[i].I;
-//	}
-//	if (Reps == 1)
-//		return WriteFrame(dacNum, PPS, HELIOS_FLAGS_SINGLE_MODE, frameBuffer, numPoints);
-//	else
-//		return WriteFrame(dacNum, PPS, HELIOS_FLAGS_DEFAULT, frameBuffer, numPoints); //ignore reps over 1, play continuously instead
-//}
-//
-//bool STDCALL NetLaseWriteFrame(const int *CardNum, const struct EL_Pnt_s* data, int Bytes, uint16_t PPS)
-//{
-//	unsigned int dacNum = *CardNum;
-//	unsigned int numPoints = Bytes / sizeof(*data);
-//	HeliosPoint frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
-//	for (unsigned int i = 0; i < numPoints; i++)
-//	{
-//		frameBuffer[i].x = data[i].X;
-//		frameBuffer[i].y = data[i].Y;
-//		frameBuffer[i].r = data[i].R;
-//		frameBuffer[i].g = data[i].G;
-//		frameBuffer[i].b = data[i].B;
-//		frameBuffer[i].i = data[i].I;
-//	}
-//	return WriteFrame(dacNum, PPS, HELIOS_FLAGS_DEFAULT, frameBuffer, numPoints);
-//}
-//
-//int STDCALL NetLaseGetCardNum(void)
-//{
-//	//return OpenDevices();
-//	MessageBox(NULL, L"Hello", L"Hello", MB_OK);
-//	return 1;
-//}
-//
-//int STDCALL NetLaseGetStatus(const int *CardNum)
-//{
-//	unsigned int dacNum = *CardNum;
-//	return GetStatus(dacNum);
-//}
-//
-//bool STDCALL NetLaseClose(void)
-//{
-//	return CloseDevices();
-//}
-//
-//bool STDCALL NetLaseStop(const int *CardNum)
-//{
-//	unsigned int dacNum = *CardNum;
-//	return Stop(dacNum);
-//}
-//
-//bool STDCALL NetLaseWriteDMX(const int *CardNum, unsigned char * data)
-//{
-//	return false; //not supported
-//}
-//bool STDCALL NetLaseGetDMX(const int *CardNum, unsigned char * data)
-//{
-//	return false; //not supported
-//}
-//bool STDCALL NetLaseDMXOut(const int *CardNum, unsigned char * data, uint16_t Baseaddress, uint16_t ChannelCount)
-//{
-//	return false; //not supported
-//}
-//bool STDCALL NetLaseDMXIn(const int *CardNum, unsigned char * data, uint16_t Baseaddress, uint16_t ChannelCount)
-//{
-//	return false; //not supported
-//}
-//bool STDCALL NetLaseWriteTTL(const int *CardNum, uint16_t TTLValue)
-//{
-//	return false; //not supported
-//}
-//bool STDCALL NetLaseGetDebugInfo(const int *CardNum, void * data, uint16_t count)
-//{
-//	return false; //not supported
-//}
-//int STDCALL NetLaseGetLastError(const int *CardNum)
-//{
-//	return 0; //not supported
-//}
 
 #endif
