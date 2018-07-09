@@ -24,3 +24,5 @@ EXPORTS
 	EzAudDacGetStatus
 	EzAudDacClose
 	EzAudDacStop
+	GetName
+	SetName

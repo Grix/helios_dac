@@ -81,12 +81,12 @@ HELIOS_EXPORT int GetFirmwareVersion(unsigned int dacNum);
 //returns 1 if successful, return 0 if the proper name couldn't be fetched from the DAC, but name is
 //still populated with a fallback numbered name based on order of discovery by the library
 //return -1 if unsuccessful and name is not populated.
-HELIOS_EXPORT int GetName(unsigned int dacNum, char* name);
+HELIOS_EXPORT int STDCALL GetName(unsigned int *dacNum, char* name);
 
 //gets a descriptive name of the specified dac
 //name is max 31 bytes long including null terminator
 //returns 1 if successful, return 0 if the transfer failed
-HELIOS_EXPORT int SetName(unsigned int dacNum, char* name);
+HELIOS_EXPORT int STDCALL SetName(unsigned int *dacNum, char* name);
 
 //stops, blanks and centers output on the specified dac
 //returns 1 if successful

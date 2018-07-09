@@ -47,20 +47,20 @@ int Stop(unsigned int dacNum)
 	return dacController->Stop(dacNum);
 }
 
-int GetName(unsigned int dacNum, char* name)
+int STDCALL GetName(unsigned int *dacNum, char* name)
 {
 	if (!inited)
 		return  HELIOS_ERROR;
 
-	return dacController->GetName(dacNum, name);
+	return dacController->GetName(*dacNum, name);
 }
 
-int SetName(unsigned int dacNum, char* name)
+int STDCALL SetName(unsigned int *dacNum, char* name)
 {
 	if (!inited)
 		return  HELIOS_ERROR;
 
-	return dacController->SetName(dacNum, name);
+	return dacController->SetName(*dacNum, name);
 }
 
 int GetStatus(unsigned int dacNum)
@@ -158,7 +158,7 @@ OLSC_API int __stdcall OLSC_GetDeviceCapabilities(int device_number, struct LASE
 	device_capabilities.max_speed = HELIOS_MAX_RATE;
 	device_capabilities.min_frame_size = 1;
 	device_capabilities.min_speed = HELIOS_MIN_RATE;
-	GetName(device_number, &device_capabilities.name[0]);
+	GetName((unsigned int*)&device_number, &device_capabilities.name[0]);
 	device_capabilities.uses_callbacks = false;
 	device_capabilities.version_major = 1;
 	device_capabilities.version_minor = 0;
