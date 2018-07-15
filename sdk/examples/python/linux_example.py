@@ -20,6 +20,7 @@ class HeliosPoint(ctypes.Structure):
 #Load and initialize library
 HeliosLib = ctypes.cdll.LoadLibrary("./libHeliosDacAPI.so")
 numDevices = HeliosLib.OpenDevices()
+print("Found ", numDevices, "Helios DACs")
 
 #Create sample frames
 frames = [0 for x in range(30)]
