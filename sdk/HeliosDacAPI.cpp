@@ -34,7 +34,7 @@ int OpenDevices()
 int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints)
 {
 	if (!inited)
-		return HELIOS_ERROR;
+		return HELIOS_ERROR_NOT_INITIALIZED;
 
 	return dacController->WriteFrame(dacNum, pps, flags, points, numOfPoints);
 }
@@ -42,7 +42,7 @@ int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPoint* po
 int Stop(unsigned int dacNum)
 {
 	if (!inited)
-		return HELIOS_ERROR;
+		return HELIOS_ERROR_NOT_INITIALIZED;
 
 	return dacController->Stop(dacNum);
 }
@@ -50,7 +50,7 @@ int Stop(unsigned int dacNum)
 int GetName(unsigned int dacNum, char* name)
 {
 	if (!inited)
-		return  HELIOS_ERROR;
+		return  HELIOS_ERROR_NOT_INITIALIZED;
 
 	return dacController->GetName(dacNum, name);
 }
@@ -58,7 +58,7 @@ int GetName(unsigned int dacNum, char* name)
 int SetName(unsigned int dacNum, char* name)
 {
 	if (!inited)
-		return  HELIOS_ERROR;
+		return  HELIOS_ERROR_NOT_INITIALIZED;
 
 	return dacController->SetName(dacNum, name);
 }
@@ -66,7 +66,7 @@ int SetName(unsigned int dacNum, char* name)
 int GetStatus(unsigned int dacNum)
 {
 	if (!inited)
-		return HELIOS_ERROR;
+		return HELIOS_ERROR_NOT_INITIALIZED;
 
 	return (int)dacController->GetStatus(dacNum);
 }
@@ -74,7 +74,7 @@ int GetStatus(unsigned int dacNum)
 int SetShutter(unsigned int dacNum, bool value)
 {
 	if (!inited)
-		return HELIOS_ERROR;
+		return HELIOS_ERROR_NOT_INITIALIZED;
 
 	return dacController->SetShutter(dacNum, value);
 }
@@ -82,7 +82,7 @@ int SetShutter(unsigned int dacNum, bool value)
 int GetFirmwareVersion(unsigned int dacNum)
 {
 	if (!inited)
-		return HELIOS_ERROR;
+		return HELIOS_ERROR_NOT_INITIALIZED;
 
 	return dacController->GetFirmwareVersion(dacNum);
 }
@@ -90,7 +90,7 @@ int GetFirmwareVersion(unsigned int dacNum)
 int EraseFirmware(unsigned int dacNum)
 {
 	if (!inited)
-		return  HELIOS_ERROR;
+		return  HELIOS_ERROR_NOT_INITIALIZED;
 
 	return dacController->EraseFirmware(dacNum);
 }
@@ -104,7 +104,7 @@ int CloseDevices()
 		return HELIOS_SUCCESS;
 	}
 	else
-		return HELIOS_ERROR;
+		return HELIOS_ERROR_NOT_INITIALIZED;
 }
 
 
