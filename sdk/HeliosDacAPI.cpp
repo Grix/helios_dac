@@ -39,6 +39,14 @@ int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPoint* po
 	return dacController->WriteFrame(dacNum, pps, flags, points, numOfPoints);
 }
 
+int SetLibusbDebugLogLevel(int logLevel)
+{
+	if (!inited)
+		return HELIOS_ERROR_NOT_INITIALIZED;
+
+	return dacController->SetLibusbDebugLogLevel(logLevel);
+}
+
 int Stop(unsigned int dacNum)
 {
 	if (!inited)

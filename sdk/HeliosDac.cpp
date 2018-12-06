@@ -95,6 +95,16 @@ int HeliosDac::CloseDevices()
 	return HELIOS_SUCCESS;
 }
 
+int HeliosDac::SetLibusbDebugLogLevel(int logLevel)
+{
+	if (!inited)
+		return HELIOS_ERROR_NOT_INITIALIZED;
+	
+	libusb_set_debug(NULL, logLevel);
+
+	return HELIOS_SUCCESS;
+}
+
 int HeliosDac::WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints)
 {
 	if (!inited)

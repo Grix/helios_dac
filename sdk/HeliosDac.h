@@ -122,6 +122,9 @@ public:
 
 	//closes and frees all devices
 	int CloseDevices();
+	
+	//sets debug log level in libusb
+	int SetLibusbDebugLogLevel(int logLevel);
 
 	//writes and outputs a frame to the speficied dac
 	//devNum: dac number (0 to n where n+1 is the return value from OpenDevices() )
