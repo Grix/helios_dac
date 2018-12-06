@@ -43,7 +43,7 @@ for i in range(150):
     for j in range(numDevices):
         while (HeliosLib.GetStatus(j) == 0): #Wait for ready status
             pass
-        HeliosLib.WriteFrame(0, 30000, 0, ctypes.pointer(frames[i % 30]), 1000) #Send the frame
+        HeliosLib.WriteFrame(j, 30000, 0, ctypes.pointer(frames[i % 30]), 1000) #Send the frame
 
 
 HeliosLib.CloseDevices()
