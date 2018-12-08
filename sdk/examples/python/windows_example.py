@@ -39,9 +39,11 @@ for i in range(30):
 #Play frames on DAC
 for i in range(150):
     for j in range(numDevices):
-        while (HeliosLib.GetStatus(j) == 0): #Wait for ready status
-            pass
-        HeliosLib.WriteFrame(0, 30000, 0, ctypes.pointer(frames[i % 30]), 1000) #Send the frame
+        statusAttempts = 0
+        # Make 512 attempts for DAC status to be ready. After that, just give up and try to write the frame anyway
+        while (statusAttempts < 512 and HeliosLib.GetStatus(j) != 1):
+            statusAttempts += 1
+        HeliosLib.WriteFrame(j, 30000, 0, ctypes.pointer(frames[i % 30]), 1000) #Send the frame
 
 
 HeliosLib.CloseDevices()
