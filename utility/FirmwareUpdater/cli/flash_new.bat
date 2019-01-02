@@ -1,5 +1,7 @@
 @echo off
 
+:loop
+
 echo Attempting to upload new firmware.
 
 ping -n 3 127.0.0.1 > NUL
@@ -11,3 +13,5 @@ ping -n 2 127.0.0.1 > NUL
 echo Done. Please unplug and replug the DAC again. 
 
 PAUSE
+
+goto loop
