@@ -43,8 +43,38 @@ cannot receive a new frame until the currently playing frame finishes, freeing u
 #define HELIOS_MAX_RATE		0xFFFF
 #define HELIOS_MIN_RATE		7
 
-#define HELIOS_SUCCESS		1		
-#define HELIOS_ERROR		-1		//functions return this if something went wrong
+#define HELIOS_SUCCESS		1	
+
+// Functions return negative values if something went wrong	
+// Attempted to perform an action before calling OpenDevices()
+#define HELIOS_ERROR_NOT_INITIALIZED	-1
+// Attempted to perform an action with an invalid device number
+#define HELIOS_ERROR_INVALID_DEVNUM		-2
+// WriteFrame() called with null pointer to points
+#define HELIOS_ERROR_NULL_POINTS		-3
+// WriteFrame() called with a frame containing too many points
+#define HELIOS_ERROR_TOO_MANY_POINTS	-4
+// WriteFrame() called with pps higher than maximum allowed
+#define HELIOS_ERROR_PPS_TOO_HIGH		-5
+// WriteFrame() called with pps lower than minimum allowed
+#define HELIOS_ERROR_PPS_TOO_LOW		-6
+
+// Errors from the HeliosDacDevice class begin at -1000
+// Attempted to perform an operation on a closed DAC device
+#define HELIOS_ERROR_DEVICE_CLOSED			-1000
+// Attempted to send a new frame with HELIOS_FLAGS_DONT_BLOCK before previous DoFrame() completed
+#define HELIOS_ERROR_DEVICE_FRAME_READY		-1001
+// Operation failed because SendControl() failed (if operation failed because of libusb_interrupt_transfer failure, the error code will be a libusb error instead)
+#define HELIOS_ERROR_DEVICE_SEND_CONTROL	-1002
+// Received an unexpected result from a call to SendControl()
+#define HELIOS_ERROR_DEVICE_RESULT			-1003
+// Attempted to call SendControl() with a null buffer pointer
+#define HELIOS_ERROR_DEVICE_NULL_BUFFER		-1004
+// Attempted to call SendControl() with a control signal that is too long
+#define HELIOS_ERROR_DEVICE_SIGNAL_TOO_LONG	-1005
+
+// Errors from libusb are the libusb error code added to -5000. See libusb.h for libusb error codes.
+#define HELIOS_ERROR_LIBUSB_BASE		-5000
 	
 #define HELIOS_FLAGS_DEFAULT			0
 #define HELIOS_FLAGS_START_IMMEDIATELY	(1 << 0)
@@ -92,6 +122,9 @@ public:
 
 	//closes and frees all devices
 	int CloseDevices();
+	
+	//sets debug log level in libusb
+	int SetLibusbDebugLogLevel(int logLevel);
 
 	//writes and outputs a frame to the speficied dac
 	//devNum: dac number (0 to n where n+1 is the return value from OpenDevices() )

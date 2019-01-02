@@ -56,6 +56,10 @@ HELIOS_EXPORT int OpenDevices();
 //Return 1 if ready to receive new frame, 0 if not, -1 if communcation failed
 HELIOS_EXPORT int GetStatus(unsigned int dacNum);
 
+//Sets libusb debug log level
+//See libusb.h for log level values
+HELIOS_EXPORT int SetLibusbDebugLogLevel(int logLevel);
+
 //writes and outputs a frame to the speficied dac
 //dacNum: dac number (0 to n where n+1 is the return value from OpenDevices() )
 //pps: rate of output in points per second
