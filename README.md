@@ -13,11 +13,13 @@ Open source, low cost USB DAC for the ISP-DB25 laser protocol. This repository c
 
 #### Third party software integration
 
-Navigate to the folder "sdk" to find the relevant code. You can choose to use the functions documented in HeliosDacAPI.h (shared library) or HeliosDac.h (OOP class). Basic flow for using the DAC is documented in the header files just mentioned.
+Navigate to the folder "sdk" to find the relevant code for interfacing with the Helios DAC in your software. The core SDK is written in C++, documented in HeliosDac.h. But libraries with exported functions that you can call from many languages such as python or C# are available, documented in HeliosDacAPI.h. You can also find examples of usage in the examples folder.
 
-The driver depends on libusb. You can use the included libusb binary libraries for Win32, Mac or Linux, or you can build your own. You can find the libusb source on libusb.info.
+The C++ code depends on libusb. You can use the included libusb binary libraries for Win32, Mac or Linux, or you can build your own. You can find the libusb source on libusb.info.
 
 If you wish to use the shared library, there are ready-made builds for Win32 (.dll) and 64-bit linux (.so) in the sdk folder. NB: Only the Windows binary is guaranteed to be up to date. For Mac and Linux it is recommended to build your own or use the C++ classes.
+
+If you are adding support for the Helios in your program, let me know and I can link it on the Helios' home page.
 
 Steps to compiling shared library (.so) for Linux based systems yourself:
 
