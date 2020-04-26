@@ -113,8 +113,8 @@ int HeliosDac::WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t fl
 	if (points == NULL)
 		return HELIOS_ERROR_NULL_POINTS;
 
-	if (numOfPoints > HELIOS_MAX_POINTS)
-		return HELIOS_ERROR_TOO_MANY_POINTS;
+	//if (numOfPoints > HELIOS_MAX_POINTS)
+	//	return HELIOS_ERROR_TOO_MANY_POINTS;
 
 	if (pps > HELIOS_MAX_RATE)
 		return HELIOS_ERROR_PPS_TOO_HIGH;
@@ -131,7 +131,7 @@ int HeliosDac::WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t fl
 	if (dev == NULL)
 		return HELIOS_ERROR_INVALID_DEVNUM;
 
-	return dev->SendFrame(pps, flags, points, numOfPoints);
+	return dev->SendFrame(pps, flags, points, min(numOfPoints, HELIOS_MAX_POINTS));
 }
 
 int HeliosDac::GetStatus(unsigned int devNum)

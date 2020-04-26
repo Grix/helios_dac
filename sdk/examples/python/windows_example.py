@@ -22,13 +22,13 @@ print("Found ", numDevices, "Helios DACs")
 
 #Create sample frames
 frames = [0 for x in range(30)]
-frameType = HeliosPoint * 1000
+frameType = HeliosPoint * 5000
 x = 0
 y = 0
 for i in range(30):
     y = round(i * 0xFFF / 30)
     frames[i] = frameType()
-    for j in range(1000):
+    for j in range(5000):
         if (j < 500):
             x = round(j * 0xFFF / 500)
         else:
@@ -43,7 +43,7 @@ for i in range(150):
         # Make 512 attempts for DAC status to be ready. After that, just give up and try to write the frame anyway
         while (statusAttempts < 512 and HeliosLib.GetStatus(j) != 1):
             statusAttempts += 1
-        HeliosLib.WriteFrame(j, 30000, 0, ctypes.pointer(frames[i % 30]), 1000) #Send the frame
+        HeliosLib.WriteFrame(j, 30000, 0, ctypes.pointer(frames[i % 30]), 5000) #Send the frame
 
 
 HeliosLib.CloseDevices()

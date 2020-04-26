@@ -233,7 +233,7 @@ OLSC_API int __stdcall OLSC_GetStatus(int device_number, DWORD& status)
 		return OLSC_ERROR_NONE;
 
 	std::uint8_t statusResult = GetStatus(device_number);
-	if (statusResult == HELIOS_ERROR)
+	if (statusResult < 0)
 		return OLSC_ERROR_FAILED;
 
 	if (statusResult == 1)
