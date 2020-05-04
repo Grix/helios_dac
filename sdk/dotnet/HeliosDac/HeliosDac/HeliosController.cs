@@ -84,8 +84,8 @@ namespace HeliosDac
         /// <param name="deviceNumber">DAC number. Valid range is 0 up to the number of DACs as returned by OpenDevices() minus one.</param>
         /// <param name="scanRate">Number of points per second. Valid range is 7 to 0xFFFF</param>
         /// <param name="points">Array of point data (X,Y,R,G,B,I) in the frame. Max number of points is 0x1000</param>
-        /// <param name="flags">Optional frame settings. OR'd bits defined in enum HeliosFrameFlags</param>
-        public void WriteFrame(int deviceNumber, ushort scanRate, HeliosPoint[] points, ushort flags = 0xFF )
+        /// <param name="flags">Optional frame settings, each bit is a bool. Bits defined in enum HeliosFrameFlags</param>
+        public void WriteFrame(int deviceNumber, ushort scanRate, HeliosPoint[] points, byte flags = 0xFF)
         {
             dacs[deviceNumber].WriteFrame(scanRate, points, flags);
         }
@@ -184,6 +184,7 @@ namespace HeliosDac
         UsbEndpointWriter interruptEndpointWriter;
         UsbEndpointWriter bulkEndpointWriter;
         Mutex mutex;
+        byte[] frameBuffer = new byte[MAX_POINTS];
 
         public HeliosDevice(IUsbDevice usbDevice)
         {
@@ -205,8 +206,8 @@ namespace HeliosDac
         /// </summary>
         /// <param name="scanRate">Number of points per second. Valid range is 7 to 0xFFFF</param>
         /// <param name="points">Array of point data (X,Y,R,G,B,I) in the frame. Max number of points is 0x1000</param>
-        /// <param name="flags">Optional frame settings. OR'd bits defined in enum HeliosFrameFlags</param>
-        public void WriteFrame(ushort scanRate, HeliosPoint[] points, ushort flags = 0)
+        /// <param name="flags">Optional frame settings, each bit is a bool. Bits defined in enum HeliosFrameFlags</param>
+        public void WriteFrame(ushort scanRate, HeliosPoint[] points, byte flags = 0)
         {
             // Status OK if we send {0x03, 0} and get {0x83, 1} in return
 
@@ -220,7 +221,40 @@ namespace HeliosDac
                 if (!mutex.WaitOne(1000))
                     throw new Exception("Could not acquire mutex.");
 
+                // This is a bug workaround, the MCU won't correctly receive transfers with these sizes
+                int scanRateActual = scanRate;
+                int numOfPointsActual = points.Length;
+                if (((points.Length - 45) % 64) == 0)
+                {
+                    numOfPointsActual--;
+                    scanRateActual = (int)Math.Round(scanRate * (double)numOfPointsActual / (double)points.Length); // Adjust pps to keep the same frame duration even with one less point
+                }
 
+                // Prepare frame buffer
+                int bufPos = 0;
+                for (int i = 0; i < numOfPointsActual; i++)
+                {
+                    frameBuffer[bufPos++] = (byte)(points[i].X >> 4);
+                    frameBuffer[bufPos++] = (byte)(((points[i].X & 0x0F) << 4) | (points[i].Y >> 8));
+                    frameBuffer[bufPos++] = (byte)(points[i].Y & 0xFF);
+                    frameBuffer[bufPos++] = points[i].Red;
+                    frameBuffer[bufPos++] = points[i].Green;
+                    frameBuffer[bufPos++] = points[i].Blue;
+                    frameBuffer[bufPos++] = points[i].Intensity;
+                }
+                frameBuffer[bufPos++] = (byte)(scanRateActual & 0xFF);
+                frameBuffer[bufPos++] = (byte)(scanRateActual >> 8);
+                frameBuffer[bufPos++] = (byte)(numOfPointsActual & 0xFF);
+                frameBuffer[bufPos++] = (byte)(numOfPointsActual >> 8);
+                frameBuffer[bufPos++] = flags;
+
+                // Send USB transaction
+                var result = bulkEndpointWriter.Write(frameBuffer, 0, bufPos, 8 + (bufPos >> 5), out int transferLength);
+
+                if (result != ErrorCode.Ok || transferLength == bufPos)
+                {
+                    throw new Exception("Could not send frame USB transaction. Error code: " + result.ToString() + ". Make sure you first call GetStatus() before writing a frame.");
+                }
 
             }
             catch (Exception e)
@@ -256,10 +290,10 @@ namespace HeliosDac
                         return readData[1] != 0;
                     }
                     else
-                        throw new Exception("Failed to receive USB interrupt response packet.");
+                        return false;
                 }
                 else
-                    throw new Exception("Failed to send USB interrupt packet.");
+                    throw new Exception("Failed to send USB interrupt packet. Error code: " + errorCode.ToString());
             }
             catch (Exception e)
             {
@@ -287,7 +321,7 @@ namespace HeliosDac
                 if (errorCode == ErrorCode.Ok && writeTransferLength == 2)
                     return;
                 else
-                    throw new Exception("Failed to send USB interrupt packet.");
+                    throw new Exception("Failed to send USB interrupt packet. Error code: " + errorCode.ToString());
             }
             catch (Exception e)
             {
@@ -323,7 +357,34 @@ namespace HeliosDac
         /// <returns>DAC name</returns>
         public string GetName()
         {
-            return "";
+            // If we send {0x05, 0} we should get {0x85, [name]} in return.
+
+            try
+            {
+                if (!mutex.WaitOne(3000))
+                    throw new Exception("Could not acquire mutex.");
+
+                var errorCode = interruptEndpointWriter.Write(new byte[] { 0x05, 0 }, 16, out int writeTransferLength);
+                if (errorCode == ErrorCode.Ok && writeTransferLength == 2)
+                {
+                    byte[] readData = new byte[32];
+                    errorCode = interruptEndpointReader.Read(readData, 32, out int readTransferLength);
+                    if (errorCode == ErrorCode.Ok && readTransferLength > 2 && readData[0] == 0x85)
+                        return System.Text.Encoding.ASCII.GetString(readData, 1, readTransferLength-1);
+                    else
+                        throw new Exception("Did not get valid response from DAC. Error code: " + errorCode.ToString());
+                }
+                else
+                    throw new Exception("Failed to send USB interrupt packet. Error code: " + errorCode.ToString());
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            finally
+            {
+                mutex.ReleaseMutex();
+            }
         }
 
         /// <summary>
@@ -351,19 +412,19 @@ namespace HeliosDac
     {
         public HeliosPoint(ushort x, ushort y, byte red, byte green, byte blue, byte intensity = 0xFF)
         {
-            this.x = x;
-            this.y = y;
-            this.red = red;
-            this.green = green;
-            this.blue = blue;
-            this.intensity = intensity;
+            this.X = x;
+            this.Y = y;
+            this.Red = red;
+            this.Green = green;
+            this.Blue = blue;
+            this.Intensity = intensity;
         }
-        ushort x;       // From 0 to 0xFFF
-        ushort y;       // From 0 to 0xFFF
-        byte red;       // From 0 to 0xFF
-        byte green;     // From 0 to 0xFF
-        byte blue;      // From 0 to 0xFF
-        byte intensity; // From 0 to 0xFF
+        public ushort X;       // From 0 to 0xFFF
+        public ushort Y;       // From 0 to 0xFFF
+        public byte Red;       // From 0 to 0xFF
+        public byte Green;     // From 0 to 0xFF
+        public byte Blue;      // From 0 to 0xFF
+        public byte Intensity; // From 0 to 0xFF
     }
 
     [Flags]
