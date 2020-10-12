@@ -131,7 +131,7 @@ int HeliosDac::WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t fl
 	if (dev == NULL)
 		return HELIOS_ERROR_INVALID_DEVNUM;
 
-	return dev->SendFrame(pps, flags, points, min(numOfPoints, HELIOS_MAX_POINTS));
+	return dev->SendFrame(pps, flags, points, std::min<int>(numOfPoints, HELIOS_MAX_POINTS));
 }
 
 int HeliosDac::GetStatus(unsigned int devNum)
