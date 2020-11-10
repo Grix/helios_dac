@@ -283,38 +283,38 @@ OLSC_API int __stdcall OLSC_ReadTTL(int device_number, DWORD& data)
 bool STDCALL EzAudDacWriteFrameNR(const int *CardNum, const struct EAD_Pnt_s* data, int Bytes, uint16_t PPS, uint16_t Reps)
 {
 	unsigned int dacNum = *CardNum;
-	unsigned int numPoints = Bytes / sizeof(*data);
-	HeliosPoint frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
+	unsigned int numPoints = min(Bytes / sizeof(*data), HELIOS_MAX_POINTS);
+	HeliosPoint frameBuffer[HELIOS_MAX_POINTS];
 	for (unsigned int i = 0; i < numPoints; i++)
 	{
-		frameBuffer[i].x = (data[i].X + 0xFFFF / 2) >> 4;
-		frameBuffer[i].y = (data[i].Y + 0xFFFF / 2) >> 4;
+		frameBuffer[i].x = (data[i].X);
+		frameBuffer[i].y = (data[i].Y);
 		frameBuffer[i].r = (data[i].R + 0xFFFF / 2) >> 8;
 		frameBuffer[i].g = (data[i].G + 0xFFFF / 2) >> 8;
 		frameBuffer[i].b = (data[i].B + 0xFFFF / 2) >> 8;
 		frameBuffer[i].i = (data[i].I + 0xFFFF / 2) >> 8;
 	}
 	if (Reps == 1)
-		return WriteFrame(dacNum, PPS, HELIOS_FLAGS_SINGLE_MODE, frameBuffer, numPoints);
+		return WriteFrame(dacNum, PPS, HELIOS_FLAGS_SINGLE_MODE | HELIOS_FLAGS_DONT_BLOCK, frameBuffer, numPoints);
 	else
-		return WriteFrame(dacNum, PPS, HELIOS_FLAGS_DEFAULT, frameBuffer, numPoints); //ignore reps over 1, play continuously instead
+		return WriteFrame(dacNum, PPS, HELIOS_FLAGS_DEFAULT | HELIOS_FLAGS_DONT_BLOCK, frameBuffer, numPoints); //ignore reps over 1, play continuously instead
 }
 
 bool STDCALL EzAudDacWriteFrame(const int *CardNum, const struct EAD_Pnt_s* data, int Bytes, uint16_t PPS)
 {
 	unsigned int dacNum = *CardNum;
-	unsigned int numPoints = Bytes / sizeof(*data);
-	HeliosPoint frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
+	unsigned int numPoints = min(Bytes / sizeof(*data), HELIOS_MAX_POINTS);
+	HeliosPoint frameBuffer[HELIOS_MAX_POINTS];
 	for (unsigned int i = 0; i < numPoints; i++)
 	{
-		frameBuffer[i].x = (data[i].X + 0xFFFF/2) >> 4;
-		frameBuffer[i].y = (data[i].Y + 0xFFFF/2) >> 4;
+		frameBuffer[i].x = (data[i].X);
+		frameBuffer[i].y = (data[i].Y);
 		frameBuffer[i].r = (data[i].R + 0xFFFF/2) >> 8;
 		frameBuffer[i].g = (data[i].G + 0xFFFF/2) >> 8;
 		frameBuffer[i].b = (data[i].B + 0xFFFF/2) >> 8;
 		frameBuffer[i].i = (data[i].I + 0xFFFF/2) >> 8;
 	}
-	return WriteFrame(dacNum, PPS, HELIOS_FLAGS_DEFAULT, frameBuffer, numPoints);
+	return WriteFrame(dacNum, PPS, HELIOS_FLAGS_DEFAULT | HELIOS_FLAGS_DONT_BLOCK, frameBuffer, numPoints);
 }
 
 int STDCALL EzAudDacGetCardNum(void)

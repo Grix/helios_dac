@@ -170,7 +170,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>..\..\..\libusb\$(PlatformName)\$(Configuration)\lib\libusb-1.0.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libusb-1.0.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>OpenLaserShowController.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>

@@ -1,7 +1,7 @@
 # Helios Laser DAC
 Digital to Analog Converter for laser projectors.
 
-* http://pages.bitlasers.com/helios/ *
+* https://bitlasers.com/helios-laser-dac/
 
 Open source, low cost USB DAC for the ISP-DB25 laser protocol. This repository consists of:
 * Hardware (PCB schematic in KiCAD)
@@ -19,6 +19,8 @@ The C++ code depends on libusb. You can use the included libusb binary libraries
 
 If you wish to use the shared library, there are ready-made builds for Win32 (.dll) and 64-bit linux (.so) in the sdk folder. NB: Only the Windows binary is guaranteed to be up to date. For Mac and Linux it is recommended to build your own or use the C++ classes.
 
+New .NET nuget library is currently in development too. It is not working yet, but if you are interested in this, let me know and I can try to prioritize the development.
+
 If you are adding support for the Helios in your program, let me know and I can link it on the Helios' home page.
 
 Steps to compiling shared library (.so) for Linux based systems yourself:
@@ -28,7 +30,9 @@ g++ -Wall -std=c++14 -fPIC -O2 -c HeliosDacAPI.cpp
 g++ -Wall -std=c++14 -fPIC -O2 -c HeliosDac.cpp
 g++ -shared -o libHeliosDacAPI.so HeliosDacAPI.o HeliosDac.o libusb-1.0.so
 ```
-To use the device on Linux you either need root privileges or need to set up udev rules (see pages.bitlasers.com/helios)
+To use the device on Linux you either need root privileges or need to set up udev rules (see https://bitlasers.com/helios-laser-dac/)
+
+A more detailed guide for compiling for Raspberry Pi (Linux ARM) is also available in the docs folder.
 
 #### Hardware and firmware modification
 
