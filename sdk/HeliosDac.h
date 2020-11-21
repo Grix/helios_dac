@@ -36,6 +36,7 @@ cannot receive a new frame until the currently playing frame finishes, freeing u
 #include <vector>
 #include <memory>
 #include <chrono>
+#include <algorithm>
 
 #define HELIOS_SDK_VERSION	6
 

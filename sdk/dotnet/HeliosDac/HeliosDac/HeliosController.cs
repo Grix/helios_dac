@@ -11,6 +11,7 @@ git repo: https://github.com/Grix/helios_dac.git
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using LibUsbDotNet;
 using LibUsbDotNet.LibUsb;
@@ -27,7 +28,7 @@ namespace HeliosDac
         public const ushort HELIOS_VID = 0x1209;
         public const ushort HELIOS_PID = 0xE500;
 
-        UsbDeviceFinder usbDeviceFinder = new UsbDeviceFinder(HELIOS_VID, HELIOS_PID);
+        //UsbDeviceFinder usbDeviceFinder = new UsbDeviceFinder(HELIOS_VID, HELIOS_PID);
         
         List<HeliosDevice> dacs;
 
@@ -221,7 +222,7 @@ namespace HeliosDac
                 if (!mutex.WaitOne(1000))
                     throw new Exception("Could not acquire mutex.");
 
-                // This is a bug workaround, the MCU won't correctly receive transfers with these sizes
+                // This is a bug workaround, the MCU won't correctly receive transfers with these specific sizes
                 int scanRateActual = scanRate;
                 int numOfPointsActual = points.Length;
                 if (((points.Length - 45) % 64) == 0)
@@ -253,7 +254,7 @@ namespace HeliosDac
 
                 if (result != ErrorCode.Ok || transferLength == bufPos)
                 {
-                    throw new Exception("Could not send frame USB transaction. Error code: " + result.ToString() + ". Make sure you first call GetStatus() before writing a frame.");
+                    throw new Exception("Could not send frame USB transaction. Error code: " + result.ToString() + ". Make sure you first poll GetStatus() before writing a frame.");
                 }
 
             }
@@ -336,10 +337,30 @@ namespace HeliosDac
         /// <summary>
         /// Sets the shutter pin of the DAC.
         /// </summary>
-        /// <param name="isShutterClosed">Whether the shutter should be closed (prevents laser output)</param>
-        public void SetShutter(bool isShutterClosed)
+        /// <param name="shutterClosed">Whether the shutter should be closed (prevents laser output)</param>
+        public void SetShutter(bool shutterClosed)
         {
+            // Send {0x02, shutterValue}
 
+            try
+            {
+                if (!mutex.WaitOne(5000))
+                    throw new Exception("Could not acquire mutex.");
+
+                var errorCode = interruptEndpointWriter.Write(new byte[] { 0x02, shutterClosed ? (byte)0 : (byte)1 }, 64, out int writeTransferLength);
+                if (errorCode == ErrorCode.Ok && writeTransferLength == 2)
+                    return;
+                else
+                    throw new Exception("Failed to send USB interrupt packet. Error code: " + errorCode.ToString());
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            finally
+            {
+                mutex.ReleaseMutex();
+            }
         }
 
         /// <summary>
@@ -348,7 +369,36 @@ namespace HeliosDac
         /// <returns>Firmware version</returns>
         public int GetFirmwareVersion()
         {
-            return 5;
+            // Send {0x04, 0} and get {0x84, firmwareVersion} in return
+
+            try
+            {
+                if (!mutex.WaitOne(3000))
+                    throw new Exception("Could not acquire mutex.");
+
+                var errorCode = interruptEndpointWriter.Write(new byte[] { 0x04, 0 }, 64, out int writeTransferLength);
+                if (errorCode == ErrorCode.Ok && writeTransferLength == 2)
+                {
+                    byte[] readData = new byte[32];
+                    errorCode = interruptEndpointReader.Read(readData, 16, out int readTransferLength);
+                    if (errorCode == ErrorCode.Ok && readTransferLength > 1 && readData[0] == 0x84)
+                    {
+                        return readData[1];
+                    }
+                    else
+                        throw new Exception("Invalid response to firmware version request. Error code: " + errorCode.ToString());
+                }
+                else
+                    throw new Exception("Failed to send USB interrupt packet. Error code: " + errorCode.ToString());
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            finally
+            {
+                mutex.ReleaseMutex();
+            }
         }
 
         /// <summary>
@@ -370,7 +420,7 @@ namespace HeliosDac
                     byte[] readData = new byte[32];
                     errorCode = interruptEndpointReader.Read(readData, 32, out int readTransferLength);
                     if (errorCode == ErrorCode.Ok && readTransferLength > 2 && readData[0] == 0x85)
-                        return System.Text.Encoding.ASCII.GetString(readData, 1, readTransferLength-1);
+                        return Encoding.ASCII.GetString(readData, 1, readTransferLength-1);
                     else
                         throw new Exception("Did not get valid response from DAC. Error code: " + errorCode.ToString());
                 }
@@ -390,10 +440,38 @@ namespace HeliosDac
         /// <summary>
         /// Sets the name of the DAC.
         /// </summary>
-        /// <param name="name">DAC name</param>
+        /// <param name="name">DAC name (max 30 characters, ascii only)</param>
         public void SetName(string name)
         {
+            // Send {0x06, [name]}
 
+            try
+            {
+                if (!mutex.WaitOne(5000))
+                    throw new Exception("Could not acquire mutex.");
+
+                var message = new byte[32];
+                message[0] = 0x06;
+                var nameBytes = ASCIIEncoding.ASCII.GetBytes(name);
+                for (int i = 0; i < nameBytes.Length && i < 31; i++)
+                    message[1 + i] = nameBytes[i];
+
+                message[31] = 0;
+
+                var errorCode = interruptEndpointWriter.Write(message, 64, out int writeTransferLength);
+                if (errorCode == ErrorCode.Ok && writeTransferLength == message.Length)
+                    return;
+                else
+                    throw new Exception("Failed to send USB interrupt packet. Error code: " + errorCode.ToString());
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            finally
+            {
+                mutex.ReleaseMutex();
+            }
         }
 
         /// <summary>
