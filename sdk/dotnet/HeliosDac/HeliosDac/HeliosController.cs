@@ -16,6 +16,7 @@ using System.Threading;
 using LibUsbDotNet;
 using LibUsbDotNet.LibUsb;
 using LibUsbDotNet.Main;
+using LibUsbDotNet.WinUsb;
 
 namespace HeliosDac
 {
@@ -29,18 +30,18 @@ namespace HeliosDac
         public const ushort HELIOS_PID = 0xE500;
 
         //UsbDeviceFinder usbDeviceFinder = new UsbDeviceFinder(HELIOS_VID, HELIOS_PID);
-        
-        List<HeliosDevice> dacs;
+
+        private readonly List<HeliosDevice> dacs = new List<HeliosDevice>();
 
 
-        HeliosController()
+        public HeliosController()
         {
 
         }
 
         ~HeliosController()
         {
-
+            CloseDevices();
         }
 
         /// <summary>
@@ -51,16 +52,19 @@ namespace HeliosDac
         {
             CloseDevices();
 
-            foreach (UsbRegistry usbRegistry in UsbDevice.AllLibUsbDevices)
+            foreach (UsbRegistry usbRegistry in UsbDevice.AllDevices)
             {
                 if (usbRegistry.Pid == HELIOS_PID && usbRegistry.Vid == HELIOS_VID)
                 {
                     if (usbRegistry.Open(out UsbDevice dac))
                     {
                         IUsbDevice libUsbDevice = dac as IUsbDevice;
-                        libUsbDevice.ClaimInterface(0);
-                        libUsbDevice.SetAltInterface(1);
-                        dacs.Add(new HeliosDevice(libUsbDevice));
+                        if (libUsbDevice != null)
+                        {
+                            libUsbDevice.ClaimInterface(0);
+                            libUsbDevice.SetAltInterface(1);
+                        }
+                        dacs.Add(new HeliosDevice(dac));
                     }
                 }
             }
@@ -86,7 +90,7 @@ namespace HeliosDac
         /// <param name="scanRate">Number of points per second. Valid range is 7 to 0xFFFF</param>
         /// <param name="points">Array of point data (X,Y,R,G,B,I) in the frame. Max number of points is 0x1000</param>
         /// <param name="flags">Optional frame settings, each bit is a bool. Bits defined in enum HeliosFrameFlags</param>
-        public void WriteFrame(int deviceNumber, ushort scanRate, HeliosPoint[] points, byte flags = 0xFF)
+        public void WriteFrame(int deviceNumber, ushort scanRate, HeliosPoint[] points, byte flags = 0)
         {
             dacs[deviceNumber].WriteFrame(scanRate, points, flags);
         }
@@ -180,14 +184,14 @@ namespace HeliosDac
         public const uint MIN_RATE = 7;
         public const uint HELIOS_SDK_VERSION = 6;
 
-        IUsbDevice usbDevice;
-        UsbEndpointReader interruptEndpointReader;
-        UsbEndpointWriter interruptEndpointWriter;
-        UsbEndpointWriter bulkEndpointWriter;
-        Mutex mutex;
-        byte[] frameBuffer = new byte[MAX_POINTS];
+        private UsbDevice usbDevice;
+        private UsbEndpointReader interruptEndpointReader;
+        private UsbEndpointWriter interruptEndpointWriter;
+        private UsbEndpointWriter bulkEndpointWriter;
+        private Mutex mutex = new Mutex();
+        private byte[] frameBuffer = new byte[MAX_POINTS];
 
-        public HeliosDevice(IUsbDevice usbDevice)
+        public HeliosDevice(UsbDevice usbDevice)
         {
             this.usbDevice = usbDevice;
 
