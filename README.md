@@ -3,7 +3,7 @@ Digital to Analog Converter for laser projectors.
 
 * https://bitlasers.com/helios-laser-dac/
 
-Open source, low cost USB DAC for the ISP-DB25 laser protocol. This repository consists of:
+Open source, low cost USB DAC for the ISP-DB25 (ILDA) laser protocol. Allows you to control an ILDA laser projector via computer over USB. Supports lots of third party software (see link above). This repository consists of:
 * Hardware (PCB schematic in KiCAD)
 * Firmware (Atmel Studio project)
 * SDK (with examples in C++ and Python)
