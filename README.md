@@ -23,7 +23,7 @@ New .NET nuget library is currently in development too. It is not working yet, b
 
 If you are adding support for the Helios in your program, let me know and I can link it on the Helios' home page.
 
-Steps to compiling shared library (.so) for Linux based systems yourself is below. For macOS, try replacing "libusb-1.0.so" with "libusb-1.0.dylib". For Windows, there is a Visual Studio project in the sdk source directory.
+Steps to compiling shared library (.so) for Linux based systems yourself is below. For macOS, try replacing ".so" with ".dylib". For Windows, there is a Visual Studio project in the sdk source directory.
 
 ```shell
 g++ -Wall -std=c++14 -fPIC -O2 -c HeliosDacAPI.cpp
