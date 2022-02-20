@@ -34,10 +34,10 @@ for i in range(30):
         else:
             x = round(0xFFF - ((j - 500) * 0xFFF / 500))
 
-        frames[i][j] = HeliosPoint(x,y,255,255,255,255)
+        frames[i][j] = HeliosPoint(x,y,255,255,255,130)
 
 #Play frames on DAC
-for i in range(150):
+for i in range(1500):
     for j in range(numDevices):
         statusAttempts = 0
         # Make 512 attempts for DAC status to be ready. After that, just give up and try to write the frame anyway
