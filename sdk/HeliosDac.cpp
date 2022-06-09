@@ -365,6 +365,9 @@ int HeliosDac::HeliosDacDevice::SendFrame(unsigned int pps, std::uint8_t flags, 
 
 	frameBufferSize = bufPos;
 
+	if (!shutterIsOpen)
+		SetShutter(1);
+
 	if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
 	{
 		frameReady = true;
@@ -513,6 +516,7 @@ int HeliosDac::HeliosDacDevice::GetStatus()
 }
 
 //Set shutter level of DAC
+//Value 1 = shutter open, value 0 = shutter closed
 int HeliosDac::HeliosDacDevice::SetShutter(bool level)
 {
 	if (closed)
@@ -522,7 +526,10 @@ int HeliosDac::HeliosDacDevice::SetShutter(bool level)
 
 	std::uint8_t txBuffer[2] = { 0x02, level };
 	if (SendControl(txBuffer, 2) == HELIOS_SUCCESS)
+	{
+		shutterIsOpen = level;
 		return HELIOS_SUCCESS;
+	}
 	else
 		return HELIOS_ERROR_DEVICE_SEND_CONTROL;
 }

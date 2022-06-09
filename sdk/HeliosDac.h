@@ -156,6 +156,7 @@ public:
 	int Stop(unsigned int devNum);
 
 	//Sets shutter level of DAC
+	//Value 1 = shutter open, value 0 = shutter closed
 	int SetShutter(unsigned int devNum, bool level);
 
 	//Erase the firmware of the DAC, allowing it to be updated by accessing the SAM-BA bootloader
@@ -194,6 +195,7 @@ private:
 		std::uint8_t* frameBuffer;
 		unsigned int frameBufferSize;
 		int frameResult = -1;
+		bool shutterIsOpen = false;
 
 	};
 
