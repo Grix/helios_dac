@@ -36,7 +36,7 @@ namespace HeliosDac
 
         public HeliosController()
         {
-
+            
         }
 
         ~HeliosController()
@@ -52,6 +52,42 @@ namespace HeliosDac
         {
             CloseDevices();
 
+			// Test code due to scanning of devices not working properly on windows. TODO
+            /*using (var context = new UsbContext())
+            {
+
+                //Get a list of all connected devices
+                var usbDeviceCollection = context.List();
+
+                //Narrow down the device by vendor and pid
+                var selectedDevice = usbDeviceCollection.FirstOrDefault(d => d.ProductId == HELIOS_PID && d.VendorId == HELIOS_VID);
+
+                //Open the device
+                selectedDevice.Open();
+
+                //Get the first config number of the interface
+                selectedDevice.ClaimInterface(selectedDevice.Configs[0].Interfaces[0].Number);
+
+                //Open up the endpoints
+                var writeEndpoint = selectedDevice.OpenEndpointWriter(WriteEndpointID.Ep01);
+                var readEnpoint = selectedDevice.OpenEndpointReader(ReadEndpointID.Ep01);
+
+                //Create a buffer with some data in it
+                var buffer = new byte[64];
+                buffer[0] = 0x3f;
+                buffer[1] = 0x23;
+                buffer[2] = 0x23;
+
+                //Write three bytes
+                writeEndpoint.Write(buffer, 3000, out var bytesWritten);
+
+                var readBuffer = new byte[64];
+
+                //Read some data
+                readEnpoint.Read(readBuffer, 3000, out var readBytes);
+            }*/
+
+            UsbDevice.ForceLibUsbWinBack = true;
             foreach (UsbRegistry usbRegistry in UsbDevice.AllDevices)
             {
                 if (usbRegistry.Pid == HELIOS_PID && usbRegistry.Vid == HELIOS_VID)
@@ -64,6 +100,17 @@ namespace HeliosDac
                             libUsbDevice.ClaimInterface(0);
                             libUsbDevice.SetAltInterface(1);
                         }
+
+                        // test code
+                        /*using (var interruptEndpointWriter = dac.OpenEndpointWriter(WriteEndpointID.Ep06, EndpointType.Interrupt))
+                        {
+                            var errorCode = interruptEndpointWriter.Write(new byte[] { 0x03, 0 }, 16, out int writeTransferLength);
+                            if (errorCode == ErrorCode.Ok && writeTransferLength == 2)
+                            {
+                                Console.WriteLine("OK");
+                            }
+                        }*/
+
                         dacs.Add(new HeliosDevice(dac));
                     }
                 }
@@ -189,7 +236,7 @@ namespace HeliosDac
         private UsbEndpointWriter interruptEndpointWriter;
         private UsbEndpointWriter bulkEndpointWriter;
         private Mutex mutex = new Mutex();
-        private byte[] frameBuffer = new byte[MAX_POINTS];
+        private byte[] frameBuffer = new byte[MAX_POINTS * 7 + 5];
 
         public HeliosDevice(UsbDevice usbDevice)
         {
@@ -258,7 +305,7 @@ namespace HeliosDac
 
                 if (result != ErrorCode.Ok || transferLength == bufPos)
                 {
-                    throw new Exception("Could not send frame USB transaction. Error code: " + result.ToString() + ". Make sure you first poll GetStatus() before writing a frame.");
+                    throw new Exception("Could not send frame USB transaction. Error code: " + result.ToString() + ". Make sure you first poll GetStatus() before writing each frame.");
                 }
 
             }

@@ -41,7 +41,7 @@ namespace HeliosDacExample
 				{
 					// Wait for ready status
 					bool isReady = false;
-					for (int k = 0; k < 512; k++)
+					for (int k = 0; k < 50; k++)
 					{
 						if (heliosController.GetStatus(deviceId))
 						{
@@ -49,7 +49,7 @@ namespace HeliosDacExample
 							break;
 						}
 					}
-					// Send the next frame
+					// Send the next frame if received a ready signal
 					if (isReady)
 						heliosController.WriteFrame(deviceId, 25000, frames[j % 30]);
 				}
