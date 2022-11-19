@@ -29,15 +29,8 @@ namespace HeliosDac
         public const ushort HELIOS_VID = 0x1209;
         public const ushort HELIOS_PID = 0xE500;
 
-        //UsbDeviceFinder usbDeviceFinder = new UsbDeviceFinder(HELIOS_VID, HELIOS_PID);
-
         private readonly List<HeliosDevice> dacs = new List<HeliosDevice>();
 
-
-        public HeliosController()
-        {
-            
-        }
 
         ~HeliosController()
         {
@@ -52,68 +45,32 @@ namespace HeliosDac
         {
             CloseDevices();
 
-			// Test code due to scanning of devices not working properly on windows. TODO
-            /*using (var context = new UsbContext())
-            {
-
-                //Get a list of all connected devices
-                var usbDeviceCollection = context.List();
-
-                //Narrow down the device by vendor and pid
-                var selectedDevice = usbDeviceCollection.FirstOrDefault(d => d.ProductId == HELIOS_PID && d.VendorId == HELIOS_VID);
-
-                //Open the device
-                selectedDevice.Open();
-
-                //Get the first config number of the interface
-                selectedDevice.ClaimInterface(selectedDevice.Configs[0].Interfaces[0].Number);
-
-                //Open up the endpoints
-                var writeEndpoint = selectedDevice.OpenEndpointWriter(WriteEndpointID.Ep01);
-                var readEnpoint = selectedDevice.OpenEndpointReader(ReadEndpointID.Ep01);
-
-                //Create a buffer with some data in it
-                var buffer = new byte[64];
-                buffer[0] = 0x3f;
-                buffer[1] = 0x23;
-                buffer[2] = 0x23;
-
-                //Write three bytes
-                writeEndpoint.Write(buffer, 3000, out var bytesWritten);
-
-                var readBuffer = new byte[64];
-
-                //Read some data
-                readEnpoint.Read(readBuffer, 3000, out var readBytes);
-            }*/
-
             UsbDevice.ForceLibUsbWinBack = true;
-            foreach (UsbRegistry usbRegistry in UsbDevice.AllDevices)
+            try
             {
-                if (usbRegistry.Pid == HELIOS_PID && usbRegistry.Vid == HELIOS_VID)
+                foreach (UsbRegistry usbRegistry in UsbDevice.AllDevices)
                 {
-                    if (usbRegistry.Open(out UsbDevice dac))
+                    if (usbRegistry.Pid == HELIOS_PID && usbRegistry.Vid == HELIOS_VID)
                     {
-                        IUsbDevice libUsbDevice = dac as IUsbDevice;
-                        if (libUsbDevice != null)
+                        if (usbRegistry.Open(out UsbDevice dac))
                         {
-                            libUsbDevice.ClaimInterface(0);
-                            libUsbDevice.SetAltInterface(1);
-                        }
-
-                        // test code
-                        /*using (var interruptEndpointWriter = dac.OpenEndpointWriter(WriteEndpointID.Ep06, EndpointType.Interrupt))
-                        {
-                            var errorCode = interruptEndpointWriter.Write(new byte[] { 0x03, 0 }, 16, out int writeTransferLength);
-                            if (errorCode == ErrorCode.Ok && writeTransferLength == 2)
+                            IUsbDevice? libUsbDevice = dac as IUsbDevice;
+                            if (libUsbDevice != null)
                             {
-                                Console.WriteLine("OK");
+                                libUsbDevice.ClaimInterface(0);
+                                libUsbDevice.SetAltInterface(1);
                             }
-                        }*/
 
-                        dacs.Add(new HeliosDevice(dac));
+                            dacs.Add(new HeliosDevice(dac));
+                        }
                     }
                 }
+            }
+            catch (DllNotFoundException ex)
+            {
+                throw new DllNotFoundException("Could not find the libusb-1.0 binaries. You need to manually include the file when distributing your program, depending on the platform.\n" +
+                    "Libusb can be downloaded here: https://sourceforge.net/projects/libusb/files/libusb-1.0/libusb-1.0.22/\n" +
+                    "For example, for Windows x64, add the file libusb-1.0.dll to your build folder, found in the folder MS64\\dll in the archive libusb-1.0.22.7z downloaded from the link above.", ex);
             }
 
             return dacs.Count;
@@ -303,7 +260,7 @@ namespace HeliosDac
                 // Send USB transaction
                 var result = bulkEndpointWriter.Write(frameBuffer, 0, bufPos, 8 + (bufPos >> 5), out int transferLength);
 
-                if (result != ErrorCode.Ok || transferLength == bufPos)
+                if (result != ErrorCode.Ok || transferLength != bufPos)
                 {
                     throw new Exception("Could not send frame USB transaction. Error code: " + result.ToString() + ". Make sure you first poll GetStatus() before writing each frame.");
                 }
@@ -471,7 +428,7 @@ namespace HeliosDac
                     byte[] readData = new byte[32];
                     errorCode = interruptEndpointReader.Read(readData, 32, out int readTransferLength);
                     if (errorCode == ErrorCode.Ok && readTransferLength > 2 && readData[0] == 0x85)
-                        return Encoding.ASCII.GetString(readData, 1, readTransferLength-1);
+                        return Encoding.ASCII.GetString(readData.Skip(1).TakeWhile((character, index) => { return character != 0 && index < readTransferLength; }).ToArray());
                     else
                         throw new Exception("Did not get valid response from DAC. Error code: " + errorCode.ToString());
                 }
