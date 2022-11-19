@@ -4,10 +4,10 @@ Digital to Analog Converter for laser projectors.
 * https://bitlasers.com/helios-laser-dac/
 
 Open source, low cost USB DAC for the ISP-DB25 (ILDA) laser protocol. Allows you to control an ILDA laser projector via computer over USB. Supports lots of third party software (see link above). This repository consists of:
+* SDK (with examples in C++, Python and C#/.NET)
 * Hardware (PCB schematic in KiCAD)
 * Firmware (Atmel Studio project)
-* SDK (with examples in C++ and Python)
-* Extras (firmware update tool, graphics etc.)
+* Extras (firmware update tool, media etc.)
 
 ## Developer guide
 
@@ -15,11 +15,11 @@ Open source, low cost USB DAC for the ISP-DB25 (ILDA) laser protocol. Allows you
 
 Navigate to the folder "sdk" to find the relevant code for interfacing with the Helios DAC in your software. The core SDK is written in C++, documented in HeliosDac.h. But libraries with exported functions that you can call from many languages such as python or C# are available, documented in HeliosDacAPI.h. You can also find examples of usage in the examples folder.
 
-The C++ code depends on libusb. You can use the included libusb binary libraries for Win32, Mac or Linux, or you can build your own. You can find the libusb source on libusb.info.
+The C++ code depends on libusb. You can use the included libusb binary libraries for Win32, Mac or Linux, or you can build your own. You can find the libusb source on libusb.info, or binaries on https://sourceforge.net/projects/libusb/files/libusb-1.0/
 
 If you wish to use the shared library, there are ready-made builds for Win32 (.dll) and 64-bit linux (.so) in the sdk folder. NB: Only the Windows binary is guaranteed to be up to date. For Mac and Linux it is recommended to build your own or use the C++ classes.
 
-New .NET nuget library is currently in development too. It is not working yet, but if you are interested in this, let me know and I can try to prioritize the development.
+New: There is a native .NET library with example code in sdk/dotnet.
 
 If you are adding support for the Helios in your program, let me know and I can link it on the Helios' home page.
 
