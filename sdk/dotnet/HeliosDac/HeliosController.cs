@@ -84,6 +84,7 @@ namespace HeliosDac
             foreach (var dac in dacs)
                 dac.Close();
             dacs.Clear();
+            UsbDevice.Exit();
         }
 
         /// <summary>
