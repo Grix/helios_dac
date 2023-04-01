@@ -4,6 +4,11 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Helios Laser DAC</Title>
+    <Authors>Gitle Mikkelsen</Authors>
+    <PackageProjectUrl>https://bitlasers.com/helios-laser-dac/</PackageProjectUrl>
+    <PackageTags>helios;laser;ilda;laser dac;usb;helios dac;laser show</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
