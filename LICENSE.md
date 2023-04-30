@@ -1,4 +1,4 @@
-Individual components of this product, namely the hardware, firmware, and host software/driver, have separete licenses. Please see the license notice in each subfolder.
+Individual components of this product, namely the hardware, firmware, and host software/driver, have separate licenses. Please see the license notice in each subfolder.
 
 In short:
 
