@@ -69,8 +69,8 @@ namespace HeliosDac
             catch (DllNotFoundException ex)
             {
                 throw new DllNotFoundException("Could not find the libusb-1.0 binaries. You need to manually include the file when distributing your program, depending on the platform.\n" +
-                    "Libusb can be downloaded here: https://sourceforge.net/projects/libusb/files/libusb-1.0/libusb-1.0.22/\n" +
-                    "For example, for Windows x64, add the file libusb-1.0.dll to your build folder, found in the folder MS64\\dll in the archive libusb-1.0.22.7z downloaded from the link above.", ex);
+                    "Libusb can be downloaded here: https://sourceforge.net/projects/libusb/files/libusb-1.0/libusb-1.0.26/\n" +
+					"For example, for Windows x64, add the file libusb-1.0.dll to your build folder, found in the folder VS2015-x64\\dll in the archive libusb-1.0.26-binaries.7z downloaded from the link above.", ex);
             }
 
             return dacs.Count;
