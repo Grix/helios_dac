@@ -21,18 +21,18 @@
     <ClInclude Include="..\..\OpenLaserShowControllerV1.0.0-Mod.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HeliosDac.h">
+    <ClInclude Include="..\..\HeliosDacAPI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HeliosDacAPI.h">
+    <ClInclude Include="..\..\..\HeliosDac.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\HeliosDac.cpp">
+    <ClCompile Include="..\..\HeliosDacAPI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\HeliosDacAPI.cpp">
+    <ClCompile Include="..\..\..\HeliosDac.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
