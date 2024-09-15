@@ -221,7 +221,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;Ws2_32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>OpenLaserShowController.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
@@ -303,24 +303,33 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessToFile>false</PreprocessToFile>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;Ws2_32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>OpenLaserShowController.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\HeliosDac.h" />
+    <ClInclude Include="..\..\..\idn\idn-hello.h" />
+    <ClInclude Include="..\..\..\idn\idn-stream.h" />
+    <ClInclude Include="..\..\..\idn\idn.h" />
+    <ClInclude Include="..\..\..\idn\idnServerList.h" />
+    <ClInclude Include="..\..\..\idn\plt-windows.h" />
+    <ClInclude Include="..\..\..\libusb.h" />
     <ClInclude Include="..\..\HeliosDacAPI.h" />
-    <ClInclude Include="..\..\libusb.h" />
     <ClInclude Include="..\..\OpenLaserShowControllerV1.0.0-Mod.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\HeliosDac.cpp" />
+    <ClCompile Include="..\..\..\idn\idn.cpp" />
+    <ClCompile Include="..\..\..\idn\idnServerList.cpp" />
+    <ClCompile Include="..\..\..\idn\plt-windows.cpp" />
     <ClCompile Include="..\..\HeliosDacAPI.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

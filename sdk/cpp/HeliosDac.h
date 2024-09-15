@@ -5,6 +5,7 @@ gitlem@gmail.com
 
 Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
+On windows, link to <Ws2_32.lib>
 
 Standard: C++14
 git repo: https://github.com/Grix/helios_dac.git
@@ -28,7 +29,10 @@ cannot receive a new frame until the currently playing frame finishes, freeing u
 
 #pragma once
 
+#define _WINSOCKAPI_   /* Prevent inclusion of winsock.h in windows.h from libusb.h */
 #include "libusb.h"
+#include "idn\idn.h"
+#include "idn\idnServerList.h"
 #include <cstring>
 #include <cstdint>
 #include <thread>
@@ -201,6 +205,7 @@ private:
 	};
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;
+	std::vector<IDNCONTEXT*> idnContexts;
 	std::mutex threadLock;
 	bool inited = false;
 };

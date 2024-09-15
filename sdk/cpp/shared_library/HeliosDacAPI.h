@@ -6,7 +6,7 @@ gitlem@gmail.com
 Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 HeliosDAC class
-OpenLaserShowControllerV1.0.0 header and .def file (only on windows)
+OpenLaserShowControllerV1.0.0 header and .def file (only on windows, optional if you remove the OLSC_* functions from HeliosDACApi.cpp)
 
 Standard: C++14
 

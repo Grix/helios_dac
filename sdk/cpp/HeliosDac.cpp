@@ -5,6 +5,7 @@ gitlem@gmail.com
 
 Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
+On windows, link to <Ws2_32.lib>
 
 Standard: C++14
 git repo: https://github.com/Grix/helios_dac.git
@@ -30,6 +31,8 @@ int HeliosDac::OpenDevices()
 	if (inited)
 		return deviceList.size();
 
+	// Scanning USB Connection
+
 	int result = libusb_init(NULL);
 	if (result < 0)
 		return result;
@@ -43,7 +46,7 @@ int HeliosDac::OpenDevices()
 
 	std::lock_guard<std::mutex> lock(threadLock);
 
-	unsigned int devNum = 0;
+	unsigned int numDevices = 0;
 	for (int i = 0; i < cnt; i++)
 	{
 		struct libusb_device_descriptor devDesc;
@@ -70,15 +73,121 @@ int HeliosDac::OpenDevices()
 		//successfully opened, add to device list
 		deviceList.push_back(std::make_unique<HeliosDacDevice>(devHandle));
 
-		devNum++;
+		numDevices++;
 	}
 
 	libusb_free_device_list(devs, 1);
 
-	if (devNum > 0)
+	// Scanning IDN (Network) connection
+
+	idnContexts.clear(); // Todo: scan without closing existing connections
+
+	extern void logError(const char* fmt, ...);
+
+	//struct addrinfo* servinfo;              // Will point to the results
+	//struct addrinfo hints;                  // Hints about the caller-supported socket types
+	//memset(&hints, 0, sizeof hints);        // Make sure the struct is empty
+	//hints.ai_flags = AI_PASSIVE;            // Intention to use address with the bind function
+	//hints.ai_family = AF_INET;              // IPv4
+
+#ifndef WIN32 
+
+	// Find all IDN servers
+	unsigned msTimeout = 500;
+	IDNSL_SERVER_INFO* firstServerInfo;
+	int rcGetList = getIDNServerList(&firstServerInfo, 0, msTimeout);
+	if (rcGetList != 0)
+	{
+		logError("getIDNServerList() failed (error: %d)", rcGetList);
+	}
+	else
+	{
+		for (IDNSL_SERVER_INFO* serverInfo = firstServerInfo; serverInfo != 0; serverInfo = serverInfo->next)
+		{
+			for (unsigned int i = 0; i < serverInfo->addressCount; i++)
+			{
+				if (serverInfo->addressTable[i].errorFlags == 0 && numDevices < 999)
+				{
+					bool found = false;
+					int contextId = 0;
+					for (; contextId < numDevices; contextId++) // Check for duplicate entries
+					{
+						if (idnContexts[contextId]->serverSockAddr.sin_addr.s_addr == serverInfo->addressTable[i].addr.s_addr) // todo: and name / unit id?
+							found = true;
+					}
+					if (!found)
+					{
+						for (unsigned int j = 0; j < serverInfo->serviceCount && numDevices < 999; j++)
+						{
+							IDNCONTEXT* ctx = new IDNCONTEXT{ 0 };
+							ctx->serverSockAddr.sin_family = AF_INET;
+							ctx->serverSockAddr.sin_port = htons(IDN_PORT);
+							ctx->serverSockAddr.sin_addr.s_addr = serverInfo->addressTable[i].addr.s_addr;
+							ctx->name = std::string(serverInfo->hostName).append(" - ").append(serverInfo->serviceTable[j].serviceName);
+							ctx->serviceId = serverInfo->serviceTable[j].serviceID;
+
+							idnContexts[numDevices++] = ctx;
+						}
+
+					}
+				}
+			}
+		}
+
+		freeIDNServerList(firstServerInfo);  // Server list is dynamically allocated and must be freed
+	}
+#else
+	unsigned msTimeout = 500;
+	IDNSL_SERVER_INFO* firstServerInfo;
+	int rcGetList = getIDNServerList(&firstServerInfo, 0, msTimeout);
+	if (rcGetList != 0)
+	{
+		logError("getIDNServerList() failed (error: %d)", rcGetList);
+	}
+	else
+	{
+		for (IDNSL_SERVER_INFO* serverInfo = firstServerInfo; serverInfo != 0; serverInfo = serverInfo->next)
+		{
+			for (unsigned int i = 0; i < serverInfo->addressCount; i++)
+			{
+				if (serverInfo->addressTable[i].errorFlags == 0 && numDevices < 999)
+				{
+					bool found = false;
+					int contextId = 0;
+					for (; contextId < numDevices; contextId++) // Check for duplicate entries
+					{
+						if (idnContexts[contextId]->serverSockAddr.sin_addr.S_un.S_addr == serverInfo->addressTable[i].addr.S_un.S_addr) // todo: and name / unit id?
+							found = true;
+					}
+					if (!found)
+					{
+						for (unsigned int j = 0; j < serverInfo->serviceCount && numDevices < 999; j++)
+						{
+							IDNCONTEXT* ctx = new IDNCONTEXT{ 0 };
+							ctx->serverSockAddr.sin_family = AF_INET;
+							ctx->serverSockAddr.sin_port = htons(IDN_PORT);
+							ctx->serverSockAddr.sin_addr.s_addr = serverInfo->addressTable[i].addr.S_un.S_addr;
+							ctx->name = std::string(serverInfo->hostName).append(" - ").append(serverInfo->serviceTable[j].serviceName);
+							ctx->serviceId = serverInfo->serviceTable[j].serviceID;
+
+							idnContexts[numDevices++] = ctx;
+						}
+
+					}
+				}
+			}
+		}
+
+		freeIDNServerList(firstServerInfo);  // Server list is dynamically allocated and must be freed
+	}
+
+#endif
+
+
+	if (numDevices > 0)
 		inited = true;
 
-	return devNum;
+	return numDevices;
 }
 
 int HeliosDac::CloseDevices()
