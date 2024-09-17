@@ -46,7 +46,6 @@ cannot receive a new frame until the currently playing frame finishes, freeing u
 #define STDCALL __stdcall
 
 bool inited = false;
-bool flipX = true;
 
 HeliosDac* dacController;
 

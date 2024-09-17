@@ -7,7 +7,7 @@ See HeliosDacAPI.h for documentation
 Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
 HeliosDAC class
-OpenLaserShowControllerV1.0.0 header and .def file (only on windows)
+OpenLaserShowControllerV1.0.0 header and .def file (only on windows, and optional)
 
 git repo: https://github.com/Grix/helios_dac.git
 */
@@ -162,10 +162,10 @@ OLSC_API int __stdcall OLSC_GetDeviceCapabilities(int device_number, struct LASE
 	device_capabilities.has_dmx_out = false;
 	device_capabilities.has_ttl_in = false;
 	device_capabilities.has_ttl_out = false;
-	device_capabilities.max_frame_size = HELIOS_MAX_POINTS;
-	device_capabilities.max_speed = HELIOS_MAX_RATE;
+	device_capabilities.max_frame_size = HELIOS_MAX_POINTS_LEGACY;
+	device_capabilities.max_speed = HELIOS_MAX_RATE_LEGACY;
 	device_capabilities.min_frame_size = 1;
-	device_capabilities.min_speed = HELIOS_MIN_RATE;
+	device_capabilities.min_speed = HELIOS_MIN_RATE_LEGACY;
 	GetName(device_number, &device_capabilities.name[0]);
 	device_capabilities.uses_callbacks = false;
 	device_capabilities.version_major = 1;
@@ -212,7 +212,7 @@ OLSC_API int __stdcall OLSC_WriteFrame(int device_number, struct LASER_SHOW_DEVI
 		return OLSC_ERROR_FAILED;
 
 	//convert frame structure
-	HeliosPoint frameBuffer[HELIOS_MAX_POINTS * 7 + 5];
+	HeliosPoint frameBuffer[HELIOS_MAX_POINTS_LEGACY * 7 + 5];
 	for (int i = 0; i < frame.point_count; i++)
 	{
 		frameBuffer[i].x = (frame.points[i].x >> 4);
@@ -283,8 +283,8 @@ OLSC_API int __stdcall OLSC_ReadTTL(int device_number, DWORD& data)
 bool STDCALL EzAudDacWriteFrameNR(const int *CardNum, const struct EAD_Pnt_s* data, int Bytes, uint16_t PPS, uint16_t Reps)
 {
 	unsigned int dacNum = *CardNum;
-	unsigned int numPoints = min(Bytes / sizeof(*data), HELIOS_MAX_POINTS);
-	HeliosPoint frameBuffer[HELIOS_MAX_POINTS];
+	unsigned int numPoints = min(Bytes / sizeof(*data), HELIOS_MAX_POINTS_LEGACY);
+	HeliosPoint frameBuffer[HELIOS_MAX_POINTS_LEGACY];
 	for (unsigned int i = 0; i < numPoints; i++)
 	{
 		frameBuffer[i].x = (data[i].X);
@@ -303,8 +303,8 @@ bool STDCALL EzAudDacWriteFrameNR(const int *CardNum, const struct EAD_Pnt_s* da
 bool STDCALL EzAudDacWriteFrame(const int *CardNum, const struct EAD_Pnt_s* data, int Bytes, uint16_t PPS)
 {
 	unsigned int dacNum = *CardNum;
-	unsigned int numPoints = min(Bytes / sizeof(*data), HELIOS_MAX_POINTS);
-	HeliosPoint frameBuffer[HELIOS_MAX_POINTS];
+	unsigned int numPoints = min(Bytes / sizeof(*data), HELIOS_MAX_POINTS_LEGACY);
+	HeliosPoint frameBuffer[HELIOS_MAX_POINTS_LEGACY];
 	for (unsigned int i = 0; i < numPoints; i++)
 	{
 		frameBuffer[i].x = (data[i].X);

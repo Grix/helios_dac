@@ -221,7 +221,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;Ws2_32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>OpenLaserShowController.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
@@ -310,7 +310,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;Ws2_32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>OpenLaserShowController.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>

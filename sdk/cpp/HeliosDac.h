@@ -1,35 +1,35 @@
 /*
-SDK for Helios Laser DAC class, HEADER
+SDK for Helios Laser DAC class
 By Gitle Mikkelsen
 gitlem@gmail.com
+MIT License
 
 Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
-On windows, link to <Ws2_32.lib>
 
 Standard: C++14
 git repo: https://github.com/Grix/helios_dac.git
 
 BASIC USAGE:
 1.	Call OpenDevices() to open devices, returns number of available devices.
-2.	To send a frame to the DAC, first call GetStatus(). If the function returns ready (1), 
-	then you can call WriteFrame(). The status should be polled until it returns ready. 
-	It can and sometimes will fail to return ready on the first try.
+2.	To send a frame to the DAC, first call GetStatus(). The status should be polled until it returns ready.
+    If the function returns ready (1), then you can call WriteFrame() or WriteFrameHighResolution().
 3.  To stop output, use Stop(). To restart output you must send a new frame as described above.
 4.	When the DAC is no longer needed, destroy the instance (destructors will free everything and close the connection)
 
-The DAC is double-buffered. When it receives its first frame, it starts outputting it. When a second frame is sent to 
+When the DAC receives its first frame, it starts outputting it. When a second frame is sent to 
 the DAC while the first frame is being played, the second frame is stored in the DACs memory until the first frame 
 finishes playback, at which point the second, buffered frame will start playing. If the DAC finished playback of a frame
 without having received and buffered a second frame, it will by default loop the first frame until a new frame is
 received (but the flag HELIOS_FLAG_SINGLE_MODE will make it stop playback instead).
 The GetStatus() function actually checks whether or not the buffer on the DAC is empty or full. If it is full, the DAC
-cannot receive a new frame until the currently playing frame finishes, freeing up the buffer.
+cannot receive a new frame until the currently playing frame finishes, freeing up the buffer. This is not applicable 
+on IDN network DACs, they will always be ready to receive a new frame.
 */
 
 #pragma once
 
-#define _WINSOCKAPI_   /* Prevent inclusion of winsock.h in windows.h from libusb.h */
+#define _WINSOCKAPI_   // Prevent inclusion of winsock.h in windows.h from libusb.h
 #include "libusb.h"
 #include "idn\idn.h"
 #include "idn\idnServerList.h"
@@ -42,11 +42,12 @@ cannot receive a new frame until the currently playing frame finishes, freeing u
 #include <chrono>
 #include <algorithm>
 
-#define HELIOS_SDK_VERSION	6
+#define HELIOS_SDK_VERSION	10
 
-#define HELIOS_MAX_POINTS	0x1000
-#define HELIOS_MAX_RATE		0xFFFF
-#define HELIOS_MIN_RATE		7
+// Hard limits for original Helios DAC
+#define HELIOS_MAX_POINTS_LEGACY	0x1000
+#define HELIOS_MAX_RATE_LEGACY		0xFFFF
+#define HELIOS_MIN_RATE_LEGACY		7
 
 #define HELIOS_SUCCESS		1	
 
@@ -67,7 +68,7 @@ cannot receive a new frame until the currently playing frame finishes, freeing u
 // Errors from the HeliosDacDevice class begin at -1000
 // Attempted to perform an operation on a closed DAC device
 #define HELIOS_ERROR_DEVICE_CLOSED			-1000
-// Attempted to send a new frame with HELIOS_FLAGS_DONT_BLOCK before previous DoFrame() completed
+// Attempted to send a new frame with HELIOS_FLAGS_DONT_BLOCK before previous frame has completed transfer
 #define HELIOS_ERROR_DEVICE_FRAME_READY		-1001
 // Operation failed because SendControl() failed (if operation failed because of libusb_interrupt_transfer failure, the error code will be a libusb error instead)
 #define HELIOS_ERROR_DEVICE_SEND_CONTROL	-1002
@@ -77,6 +78,10 @@ cannot receive a new frame until the currently playing frame finishes, freeing u
 #define HELIOS_ERROR_DEVICE_NULL_BUFFER		-1004
 // Attempted to call SendControl() with a control signal that is too long
 #define HELIOS_ERROR_DEVICE_SIGNAL_TOO_LONG	-1005
+// Attempted to call a function that isn't supported for this particular DAC model (for example SetShutter on network DACs, since they handle shutter logic automatically instead of manually)
+#define HELIOS_ERROR_NOT_SUPPORTED			-1006
+// Error during sending on IDN network packet. See console output for more information, or errno on Unix or WSAGetLastError() on Windows.
+#define HELIOS_ERROR_NETWORK				-1007
 
 // Errors from libusb are the libusb error code added to -5000. See libusb.h for libusb error codes.
 #define HELIOS_ERROR_LIBUSB_BASE		-5000
@@ -86,7 +91,7 @@ cannot receive a new frame until the currently playing frame finishes, freeing u
 #define HELIOS_FLAGS_SINGLE_MODE		(1 << 1)
 #define HELIOS_FLAGS_DONT_BLOCK			(1 << 2)
 
-//usb properties
+// USB properties
 #define HELIOS_VID	0x1209
 #define HELIOS_PID	0xE500
 #define EP_BULK_OUT	0x02
@@ -100,7 +105,7 @@ cannot receive a new frame until the currently playing frame finishes, freeing u
 #define LIBUSB_LOG_LEVEL LIBUSB_LOG_LEVEL_NONE
 #endif
 
-//point data structure
+// Point data structures
 typedef struct
 {
 	std::uint16_t x; // 12 bit (valid values from 0 to 0xFFF)
@@ -110,6 +115,20 @@ typedef struct
 	std::uint8_t b;	// 8 bit (valid values from 0 to 0xFF)
 	std::uint8_t i;	// 8 bit (valid values from 0 to 0xFF). Optional and should be set to max value if not used.
 } HeliosPoint;
+
+typedef struct
+{
+	std::uint16_t x; // Valid values from 0 to 0xFFFF. X position.
+	std::uint16_t y; // Valid values from 0 to 0xFFFF. Y position.
+	std::uint16_t r; // Valid values from 0 to 0xFFFF. Red.
+	std::uint16_t g; // Valid values from 0 to 0xFFFF. Green.
+	std::uint16_t b; // Valid values from 0 to 0xFFFF. Blue.
+	std::uint16_t i; // Valid values from 0 to 0xFFFF. Intensity. Optional and should be set to max value if not used.
+	std::uint16_t user1; // Valid values from 0 to 0xFFFF. Deep blue or custom. Can be disabled for faster max pps by using SKIP_U1 flag in WriteFrameHighResolution()
+	std::uint16_t user2; // Valid values from 0 to 0xFFFF. Yellow or custom. Can be disabled for faster max pps by using SKIP_U2 flag in WriteFrameHighResolution()
+	std::uint16_t user3; // Valid values from 0 to 0xFFFF. Cyan, beam brush, or custom. Can be disabled for faster max pps by using SKIP_U3 flag in WriteFrameHighResolution()
+	std::uint16_t user4; // Valid values from 0 to 0xFFFF. Z position, X-prime, field change, or custom. Can be disabled for faster max pps by using SKIP_U4 flag in WriteFrameHighResolution()
+} HeliosPointHighRes;
 
 class HeliosDac
 {
@@ -128,7 +147,7 @@ public:
 	// Closes and frees all devices.
 	int CloseDevices();
 
-	// Writes and outputs a frame to the speficied dac.
+	// Writes and outputs a frame to the speficied dac, using the legacy point structure designed for the original Helios DAC.
 	// devNum: dac number (0 to n where n+1 is the return value from OpenDevices() ).
 	// pps: rate of output in points per second.
 	// flags: (default is 0)
@@ -140,6 +159,29 @@ public:
 	// points: pointer to point data. See point structure declaration earlier in this document.
 	// numOfPoints: number of points in the frame.
 	int WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
+
+	// Writes and outputs a frame to the speficied dac, using the high resolution point structure supported by newer DAC models.
+	// This function is safe to call even for older DAC models, it will simply convert to the low-res points if necessary (although this wastes CPU/memory).
+	// You can call ConfigureHighResolutionChannels() to disable/configure color channels that you don't need.
+	// devNum: dac number (0 to n, where n+1 is the return value from OpenDevices() ).
+	// pps: rate of output in points per second.
+	// flags: (default is 0)
+	//	 Bit 0 (LSB) = if 1, start output immediately, instead of waiting for current frame (if there is one) to finish playing
+	//	 Bit 1 = if 1, play frame only once, instead of repeating until another frame is written
+	//   Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
+	//			(NB: then the function might return 1 even if it fails)
+	//	 Bit 3-7 = reserved
+	// points: pointer to point data. See point structure declaration earlier in this document.
+	// numOfPoints: number of points in the frame.
+	// channelEnableMask: Bitmask that signals which channels (X, Y, Z, R, G, B, I, U1, U2, U3, U4) are enabled. TODO
+	int WriteFrameHighResolution(unsigned int devNum, unsigned int pps, unsigned int flags, HeliosPointHighRes* points, unsigned int numOfPoints);
+
+	// This function lets you enable or disable various color and aux channels when using WriteFrameHighResolution(), as well as adjust resolution between 8 and 16 bits. 
+	// For each channel argument, pass one of the following values: 0: Disabled, 1: Enabled with 8-bit resolution, 2: Enabled with 16-bit resolution.
+	// It is beneficial to disable channels you don't use to preserve bandwidth and processing power, and enable higher max pps on some DAC models.
+	// By default, if you don't run this function, only channels X,Y,R,G,B are enabled, matching the needs of most projectors. Otherwise, run this once after opening the device.
+	// Does not affect the legacy WriteFrame() function.
+	int ConfigureHighResolutionChannels(unsigned int devNum, unsigned char red, unsigned char green, unsigned char blue, unsigned char intensity, unsigned char user1, unsigned char user2, unsigned char user3, unsigned char user4);
 
 	// Gets status of DAC, 1 means DAC is ready to receive frame, 0 means it is not.
 	int GetStatus(unsigned int devNum);
@@ -169,13 +211,36 @@ public:
 
 private:
 
-	class HeliosDacDevice // Individual dac, interal use
+	// Base class for individual DAC, for internal use
+	class HeliosDacDevice
+	{
+
+	public:
+
+		virtual int SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints) = 0;
+		virtual int SendFrameHighResolution(unsigned int pps, std::uint8_t flags, HeliosPointHighRes* points, unsigned int numOfPoints) = 0;
+		virtual int ConfigureHighResolutionChannels(unsigned char red, unsigned char green, unsigned char blue, unsigned char intensity, unsigned char user1, unsigned char user2, unsigned char user3, unsigned char user4) = 0;
+		virtual int GetStatus() = 0;
+		virtual int GetFirmwareVersion() = 0;
+		virtual int GetName(char* name) = 0;
+		virtual int SetName(char* name) = 0;
+		virtual int SetShutter(bool level) = 0;
+		virtual int Stop() = 0;
+		virtual int EraseFirmware() = 0;
+
+	};
+
+	// Class for USB-connected Helios DACs, for internal use
+	class HeliosDacUsbDevice : public HeliosDacDevice
 	{
 	public:
 
-		HeliosDacDevice(libusb_device_handle*);
-		~HeliosDacDevice();
+		HeliosDacUsbDevice(libusb_device_handle*);
+		~HeliosDacUsbDevice();
+
 		int SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
+		int SendFrameHighResolution(unsigned int pps, std::uint8_t flags, HeliosPointHighRes* points, unsigned int numOfPoints);
+		int ConfigureHighResolutionChannels(unsigned char red, unsigned char green, unsigned char blue, unsigned char intensity, unsigned char user1, unsigned char user2, unsigned char user3, unsigned char user4);
 		int GetStatus();
 		int GetFirmwareVersion();
 		int GetName(char* name);
@@ -183,6 +248,7 @@ private:
 		int SetShutter(bool level);
 		int Stop();
 		int EraseFirmware();
+
 
 	private:
 
@@ -201,11 +267,48 @@ private:
 		unsigned int frameBufferSize;
 		int frameResult = -1;
 		bool shutterIsOpen = false;
+	};
 
+	// Class for network (IDN) connected DACs such as Helios Pro (but also work with other DACs supporting IDN), for internal use
+	class HeliosDacIdnDevice : public HeliosDacDevice
+	{
+	public:
+
+		HeliosDacIdnDevice(IDNCONTEXT* idnContext);
+		~HeliosDacIdnDevice();
+
+		int SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
+		int SendFrameHighResolution(unsigned int pps, std::uint8_t flags, HeliosPointHighRes* points, unsigned int numOfPoints);
+		int ConfigureHighResolutionChannels(unsigned char red, unsigned char green, unsigned char blue, unsigned char intensity, unsigned char user1, unsigned char user2, unsigned char user3, unsigned char user4);
+		int GetStatus();
+		int GetFirmwareVersion();
+		int GetName(char* name);
+		int SetName(char* name);
+		int SetShutter(bool level);
+		int Stop();
+		int EraseFirmware();
+
+	private:
+
+		int DoFrame();
+		void FrameHandler();
+
+		IDNCONTEXT* context;
+		int firmwareVersion = 0;
+		char name[32];
+		bool closed = true;
+		unsigned int previousChannelEnableMask = 0;
+
+		bool frameReady = false;
+		std::mutex frameLock;
+		int frameResult = -1;
+
+		uint16_t channelDescriptors[32];
+		size_t numChannelDescriptors;
+		bool descriptorsHasChanged = false;
 	};
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;
-	std::vector<IDNCONTEXT*> idnContexts;
 	std::mutex threadLock;
 	bool inited = false;
 };
