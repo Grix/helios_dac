@@ -230,6 +230,23 @@ int HeliosDac::WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t fl
 	return dev->SendFrame(pps, flags, points, std::min<int>(numOfPoints, HELIOS_MAX_POINTS_LEGACY));
 }
 
+bool HeliosDac::GetSupportsHigherResolutions(unsigned int devNum)
+{
+	if (!inited)
+		return HELIOS_ERROR_NOT_INITIALIZED;
+
+	std::unique_lock<std::mutex> lock(threadLock);
+	HeliosDacDevice* dev = NULL;
+	if (devNum < deviceList.size())
+		dev = deviceList[devNum].get();
+	lock.unlock();
+
+	if (dev == NULL)
+		return HELIOS_ERROR_INVALID_DEVNUM;
+
+	return dev->GetSupportsHigherResolutions();
+}
+
 int HeliosDac::WriteFrameHighResolution(unsigned int devNum, unsigned int pps, unsigned int flags, HeliosPointHighRes* points, unsigned int numOfPoints)
 {
 	if (!inited)
@@ -254,23 +271,6 @@ int HeliosDac::WriteFrameHighResolution(unsigned int devNum, unsigned int pps, u
 		return HELIOS_ERROR_INVALID_DEVNUM;
 
 	return dev->SendFrameHighResolution(pps, flags, points, std::min<int>(numOfPoints, HELIOS_MAX_POINTS_LEGACY));
-}
-
-int HeliosDac::ConfigureHighResolutionChannels(unsigned int devNum, unsigned char red, unsigned char green, unsigned char blue, unsigned char intensity, unsigned char user1, unsigned char user2, unsigned char user3, unsigned char user4)
-{
-	if (!inited)
-		return HELIOS_ERROR_NOT_INITIALIZED;
-
-	std::unique_lock<std::mutex> lock(threadLock);
-	HeliosDacDevice* dev = NULL;
-	if (devNum < deviceList.size())
-		dev = deviceList[devNum].get();
-	lock.unlock();
-
-	if (dev == NULL)
-		return HELIOS_ERROR_INVALID_DEVNUM;
-
-	return dev->ConfigureHighResolutionChannels(red, green, blue, intensity, user1, user2, user3, user4);
 }
 
 int HeliosDac::GetStatus(unsigned int devNum)
@@ -322,10 +322,10 @@ int HeliosDac::GetName(unsigned int devNum, char* name)
 	if (dev->GetName(dacName) < 0)
 	{
 		// The device didn't return a name so build a generic name
-		memcpy(name, "Helios ", 8);
-		name[7] = (char)((int)(devNum >= 10) + 48);
-		name[8] = (char)((int)(devNum % 10) + 48);
-		name[9] = '\0';
+		memcpy(name, "Unknown Helios ", 16);
+		name[15] = (char)((int)(devNum >= 10) + 48);
+		name[16] = (char)((int)(devNum % 10) + 48);
+		name[17] = '\0';
 	}
 	else
 	{
@@ -486,8 +486,6 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	if (frameReady)
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
-	unsigned int bufPos = 0;
-	
 	// This is a bug workaround, the mcu won't correctly receive transfers with these sizes
 	unsigned int ppsActual = pps;
 	unsigned int numOfPointsActual = numOfPoints;
@@ -497,6 +495,10 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 		//adjust pps to keep the same frame duration even with one less point
 		ppsActual = (unsigned int)((pps * (double)numOfPointsActual / (double)numOfPoints) + 0.5); 
 	}
+	if (numOfPointsActual > HELIOS_MAX_POINTS_LEGACY)
+		return HELIOS_ERROR_TOO_MANY_POINTS; // Todo subsample instead
+
+	unsigned int bufPos = 0;
 
 	// Prepare frame buffer
 	for (unsigned int i = 0; i < numOfPointsActual; i++)
@@ -531,7 +533,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	}
 }
 
-// Sends a raw frame buffer (implemented as bulk transfer) to a dac device
+// Sends a raw frame buffer (implemented as bulk transfer) to a dac device, using high-res point structure (but simply convert down to low-res)
 // Returns 1 if success
 int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std::uint8_t flags, HeliosPointHighRes* points, unsigned int numOfPoints)
 {
@@ -541,29 +543,33 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std
 	if (frameReady)
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
-	unsigned int bufPos = 0;
-
-	//this is a bug workaround, the mcu won't correctly receive transfers with these sizes
+	// This is a bug workaround, the mcu won't correctly receive transfers with these sizes
 	unsigned int ppsActual = pps;
 	unsigned int numOfPointsActual = numOfPoints;
 	if ((((int)numOfPoints - 45) % 64) == 0)
 	{
 		numOfPointsActual--;
-		//adjust pps to keep the same frame duration even with one less point
+		// Adjust pps to keep the same frame duration even with one less point
 		ppsActual = (unsigned int)((pps * (double)numOfPointsActual / (double)numOfPoints) + 0.5);
 	}
+	if (numOfPointsActual > HELIOS_MAX_POINTS_LEGACY)
+		return HELIOS_ERROR_TOO_MANY_POINTS; // Todo subsample instead
+
+	unsigned int bufPos = 0;
 
 	// Prepare frame buffer
-	// TODO convert to non-high-res for unsupported models
+	// Converting to non-high-res for unsupported models
 	for (unsigned int i = 0; i < numOfPointsActual; i++)
 	{
-		frameBuffer[bufPos++] = (points[i].x >> 4);
-		frameBuffer[bufPos++] = ((points[i].x & 0x0F) << 4) | (points[i].y >> 8);
-		frameBuffer[bufPos++] = (points[i].y & 0xFF);
-		frameBuffer[bufPos++] = points[i].r;
-		frameBuffer[bufPos++] = points[i].g;
-		frameBuffer[bufPos++] = points[i].b;
-		frameBuffer[bufPos++] = points[i].i;
+		std::uint16_t x = points[i].x >> 4;
+		std::uint16_t y = points[i].y >> 4;
+		frameBuffer[bufPos++] = (x >> 4);
+		frameBuffer[bufPos++] = ((x & 0x0F) << 4) | (y >> 8);
+		frameBuffer[bufPos++] = (y & 0xFF);
+		frameBuffer[bufPos++] = points[i].r >> 8;
+		frameBuffer[bufPos++] = points[i].g >> 8;
+		frameBuffer[bufPos++] = points[i].b >> 8;
+		frameBuffer[bufPos++] = 0xFF;
 	}
 	frameBuffer[bufPos++] = (ppsActual & 0xFF);
 	frameBuffer[bufPos++] = (ppsActual >> 8);
@@ -586,10 +592,64 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std
 		return DoFrame();
 	}
 }
-
-int HeliosDac::HeliosDacUsbDevice::ConfigureHighResolutionChannels(unsigned char red, unsigned char green, unsigned char blue, unsigned char intensity, unsigned char user1, unsigned char user2, unsigned char user3, unsigned char user4)
+// Sends a raw frame buffer (implemented as bulk transfer) to a dac device, using extended point structure (but simply convert down to low-res)
+// Returns 1 if success
+int HeliosDac::HeliosDacUsbDevice::SendFrameExtended(unsigned int pps, std::uint8_t flags, HeliosPointExt* points, unsigned int numOfPoints)
 {
-	return HELIOS_ERROR_NOT_SUPPORTED; // TODO
+	if (closed)
+		return HELIOS_ERROR_DEVICE_CLOSED;
+
+	if (frameReady)
+		return HELIOS_ERROR_DEVICE_FRAME_READY;
+
+	// This is a bug workaround, the mcu won't correctly receive transfers with these sizes
+	unsigned int ppsActual = pps;
+	unsigned int numOfPointsActual = numOfPoints;
+	if ((((int)numOfPoints - 45) % 64) == 0)
+	{
+		numOfPointsActual--;
+		// Adjust pps to keep the same frame duration even with one less point
+		ppsActual = (unsigned int)((pps * (double)numOfPointsActual / (double)numOfPoints) + 0.5);
+	}
+	if (numOfPointsActual > HELIOS_MAX_POINTS_LEGACY)
+		return HELIOS_ERROR_TOO_MANY_POINTS; // Todo subsample instead
+
+	unsigned int bufPos = 0;
+
+	// Prepare frame buffer
+	// Converting to non-high-res for unsupported models
+	for (unsigned int i = 0; i < numOfPointsActual; i++)
+	{
+		std::uint16_t x = points[i].x >> 4;
+		std::uint16_t y = points[i].y >> 4;
+		frameBuffer[bufPos++] = (x >> 4);
+		frameBuffer[bufPos++] = ((x & 0x0F) << 4) | (y >> 8);
+		frameBuffer[bufPos++] = (y & 0xFF);
+		frameBuffer[bufPos++] = points[i].r >> 8;
+		frameBuffer[bufPos++] = points[i].g >> 8;
+		frameBuffer[bufPos++] = points[i].b >> 8;
+		frameBuffer[bufPos++] = points[i].i >> 8;
+	}
+	frameBuffer[bufPos++] = (ppsActual & 0xFF);
+	frameBuffer[bufPos++] = (ppsActual >> 8);
+	frameBuffer[bufPos++] = (numOfPointsActual & 0xFF);
+	frameBuffer[bufPos++] = (numOfPointsActual >> 8);
+	frameBuffer[bufPos++] = flags;
+
+	frameBufferSize = bufPos;
+
+	if (!shutterIsOpen)
+		SetShutter(1);
+
+	if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
+	{
+		frameReady = true;
+		return HELIOS_SUCCESS;
+	}
+	else
+	{
+		return DoFrame();
+	}
 }
 
 // Sends frame to DAC
@@ -916,7 +976,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 
 	for (int i = 0; i < numOfPoints; i++)
 	{
-		if (idnPutSampleXYRGB(context, points[i].x, points[i].y, points[i].r, points[i].g, points[i].b))
+		if (idnPutSampleXYRGB(context, points[i].x << 4, points[i].y << 4, points[i].r, points[i].g, points[i].b))
 			return false;
 	}
 
@@ -952,7 +1012,12 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 
 	for (int i = 0; i < numOfPoints; i++)
 	{
-		if (idnPutSampleXYRGB(context, points[i].x, points[i].y, points[i].r, points[i].g, points[i].b)) // TODO custom fields
+		for (int j = 4; j < numChannelDescriptors; )
+		{
+			if (channelDescriptors[j++] == 0x527E)
+		}
+
+		if (idnPutSampleGeneric(context, points[i].x, points[i].y, points[i].r, points[i].g, points[i].b)) // TODO custom fields
 			return false;
 	}
 
@@ -965,6 +1030,34 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 	{
 		return DoFrame();
 	}
+}
+
+
+//Gets status of DAC, 1 means DAC is ready to receive frame, 0 means it's not
+int HeliosDac::HeliosDacIdnDevice::GetStatus()
+{
+	if (closed)
+		return HELIOS_ERROR_DEVICE_CLOSED;
+
+	return true; // No feedback in IDN
+}
+
+// Returns whether a specific DAC supports the new WriteFrameHighResolution() and WriteFrameExtended() functions. 
+bool HeliosDac::GetSupportsHigherResolutions(unsigned int devNum)
+{
+	if (!inited)
+		return HELIOS_ERROR_NOT_INITIALIZED;
+
+	std::unique_lock<std::mutex> lock(threadLock);
+	HeliosDacDevice* dev = NULL;
+	if (devNum < deviceList.size())
+		dev = deviceList[devNum].get();
+	lock.unlock();
+
+	if (dev == NULL)
+		return HELIOS_ERROR_INVALID_DEVNUM;
+
+	return dev->GetSupportsHigherResolutions();
 }
 
 int HeliosDac::HeliosDacIdnDevice::ConfigureHighResolutionChannels(unsigned char red, unsigned char green, unsigned char blue, unsigned char intensity, unsigned char user1, unsigned char user2, unsigned char user3, unsigned char user4)
@@ -1096,15 +1189,6 @@ int HeliosDac::HeliosDacIdnDevice::GetName(char* dacName)
 	memcpy(dacName, name, 31);
 
 	return HELIOS_SUCCESS;
-}
-
-//Gets status of DAC, 1 means DAC is ready to receive frame, 0 means it's not
-int HeliosDac::HeliosDacIdnDevice::GetStatus()
-{
-	if (closed)
-		return HELIOS_ERROR_DEVICE_CLOSED;
-
-	return true; // No feedback in IDN
 }
 
 //Set shutter level of DAC

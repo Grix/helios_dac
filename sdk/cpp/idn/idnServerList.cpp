@@ -51,11 +51,7 @@
 
 #endif
 
-
-// Project headers
 #include "idn-hello.h"
-
-// Module header
 #include "idnServerList.h"
 
 

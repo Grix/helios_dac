@@ -182,8 +182,6 @@ int idnOpenFrameGeneric(IDNCONTEXT* context, uint16_t* channelDescriptors, size_
 }
 
 
-
-
 int idnPutSampleGeneric(IDNCONTEXT* context, int8_t* sampleBuffer, size_t sampleBufferSize)
 {
 	IDNCONTEXT* ctx = context;
@@ -292,7 +290,7 @@ int idnPutSampleXYRGB(IDNCONTEXT* context, int16_t x, int16_t y, uint8_t r, uint
 	// Make sure there is enough buffer. Note: payload and bufferPtr are (uint8_t *) - and 
 	// pointer substraction is defined as the difference of (array) elements.
 	unsigned lenUsed = (unsigned)(ctx->payload - ctx->bufferPtr);
-	unsigned lenNeeded = lenUsed + (XYRGB_SAMPLE_SIZE);
+	unsigned lenNeeded = lenUsed + (XYRGB_SAMPLE_SIZE); // Todo remove?
 
 
 	// Note: With IDN, the first two points and the last two points of a frame have special 

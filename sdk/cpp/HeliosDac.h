@@ -108,27 +108,37 @@ on IDN network DACs, they will always be ready to receive a new frame.
 // Point data structures
 typedef struct
 {
-	std::uint16_t x; // 12 bit (valid values from 0 to 0xFFF)
-	std::uint16_t y; // 12 bit (valid values from 0 to 0xFFF)
-	std::uint8_t r;	// 8 bit (valid values from 0 to 0xFF)
-	std::uint8_t g;	// 8 bit (valid values from 0 to 0xFF)
-	std::uint8_t b;	// 8 bit (valid values from 0 to 0xFF)
-	std::uint8_t i;	// 8 bit (valid values from 0 to 0xFF). Optional and should be set to max value if not used.
+	std::uint16_t x; // 12 bit (valid values from 0 to 0xFFF). X position.
+	std::uint16_t y; // 12 bit (valid values from 0 to 0xFFF). Y position.
+	std::uint8_t r;	// 8 bit (valid values from 0 to 0xFF). Red.
+	std::uint8_t g;	// 8 bit (valid values from 0 to 0xFF). Green.
+	std::uint8_t b;	// 8 bit (valid values from 0 to 0xFF). Blue.
+	std::uint8_t i;	// 8 bit (valid values from 0 to 0xFF). Intensity. Optional and should be set to max value if not used.
 } HeliosPoint;
 
 typedef struct
 {
-	std::uint16_t x; // Valid values from 0 to 0xFFFF. X position.
-	std::uint16_t y; // Valid values from 0 to 0xFFFF. Y position.
-	std::uint16_t r; // Valid values from 0 to 0xFFFF. Red.
-	std::uint16_t g; // Valid values from 0 to 0xFFFF. Green.
-	std::uint16_t b; // Valid values from 0 to 0xFFFF. Blue.
-	std::uint16_t i; // Valid values from 0 to 0xFFFF. Intensity. Optional and should be set to max value if not used.
-	std::uint16_t user1; // Valid values from 0 to 0xFFFF. Deep blue or custom. Can be disabled for faster max pps by using SKIP_U1 flag in WriteFrameHighResolution()
-	std::uint16_t user2; // Valid values from 0 to 0xFFFF. Yellow or custom. Can be disabled for faster max pps by using SKIP_U2 flag in WriteFrameHighResolution()
-	std::uint16_t user3; // Valid values from 0 to 0xFFFF. Cyan, beam brush, or custom. Can be disabled for faster max pps by using SKIP_U3 flag in WriteFrameHighResolution()
-	std::uint16_t user4; // Valid values from 0 to 0xFFFF. Z position, X-prime, field change, or custom. Can be disabled for faster max pps by using SKIP_U4 flag in WriteFrameHighResolution()
+	std::uint16_t x; // 16 bit (valid values from 0 to 0xFFFF). X position.
+	std::uint16_t y; // 16 bit (valid values from 0 to 0xFFFF). Y position.
+	std::uint16_t r; // 16 bit (valid values from 0 to 0xFFFF). Red.
+	std::uint16_t g; // 16 bit (valid values from 0 to 0xFFFF). Green.
+	std::uint16_t b; // 16 bit (valid values from 0 to 0xFFFF). Blue.
+	std::uint16_t user1; // 16 bit (valid values from 0 to 0xFFFF). Deep blue or custom.
 } HeliosPointHighRes;
+
+typedef struct
+{
+	std::uint16_t x; // 16 bit (valid values from 0 to 0xFFFF). X position.
+	std::uint16_t y; // 16 bit (valid values from 0 to 0xFFFF). Y position.
+	std::uint16_t r; // 16 bit (valid values from 0 to 0xFFFF). Red.
+	std::uint16_t g; // 16 bit (valid values from 0 to 0xFFFF). Green.
+	std::uint16_t b; // 16 bit (valid values from 0 to 0xFFFF). Blue.
+	std::uint16_t i; // 16 bit (valid values from 0 to 0xFFFF). Intensity. Optional and should be set to max value if not used.
+	std::uint16_t user1; // 16 bit (valid values from 0 to 0xFFFF). Deep blue or custom.
+	std::uint16_t user2; // 16 bit (valid values from 0 to 0xFFFF). Yellow or custom. 
+	std::uint16_t user3; // 16 bit (valid values from 0 to 0xFFFF). Cyan, beam brush, or custom. 
+	std::uint16_t user4; // 16 bit (valid values from 0 to 0xFFFF). Z position, X-prime, field change, or custom. 
+} HeliosPointExt;
 
 class HeliosDac
 {
@@ -137,7 +147,7 @@ public:
 	HeliosDac();
 	~HeliosDac();
 
-	// Unless otherwise specified, functions return HELIOS_SUCCESS if OK, and HELIOS_ERROR if something went wrong.
+	// Unless otherwise specified, functions return HELIOS_SUCCESS if OK, and some negative error code (see above) if something went wrong.
 
 	// Initializes drivers, opens connection to all devices.
 	// Returns number of available devices.
@@ -147,44 +157,54 @@ public:
 	// Closes and frees all devices.
 	int CloseDevices();
 
-	// Writes and outputs a frame to the speficied dac, using the legacy point structure designed for the original Helios DAC.
+	// Writes and outputs a frame to the speficied dac, using the lightweight point structure designed for the original Helios DAC.
 	// devNum: dac number (0 to n where n+1 is the return value from OpenDevices() ).
 	// pps: rate of output in points per second.
 	// flags: (default is 0)
 	//	 Bit 0 (LSB) = if 1, start output immediately, instead of waiting for current frame (if there is one) to finish playing
 	//	 Bit 1 = if 1, play frame only once, instead of repeating until another frame is written
 	//   Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
-	//			(NB: then the function might return 1 even if it fails)
+	//			(NB: then the function might return 1 even if the transfer fails)
 	//	 Bit 3-7 = reserved
 	// points: pointer to point data. See point structure declaration earlier in this document.
 	// numOfPoints: number of points in the frame.
 	int WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
 
-	// Writes and outputs a frame to the speficied dac, using the high resolution point structure supported by newer DAC models.
-	// This function is safe to call even for older DAC models, it will simply convert to the low-res points if necessary (although this wastes CPU/memory).
-	// You can call ConfigureHighResolutionChannels() to disable/configure color channels that you don't need.
+	// Writes and outputs a frame to the speficied dac, using a higher resolution point structure supported by newer DAC models.
+	// It is safe to call this function even for DACs that don't support higher resolution data, in that case the data will be converted (though at a slight performance cost)
 	// devNum: dac number (0 to n, where n+1 is the return value from OpenDevices() ).
 	// pps: rate of output in points per second.
 	// flags: (default is 0)
 	//	 Bit 0 (LSB) = if 1, start output immediately, instead of waiting for current frame (if there is one) to finish playing
 	//	 Bit 1 = if 1, play frame only once, instead of repeating until another frame is written
 	//   Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
-	//			(NB: then the function might return 1 even if it fails)
+	//			(NB: then the function might return 1 even if the transfer fails)
 	//	 Bit 3-7 = reserved
 	// points: pointer to point data. See point structure declaration earlier in this document.
 	// numOfPoints: number of points in the frame.
-	// channelEnableMask: Bitmask that signals which channels (X, Y, Z, R, G, B, I, U1, U2, U3, U4) are enabled. TODO
 	int WriteFrameHighResolution(unsigned int devNum, unsigned int pps, unsigned int flags, HeliosPointHighRes* points, unsigned int numOfPoints);
 
-	// This function lets you enable or disable various color and aux channels when using WriteFrameHighResolution(), as well as adjust resolution between 8 and 16 bits. 
-	// For each channel argument, pass one of the following values: 0: Disabled, 1: Enabled with 8-bit resolution, 2: Enabled with 16-bit resolution.
-	// It is beneficial to disable channels you don't use to preserve bandwidth and processing power, and enable higher max pps on some DAC models.
-	// By default, if you don't run this function, only channels X,Y,R,G,B are enabled, matching the needs of most projectors. Otherwise, run this once after opening the device.
-	// Does not affect the legacy WriteFrame() function.
-	int ConfigureHighResolutionChannels(unsigned int devNum, unsigned char red, unsigned char green, unsigned char blue, unsigned char intensity, unsigned char user1, unsigned char user2, unsigned char user3, unsigned char user4);
+	// Writes and outputs a frame to the speficied dac, with additional optional channels and a higher resolution point structure supported by newer DAC models.
+	// It is safe to call this function even for DACs that don't support higher resolution data, in that case the data will be converted (though at a slight performance cost)
+	// devNum: dac number (0 to n, where n+1 is the return value from OpenDevices() ).
+	// pps: rate of output in points per second.
+	// flags: (default is 0)
+	//	 Bit 0 (LSB) = if 1, start output immediately, instead of waiting for current frame (if there is one) to finish playing
+	//	 Bit 1 = if 1, play frame only once, instead of repeating until another frame is written
+	//   Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
+	//			(NB: then the function might return 1 even if the transfer fails)
+	//	 Bit 3-7 = reserved
+	// points: pointer to point data. See point structure declaration earlier in this document.
+	// numOfPoints: number of points in the frame.
+	int WriteFrameExtended(unsigned int devNum, unsigned int pps, unsigned int flags, HeliosPointExt* points, unsigned int numOfPoints);
 
 	// Gets status of DAC, 1 means DAC is ready to receive frame, 0 means it is not.
 	int GetStatus(unsigned int devNum);
+
+	// Returns whether a specific DAC supports the new WriteFrameHighResolution() and WriteFrameExtended() functions. 
+	// The Original Helios USB device does not, at least not all firmware versions. HeliosPRO / IDN devices supports it.
+	// Note that it is safe to call these function even for DACs that don't support higher resolution data, in that case the data will be converted (though at a performance cost).
+	bool GetSupportsHigherResolutions(unsigned int devNum);
 
 	// Returns firmware version of DAC.
 	int GetFirmwareVersion(unsigned int devNum);
@@ -219,8 +239,9 @@ private:
 
 		virtual int SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints) = 0;
 		virtual int SendFrameHighResolution(unsigned int pps, std::uint8_t flags, HeliosPointHighRes* points, unsigned int numOfPoints) = 0;
-		virtual int ConfigureHighResolutionChannels(unsigned char red, unsigned char green, unsigned char blue, unsigned char intensity, unsigned char user1, unsigned char user2, unsigned char user3, unsigned char user4) = 0;
+		virtual int SendFrameExtended(unsigned int pps, std::uint8_t flags, HeliosPointExt* points, unsigned int numOfPoints) = 0;
 		virtual int GetStatus() = 0;
+		virtual bool GetSupportsHigherResolutions() = 0;
 		virtual int GetFirmwareVersion() = 0;
 		virtual int GetName(char* name) = 0;
 		virtual int SetName(char* name) = 0;
@@ -240,8 +261,9 @@ private:
 
 		int SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
 		int SendFrameHighResolution(unsigned int pps, std::uint8_t flags, HeliosPointHighRes* points, unsigned int numOfPoints);
-		int ConfigureHighResolutionChannels(unsigned char red, unsigned char green, unsigned char blue, unsigned char intensity, unsigned char user1, unsigned char user2, unsigned char user3, unsigned char user4);
+		int SendFrameExtended(unsigned int pps, std::uint8_t flags, HeliosPointExt* points, unsigned int numOfPoints);
 		int GetStatus();
+		bool GetSupportsHigherResolutions() { return false; } // TODO read capabilities from DAC
 		int GetFirmwareVersion();
 		int GetName(char* name);
 		int SetName(char* name);
@@ -269,7 +291,7 @@ private:
 		bool shutterIsOpen = false;
 	};
 
-	// Class for network (IDN) connected DACs such as Helios Pro (but also work with other DACs supporting IDN), for internal use
+	// Class for network (IDN) connected DACs such as HeliosPRO (but also work with other DACs supporting IDN), for internal use
 	class HeliosDacIdnDevice : public HeliosDacDevice
 	{
 	public:
@@ -279,8 +301,9 @@ private:
 
 		int SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
 		int SendFrameHighResolution(unsigned int pps, std::uint8_t flags, HeliosPointHighRes* points, unsigned int numOfPoints);
-		int ConfigureHighResolutionChannels(unsigned char red, unsigned char green, unsigned char blue, unsigned char intensity, unsigned char user1, unsigned char user2, unsigned char user3, unsigned char user4);
+		int SendFrameExtended(unsigned int pps, std::uint8_t flags, HeliosPointExt* points, unsigned int numOfPoints);
 		int GetStatus();
+		bool GetSupportsHigherResolutions() { return true; }
 		int GetFirmwareVersion();
 		int GetName(char* name);
 		int SetName(char* name);
