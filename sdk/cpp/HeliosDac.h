@@ -108,36 +108,36 @@ on IDN network DACs, they will always be ready to receive a new frame.
 // Point data structures
 typedef struct
 {
-	std::uint16_t x; // 12 bit (valid values from 0 to 0xFFF). X position.
-	std::uint16_t y; // 12 bit (valid values from 0 to 0xFFF). Y position.
-	std::uint8_t r;	// 8 bit (valid values from 0 to 0xFF). Red.
-	std::uint8_t g;	// 8 bit (valid values from 0 to 0xFF). Green.
-	std::uint8_t b;	// 8 bit (valid values from 0 to 0xFF). Blue.
-	std::uint8_t i;	// 8 bit (valid values from 0 to 0xFF). Intensity. Optional and should be set to max value if not used.
+	std::uint16_t x; // Unsigned 12 bit (valid values from 0 to 0xFFF). X position.
+	std::uint16_t y; // Unsigned 12 bit (valid values from 0 to 0xFFF). Y position.
+	std::uint8_t r;	// Unsigned 8 bit (valid values from 0 to 0xFF). Red.
+	std::uint8_t g;	// Unsigned 8 bit (valid values from 0 to 0xFF). Green.
+	std::uint8_t b;	// Unsigned 8 bit (valid values from 0 to 0xFF). Blue.
+	std::uint8_t i;	// Unsigned 8 bit (valid values from 0 to 0xFF). Intensity. Optional and should be set to max value if not used.
 } HeliosPoint;
 
 typedef struct
 {
-	std::uint16_t x; // 16 bit (valid values from 0 to 0xFFFF). X position.
-	std::uint16_t y; // 16 bit (valid values from 0 to 0xFFFF). Y position.
-	std::uint16_t r; // 16 bit (valid values from 0 to 0xFFFF). Red.
-	std::uint16_t g; // 16 bit (valid values from 0 to 0xFFFF). Green.
-	std::uint16_t b; // 16 bit (valid values from 0 to 0xFFFF). Blue.
-	std::uint16_t user1; // 16 bit (valid values from 0 to 0xFFFF). Deep blue or custom.
+	std::uint16_t x; // Unsigned 16 bit (valid values from 0 to 0xFFFF). X position.
+	std::uint16_t y; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Y position.
+	std::uint16_t r; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Red.
+	std::uint16_t g; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Green.
+	std::uint16_t b; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Blue.
+	std::uint16_t user1; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Deep blue or custom.
 } HeliosPointHighRes;
 
 typedef struct
 {
-	std::uint16_t x; // 16 bit (valid values from 0 to 0xFFFF). X position.
-	std::uint16_t y; // 16 bit (valid values from 0 to 0xFFFF). Y position.
-	std::uint16_t r; // 16 bit (valid values from 0 to 0xFFFF). Red.
-	std::uint16_t g; // 16 bit (valid values from 0 to 0xFFFF). Green.
-	std::uint16_t b; // 16 bit (valid values from 0 to 0xFFFF). Blue.
-	std::uint16_t i; // 16 bit (valid values from 0 to 0xFFFF). Intensity. Optional and should be set to max value if not used.
-	std::uint16_t user1; // 16 bit (valid values from 0 to 0xFFFF). Deep blue or custom.
-	std::uint16_t user2; // 16 bit (valid values from 0 to 0xFFFF). Yellow or custom. 
-	std::uint16_t user3; // 16 bit (valid values from 0 to 0xFFFF). Cyan, beam brush, or custom. 
-	std::uint16_t user4; // 16 bit (valid values from 0 to 0xFFFF). Z position, X-prime, field change, or custom. 
+	std::uint16_t x; // Unsigned 16 bit (valid values from 0 to 0xFFFF). X position.
+	std::uint16_t y; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Y position.
+	std::uint16_t r; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Red.
+	std::uint16_t g; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Green.
+	std::uint16_t b; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Blue.
+	std::uint16_t i; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Intensity. Optional and should be set to max value if not used.
+	std::uint16_t user1; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Deep blue or custom.
+	std::uint16_t user2; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Yellow or custom. 
+	std::uint16_t user3; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Cyan, beam brush, or custom. 
+	std::uint16_t user4; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Z position, X-prime, field change, or custom. 
 } HeliosPointExt;
 
 class HeliosDac
@@ -275,7 +275,7 @@ private:
 	private:
 
 		int DoFrame();
-		void FrameHandler();
+		void BackgroundFrameHandler();
 		int SendControl(std::uint8_t* buffer, unsigned int bufferSize);
 
 		struct libusb_transfer* interruptTransfer = NULL;
@@ -314,7 +314,7 @@ private:
 	private:
 
 		int DoFrame();
-		void FrameHandler();
+		void BackgroundFrameHandler();
 
 		IDNCONTEXT* context;
 		int firmwareVersion = 0;
@@ -325,10 +325,6 @@ private:
 		bool frameReady = false;
 		std::mutex frameLock;
 		int frameResult = -1;
-
-		uint16_t channelDescriptors[32];
-		size_t numChannelDescriptors;
-		bool descriptorsHasChanged = false;
 	};
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;

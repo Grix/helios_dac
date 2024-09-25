@@ -81,6 +81,9 @@ typedef struct
 //#define MAX_IDN_MESSAGE_LEN             0x0800      // Message len for fragmentation tests
 
 #define XYRGB_SAMPLE_SIZE               7
+#define XYRGBI_SAMPLE_SIZE              8
+#define XYRGB_HIGHRES_SAMPLE_SIZE       10
+#define EXTENDED_SAMPLE_SIZE			20
 
 
 
@@ -132,6 +135,12 @@ int idnOpenFrameGeneric(IDNCONTEXT* context, uint16_t* channelDescriptors, size_
 int idnPutSampleGeneric(IDNCONTEXT* context, int8_t* sampleBuffer, size_t sampleBufferSize);
 int idnOpenFrameXYRGB(IDNCONTEXT* context);
 int idnPutSampleXYRGB(IDNCONTEXT* context, int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
+int idnOpenFrameXYRGBI(IDNCONTEXT* context);
+int idnPutSampleXYRGBI(IDNCONTEXT* context, int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t i);
+int idnOpenFrameHighResXYRGB(IDNCONTEXT* context);
+int idnPutSampleHighResXYRGB(IDNCONTEXT* context, int16_t x, int16_t y, uint16_t r, uint16_t g, uint16_t b);
+int idnOpenFrameExtended(IDNCONTEXT* context);
+int idnPutSampleExtended(IDNCONTEXT* context, int16_t x, int16_t y, uint16_t r, uint16_t g, uint16_t b, uint16_t i, uint16_t u1, uint16_t u2, uint16_t u3, uint16_t u4);
 int idnPushFrame(IDNCONTEXT* context);
 int idnSendVoid(IDNCONTEXT* context);
 int idnSendClose(IDNCONTEXT* context);
