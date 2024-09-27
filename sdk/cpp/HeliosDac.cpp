@@ -391,6 +391,24 @@ int HeliosDac::SetShutter(unsigned int devNum, bool level)
 	return dev->SetShutter(level);
 }
 
+// Returns whether a specific DAC supports the new WriteFrameHighResolution() and WriteFrameExtended() functions. 
+bool HeliosDac::GetSupportsHigherResolutions(unsigned int devNum)
+{
+	if (!inited)
+		return HELIOS_ERROR_NOT_INITIALIZED;
+
+	std::unique_lock<std::mutex> lock(threadLock);
+	HeliosDacDevice* dev = NULL;
+	if (devNum < deviceList.size())
+		dev = deviceList[devNum].get();
+	lock.unlock();
+
+	if (dev == NULL)
+		return HELIOS_ERROR_INVALID_DEVNUM;
+
+	return dev->GetSupportsHigherResolutions();
+}
+
 int HeliosDac::SetLibusbDebugLogLevel(int logLevel)
 {
 	if (!inited)
@@ -1083,25 +1101,6 @@ int HeliosDac::HeliosDacIdnDevice::GetStatus()
 	return true; // No feedback in IDN
 }
 
-// Returns whether a specific DAC supports the new WriteFrameHighResolution() and WriteFrameExtended() functions. 
-bool HeliosDac::GetSupportsHigherResolutions(unsigned int devNum)
-{
-	if (!inited)
-		return HELIOS_ERROR_NOT_INITIALIZED;
-
-	std::unique_lock<std::mutex> lock(threadLock);
-	HeliosDacDevice* dev = NULL;
-	if (devNum < deviceList.size())
-		dev = deviceList[devNum].get();
-	lock.unlock();
-
-	if (dev == NULL)
-		return HELIOS_ERROR_INVALID_DEVNUM;
-
-	return dev->GetSupportsHigherResolutions();
-}
-
-
 // Sends frame to DAC
 int HeliosDac::HeliosDacIdnDevice::DoFrame()
 {
@@ -1154,7 +1153,7 @@ int HeliosDac::HeliosDacIdnDevice::GetName(char* dacName)
 	int length = context->name.length();
 	if (length > 3) // Empty name has 3 chars
 	{
-		// Use name of IDN service
+		// Use name of IDN service if not empty
 		if (length > 31)
 			length = 31;
 		memcpy(name, context->name.c_str(), length + 1);
