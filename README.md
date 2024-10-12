@@ -13,7 +13,7 @@ Open source, low cost USB DAC for the ISP-DB25 (ILDA) laser protocol. Allows you
 
 #### Third party software integration
 
-Navigate to the folder "sdk" to find the relevant code for interfacing with the Helios DAC in your software. The core SDK is written in C++, documented in HeliosDac.h. But libraries with exported functions that you can call from many languages such as python or C# are available, documented in HeliosDacAPI.h. You can also find examples of usage in the examples folder.
+Navigate to the folder "sdk" to find the relevant code for interfacing with the Helios DAC in your software, and a readme with more detailed usage instructions. The core SDK is written in C++, documented in HeliosDac.h. But libraries with exported functions that you can call from many languages such as python or C# are available, documented in HeliosDacAPI.h. You can also find examples of usage in the examples folder.
 
 The C++ code depends on libusb. You can use the included libusb binary libraries for Win32, Mac or Linux, or you can build your own. You can find the libusb source on libusb.info, or binaries on https://sourceforge.net/projects/libusb/files/libusb-1.0/
 

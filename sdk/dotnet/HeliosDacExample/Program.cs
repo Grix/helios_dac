@@ -34,6 +34,8 @@ try
     Console.WriteLine($"Found {numberOfDevices} Helios DACs:");
     for (int deviceId = 0; deviceId < numberOfDevices; deviceId++)
     {
+        heliosController.SetShutter(deviceId, false);
+
         Console.WriteLine(heliosController.GetName(deviceId));
     }
 }
