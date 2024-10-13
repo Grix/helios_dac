@@ -4,6 +4,7 @@
 //  07/2013 Dirk Apitz, created
 //  01/2015 Dirk Apitz, IDN standard draft, separate stream header file
 //  05/2016 Dirk Apitz, separate hello header file
+//  10/2024 Gitle Mikkelsen, extended with more types of data frames, like high res and 8 color channels
 // -------------------------------------------------------------------------------------------------
 
 

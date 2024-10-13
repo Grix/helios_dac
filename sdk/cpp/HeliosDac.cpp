@@ -391,24 +391,6 @@ int HeliosDac::SetShutter(unsigned int devNum, bool level)
 	return dev->SetShutter(level);
 }
 
-// Returns whether a specific DAC supports the new WriteFrameHighResolution() and WriteFrameExtended() functions. 
-bool HeliosDac::GetSupportsHigherResolutions(unsigned int devNum)
-{
-	if (!inited)
-		return HELIOS_ERROR_NOT_INITIALIZED;
-
-	std::unique_lock<std::mutex> lock(threadLock);
-	HeliosDacDevice* dev = NULL;
-	if (devNum < deviceList.size())
-		dev = deviceList[devNum].get();
-	lock.unlock();
-
-	if (dev == NULL)
-		return HELIOS_ERROR_INVALID_DEVNUM;
-
-	return dev->GetSupportsHigherResolutions();
-}
-
 int HeliosDac::SetLibusbDebugLogLevel(int logLevel)
 {
 	if (!inited)
@@ -1072,7 +1054,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 
 	for (int i = 0; i < numOfPoints; i++)
 	{
-		if (idnPutSampleExtended(context, points[i].x - 0x8000, points[i].y - 0x8000, points[i].r, points[i].g, points[i].b, points[i].i, points[i].user1, points[i].user2, points[i].user3, points[i].user4))
+		if (idnPutSampleExtended(context, (int16_t)(points[i].x - 0x8000), (int16_t)(points[i].y - 0x8000), points[i].r, points[i].g, points[i].b, points[i].i, points[i].user1, points[i].user2, points[i].user3, points[i].user4))
 			return false;
 	}
 
@@ -1100,6 +1082,25 @@ int HeliosDac::HeliosDacIdnDevice::GetStatus()
 
 	return true; // No feedback in IDN
 }
+
+// Returns whether a specific DAC supports the new WriteFrameHighResolution() and WriteFrameExtended() functions. 
+bool HeliosDac::GetSupportsHigherResolutions(unsigned int devNum)
+{
+	if (!inited)
+		return HELIOS_ERROR_NOT_INITIALIZED;
+
+	std::unique_lock<std::mutex> lock(threadLock);
+	HeliosDacDevice* dev = NULL;
+	if (devNum < deviceList.size())
+		dev = deviceList[devNum].get();
+	lock.unlock();
+
+	if (dev == NULL)
+		return HELIOS_ERROR_INVALID_DEVNUM;
+
+	return dev->GetSupportsHigherResolutions();
+}
+
 
 // Sends frame to DAC
 int HeliosDac::HeliosDacIdnDevice::DoFrame()
@@ -1153,7 +1154,7 @@ int HeliosDac::HeliosDacIdnDevice::GetName(char* dacName)
 	int length = context->name.length();
 	if (length > 3) // Empty name has 3 chars
 	{
-		// Use name of IDN service if not empty
+		// Use name of IDN service
 		if (length > 31)
 			length = 31;
 		memcpy(name, context->name.c_str(), length + 1);
@@ -1188,7 +1189,7 @@ int HeliosDac::HeliosDacIdnDevice::Stop()
 
 	idnSendVoid(context);
 
-	std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Send again after 100ms to make sure it stopped
+	std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Send again after 10ms to make sure it stopped
 
 	if (idnSendVoid(context) == 0)
 		return HELIOS_SUCCESS;

@@ -448,6 +448,7 @@ int idnOpenFrameHighResXYRGB(IDNCONTEXT* context)
 		channelConfigHdr->serviceID = ctx->serviceId;
 		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_DISCRETE;
 
+		// Standard IDTF-to-IDN descriptors
 		uint16_t* descriptors = (uint16_t*)&channelConfigHdr[1];
 		descriptors[0] = htons(0x4200);     // X
 		descriptors[1] = htons(0x4010);     // 16 bit precision
@@ -544,6 +545,7 @@ int idnOpenFrameExtended(IDNCONTEXT* context)
 		channelConfigHdr->serviceID = ctx->serviceId;
 		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_DISCRETE;
 
+		// Standard IDTF-to-IDN descriptors
 		uint16_t* descriptors = (uint16_t*)&channelConfigHdr[1];
 		descriptors[0] = htons(0x4200);     // X
 		descriptors[1] = htons(0x4010);     // 16 bit precision
@@ -557,13 +559,13 @@ int idnOpenFrameExtended(IDNCONTEXT* context)
 		descriptors[9] = htons(0x4010);     // 16 bit precision
 		descriptors[10] = htons(0x5C10);     // Intensity, legacy signal
 		descriptors[11] = htons(0x4010);     // 16 bit precision
-		descriptors[12] = htons(0x51BD);     // User 1 (Deep blue)
+		descriptors[12] = htons(0x51BD);     // User 1 (Here configured as deep blue)
 		descriptors[13] = htons(0x4010);     // 16 bit precision
 		descriptors[14] = htons(0x5241);     // User 2 (Here configured as yellow)
 		descriptors[15] = htons(0x4010);     // 16 bit precision
 		descriptors[16] = htons(0x51E8);     // User 3 (Here configured as cyan)
 		descriptors[17] = htons(0x4010);     // 16 bit precision
-		descriptors[18] = htons(0x4201);     // User 4 (Here configured as X-prime) TODO cannot use X-prime because ISP-DB25 expects +-10V, HeliosPRO can only do 5V on U4.
+		descriptors[18] = htons(0x4201);     // User 4 (Here configured as X-prime) - TODO nmaybe shouldn't use X-prime because ISP-DB25 expects +-10V on it, but HeliosPRO can only do 5V on U4.
 		descriptors[19] = htons(0x4010);     // 16 bit precision
 
 		// Move sample chunk start and set flag in contentID field
