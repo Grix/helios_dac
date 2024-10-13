@@ -209,7 +209,7 @@ int HeliosDac::WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t fl
 	if (!inited)
 		return HELIOS_ERROR_NOT_INITIALIZED;
 
-	if (points == NULL)
+	if (points == NULL || numOfPoints == 0)
 		return HELIOS_ERROR_NULL_POINTS;
 
 	if (pps > HELIOS_MAX_RATE_LEGACY) // TODO get limits specific to DAC model
@@ -235,7 +235,7 @@ int HeliosDac::WriteFrameHighResolution(unsigned int devNum, unsigned int pps, u
 	if (!inited)
 		return HELIOS_ERROR_NOT_INITIALIZED;
 
-	if (points == NULL)
+	if (points == NULL || numOfPoints == 0)
 		return HELIOS_ERROR_NULL_POINTS;
 
 	if (pps > HELIOS_MAX_RATE_LEGACY) // TODO get limits specific to DAC model
@@ -261,7 +261,7 @@ int HeliosDac::WriteFrameExtended(unsigned int devNum, unsigned int pps, unsigne
 	if (!inited)
 		return HELIOS_ERROR_NOT_INITIALIZED;
 
-	if (points == NULL)
+	if (points == NULL || numOfPoints == 0)
 		return HELIOS_ERROR_NULL_POINTS;
 
 	if (pps > HELIOS_MAX_RATE_LEGACY) // TODO get limits specific to DAC model
@@ -915,6 +915,8 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 	for (int i = 0; i < 32; i++)
 		name[i] = 0;
 
+	statusReadyTime = std::chrono::high_resolution_clock::now();
+
 	context->bufferLen = 0x4000;
 	context->bufferPtr = new uint8_t[0x4000];
 	context->startTime = plt_getMonoTimeUS();
@@ -976,12 +978,23 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	if (frameReady)
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
+	if (numOfPoints == 0)
+		return HELIOS_ERROR_NULL_POINTS;
+
+	if (pps == 0)
+		return HELIOS_ERROR_PPS_TOO_LOW;
+
 	if (idnOpenFrameXYRGB(context))
 		return false;
 
-	context->usFrameTime = 1000000 / ((double)numOfPoints / pps);
 	context->scanSpeed = pps;
 	context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
+
+	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0) && !firstFrame)
+	{
+		statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)) * 0.98)); // Now plus duration of frame
+	}
+	firstFrame = false;
 
 	for (int i = 0; i < numOfPoints; i++)
 	{
@@ -1010,12 +1023,20 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 	if (frameReady)
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
+	if (numOfPoints == 0)
+		return HELIOS_ERROR_NULL_POINTS;
+
 	if (idnOpenFrameHighResXYRGB(context))
 		return false;
 
-	context->usFrameTime = 1000000 / ((double)numOfPoints / pps);
 	context->scanSpeed = pps;
 	context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
+
+	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0) && !firstFrame)
+	{
+		statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)) * 0.98)); // Now plus duration of frame
+	}
+	firstFrame = false;
 
 	for (int i = 0; i < numOfPoints; i++)
 	{
@@ -1045,12 +1066,20 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 	if (frameReady)
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
+	if (numOfPoints == 0)
+		return HELIOS_ERROR_NULL_POINTS;
+
 	if (idnOpenFrameExtended(context))
 		return false;
 
-	context->usFrameTime = 1000000 / ((double)numOfPoints / pps);
 	context->scanSpeed = pps;
 	context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
+
+	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0) && !firstFrame)
+	{
+		statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)) * 0.98)); // Now plus duration of frame
+	}
+	firstFrame = false;
 
 	for (int i = 0; i < numOfPoints; i++)
 	{
@@ -1077,7 +1106,7 @@ int HeliosDac::HeliosDacIdnDevice::GetStatus()
 	if (closed)
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
-	if (frameReady) // This isn't actually feedback from the DAC, just whether or not there is a frame waiting to be sent in the background.
+	if (frameReady || (std::chrono::high_resolution_clock::now() < statusReadyTime))
 		return false;
 
 	return true; // No feedback in IDN
@@ -1190,6 +1219,9 @@ int HeliosDac::HeliosDacIdnDevice::Stop()
 	idnSendVoid(context);
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Send again after 10ms to make sure it stopped
+
+	firstFrame = true;
+	statusReadyTime = std::chrono::high_resolution_clock::now();
 
 	if (idnSendVoid(context) == 0)
 		return HELIOS_SUCCESS;

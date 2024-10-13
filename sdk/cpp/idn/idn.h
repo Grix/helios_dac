@@ -97,7 +97,7 @@ typedef struct
 	int fdSocket;                           // Socket file descriptor
 	struct sockaddr_in serverSockAddr;      // Target server address
 	unsigned char clientGroup;              // Client group to send on
-	unsigned usFrameTime;                   // Time for one frame in microseconds (1000000/frameRate)
+	//unsigned usFrameTime;                   // Time for one frame in microseconds (1000000/frameRate)
 	int jitterFreeFlag;                     // Scan frames only once to exactly match frame rate
 	unsigned scanSpeed;                     // Scan speed in samples per second
 

@@ -31,8 +31,8 @@ on IDN network DACs, they will always be ready to receive a new frame.
 
 #define _WINSOCKAPI_   // Prevent inclusion of winsock.h in windows.h from libusb.h
 #include "libusb.h"
-#include "idn\idn.h"
-#include "idn\idnServerList.h"
+#include "idn/idn.h"
+#include "idn/idnServerList.h"
 #include <cstring>
 #include <cstdint>
 #include <thread>
@@ -56,7 +56,7 @@ on IDN network DACs, they will always be ready to receive a new frame.
 #define HELIOS_ERROR_NOT_INITIALIZED	-1
 // Attempted to perform an action with an invalid device number
 #define HELIOS_ERROR_INVALID_DEVNUM		-2
-// WriteFrame() called with null pointer to points
+// WriteFrame() called with null pointer to points or number of points being zero.
 #define HELIOS_ERROR_NULL_POINTS		-3
 // WriteFrame() called with a frame containing too many points
 #define HELIOS_ERROR_TOO_MANY_POINTS	-4
@@ -86,10 +86,20 @@ on IDN network DACs, they will always be ready to receive a new frame.
 // Errors from libusb are the libusb error code added to -5000. See libusb.h for libusb error codes.
 #define HELIOS_ERROR_LIBUSB_BASE		-5000
 	
+// Bitmask flags used in flags parameter for WriteFrame*(). Can be OR'ed together to enable multiple flags
+// No flags defined.
 #define HELIOS_FLAGS_DEFAULT			0
+// Written frame should start playing immediately, even if previously submitted frames are queued up in the frame buffer.
+// NB: This flag is NOT SUPPORTED by network-enabled DACs and is thus considered deprecated.
 #define HELIOS_FLAGS_START_IMMEDIATELY	(1 << 0)
+// Written frame should only be played exactly once, instead of being looped indefinitely if no more frames are written after this one.
 #define HELIOS_FLAGS_SINGLE_MODE		(1 << 1)
+// WriteFrame() should not block execution while the frame is transfered to the DAC, instead the transfer is processed a separate thread.
 #define HELIOS_FLAGS_DONT_BLOCK			(1 << 2)
+// For network-enabled DACs, there is no status feedback, so GetStatus() could in theory return true immediately. This flag makes it so.
+// If the flag is NOT defined (default), then a timer simulates the time it would take the DAC to play the frame and makes GetStatus()
+// return false during that time instead. This is done for compatibility reasons if your software depends on this feedback for timing.
+#define HELIOS_FLAGS_DONT_SIMULATE_TIMING	(1 << 3)
 
 // USB properties
 #define HELIOS_VID	0x1209
@@ -320,7 +330,8 @@ private:
 		int firmwareVersion = 0;
 		char name[32];
 		bool closed = true;
-		unsigned int previousChannelEnableMask = 0;
+		std::chrono::time_point<std::chrono::high_resolution_clock> statusReadyTime;
+		bool firstFrame = true;
 
 		bool frameReady = false;
 		std::mutex frameLock;
