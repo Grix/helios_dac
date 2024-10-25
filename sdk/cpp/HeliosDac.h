@@ -80,7 +80,7 @@ on IDN network DACs, they will always be ready to receive a new frame.
 #define HELIOS_ERROR_DEVICE_SIGNAL_TOO_LONG	-1005
 // Attempted to call a function that isn't supported for this particular DAC model (for example SetShutter on network DACs, since they handle shutter logic automatically instead of manually)
 #define HELIOS_ERROR_NOT_SUPPORTED			-1006
-// Error during sending on IDN network packet. See console output for more information, or errno on Unix or WSAGetLastError() on Windows.
+// Error during sending network packet for IDN DACs. See console output for more information, or errno on Unix or WSAGetLastError() on Windows.
 #define HELIOS_ERROR_NETWORK				-1007
 
 // Errors from libusb are the libusb error code added to -5000. See libusb.h for libusb error codes.
@@ -108,6 +108,8 @@ on IDN network DACs, they will always be ready to receive a new frame.
 #define EP_BULK_IN	0x81
 #define EP_INT_OUT	0x06
 #define EP_INT_IN	0x83
+
+#define MANAGEMENT_PORT 7355
 
 #ifdef _DEBUG
 #define LIBUSB_LOG_LEVEL LIBUSB_LOG_LEVEL_WARNING
@@ -332,6 +334,8 @@ private:
 		bool closed = true;
 		std::chrono::time_point<std::chrono::high_resolution_clock> statusReadyTime;
 		bool firstFrame = true;
+		int managementSocket = -1;
+		sockaddr_in managementSocketAddr;
 
 		bool frameReady = false;
 		std::mutex frameLock;

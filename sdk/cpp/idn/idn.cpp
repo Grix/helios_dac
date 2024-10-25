@@ -565,7 +565,7 @@ int idnOpenFrameExtended(IDNCONTEXT* context)
 		descriptors[15] = htons(0x4010);     // 16 bit precision
 		descriptors[16] = htons(0x51E8);     // User 3 (Here configured as cyan)
 		descriptors[17] = htons(0x4010);     // 16 bit precision
-		descriptors[18] = htons(0x4201);     // User 4 (Here configured as X-prime) - TODO nmaybe shouldn't use X-prime because ISP-DB25 expects +-10V on it, but HeliosPRO can only do 5V on U4.
+		descriptors[18] = htons(0x4201);     // User 4 (Here configured as X-prime) - TODO maybe shouldn't use X-prime because ISP-DB25 expects +-10V on it, but HeliosPRO can only do 5V on U4.
 		descriptors[19] = htons(0x4010);     // 16 bit precision
 
 		// Move sample chunk start and set flag in contentID field

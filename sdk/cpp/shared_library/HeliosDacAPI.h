@@ -83,13 +83,13 @@ HELIOS_EXPORT int SetShutter(unsigned int dacNum, bool shutterValue);
 HELIOS_EXPORT int GetFirmwareVersion(unsigned int dacNum);
 
 // Gets a descriptive name of the specified dac
-// Name is max 32 bytes long, char needs to be able to hold 32 bytes
+// Name buffer needs to be able to hold up to 32 bytes.
 // Returns 1 if successful, return 0 if the proper name couldn't be fetched from the DAC, but name is still populated with a fallback numbered name based on order of discovery by the library.
 // Return -1 if unsuccessful and name is not populated.
 HELIOS_EXPORT int GetName(unsigned int dacNum, char* name);
 
 // Gets a descriptive name of the specified dac
-// Name is max 31 bytes long including null terminator
+// Name must be max 20 characters long (21 bytes including null terminator).
 // Returns 1 if successful, return 0 if the transfer failed
 HELIOS_EXPORT int SetName(unsigned int dacNum, char* name);
 

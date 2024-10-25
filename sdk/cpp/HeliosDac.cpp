@@ -947,7 +947,7 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 #endif
 
 	// Open UDP socket
-	context->fdSocket = socket(AF_INET, SOCK_DGRAM, 0);
+	context->fdSocket = plt_sockOpen(AF_INET, SOCK_DGRAM, 0);
 	if (context->fdSocket < 0)
 	{
 #if defined(_WIN32) || defined(WIN32)
@@ -959,8 +959,18 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 		return;
 	}
 
-	//get firmware version
-	// TODO 
+	managementSocketAddr.sin_family = AF_INET;
+	managementSocketAddr.sin_port = htons(MANAGEMENT_PORT);
+	managementSocketAddr.sin_addr = context->serverSockAddr.sin_addr;
+	managementSocket = plt_sockOpen(AF_INET, SOCK_DGRAM, 0);
+	if (managementSocket < 0)
+	{
+		fprintf(stderr, "managementSocket open failed (error: %d)", plt_sockGetLastError());
+	}
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 500000;
+	setsockopt(managementSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
 
 	closed = false;
 
@@ -1166,10 +1176,49 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 // Gets firmware version of DAC
 int HeliosDac::HeliosDacIdnDevice::GetFirmwareVersion()
 {
-	return HELIOS_ERROR_NOT_SUPPORTED; // TODO
-
 	if (closed)
 		return HELIOS_ERROR_DEVICE_CLOSED;
+
+	if (firmwareVersion > 0)
+		return firmwareVersion;
+
+	char buffer[2] = { 0xE5, 0x2 };
+	int sentBytes = 0;
+	sentBytes = sendto(managementSocket, buffer, 2, 0, (const sockaddr*)&managementSocketAddr, sizeof(managementSocketAddr));
+	
+	if (sentBytes != 2)
+		return HELIOS_ERROR_NETWORK;
+
+	struct sockaddr responseAddr;
+	memcpy(&responseAddr, &managementSocketAddr, sizeof(managementSocketAddr));
+	int responseAddrLength = sizeof(managementSocketAddr);
+
+	int numBytes = recvfrom(managementSocket, buffer, sizeof(buffer), 0, &responseAddr, &responseAddrLength);
+	if (numBytes > 3)
+	{
+		if (buffer[0] == 0xE6 && buffer[1] == 0x2)
+		{
+			buffer[numBytes - 1] = '\0'; // Safety
+			int major = 0;
+			int minor = 0;
+			int patch = 0;
+#ifdef WIN32
+			if (sscanf_s(buffer, "%d.%d.%d", &major, &minor, &patch) == 3)
+#else
+			if (sscanf(buffer, "%d.%d.%d", &major, &minor, &patch) == 3)
+#endif
+			{
+				firmwareVersion = major * 10000 + minor * 100 + patch;
+				return firmwareVersion;
+			}
+			else 
+				return HELIOS_ERROR_NOT_SUPPORTED;
+		}
+		else
+			return HELIOS_ERROR_NOT_SUPPORTED;
+	}
+	else
+		return HELIOS_ERROR_NOT_SUPPORTED;
 
 	return firmwareVersion;
 }
@@ -1244,7 +1293,7 @@ int HeliosDac::HeliosDacIdnDevice::EraseFirmware()
 HeliosDac::HeliosDacIdnDevice::~HeliosDacIdnDevice()
 {
 	closed = true;
-	std::lock_guard<std::mutex>lock(frameLock); //wait until all threads have closed
+	std::lock_guard<std::mutex>lock(frameLock); // Wait until all threads have closed
 	
 	if (context != NULL)
 	{
@@ -1256,14 +1305,17 @@ HeliosDac::HeliosDacIdnDevice::~HeliosDacIdnDevice()
 		// Close socket
 		if (context->fdSocket >= 0)
 		{
-#if defined(_WIN32) || defined(WIN32)
-			closesocket(context->fdSocket);
-#else
-			close(context->fdSocket);
-#endif
+			plt_sockClose(context->fdSocket);
 		}
 
 		delete context;
 		context = NULL;
+	}
+
+	if (managementSocket >= 0)
+	{
+		if (plt_sockClose(managementSocket))
+			fprintf(stderr, "close() failed (error: %d)", plt_sockGetLastError());
+		managementSocket = -1;
 	}
 }
