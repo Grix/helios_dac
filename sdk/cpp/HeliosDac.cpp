@@ -194,7 +194,7 @@ int HeliosDac::CloseDevices()
 {
 	if (!inited)
 		return HELIOS_ERROR_NOT_INITIALIZED;
-	
+
 	std::lock_guard<std::mutex> lock(threadLock);
 	inited = false;
 	deviceList.clear(); //various destructors will clean all devices
@@ -219,7 +219,7 @@ int HeliosDac::WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t fl
 		return HELIOS_ERROR_PPS_TOO_LOW;
 
 	std::unique_lock<std::mutex> lock(threadLock);
-	HeliosDacDevice* dev = NULL; 
+	HeliosDacDevice* dev = NULL;
 	if (devNum < deviceList.size())
 		dev = deviceList[devNum].get();
 	lock.unlock();
@@ -498,11 +498,11 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	// This is a bug workaround, the mcu won't correctly receive transfers with these sizes
 	unsigned int ppsActual = pps;
 	unsigned int numOfPointsActual = numOfPoints;
-	if ((((int)numOfPoints-45) % 64) == 0)
+	if ((((int)numOfPoints - 45) % 64) == 0)
 	{
 		numOfPointsActual--;
 		//adjust pps to keep the same frame duration even with one less point
-		ppsActual = (unsigned int)((pps * (double)numOfPointsActual / (double)numOfPoints) + 0.5); 
+		ppsActual = (unsigned int)((pps * (double)numOfPointsActual / (double)numOfPoints) + 0.5);
 	}
 	if (numOfPointsActual > HELIOS_MAX_POINTS_LEGACY)
 		return HELIOS_ERROR_TOO_MANY_POINTS; // Todo subsample instead
@@ -679,7 +679,7 @@ int HeliosDac::HeliosDacUsbDevice::DoFrame()
 // Continually running thread, when a frame is ready, it is sent to the DAC
 // Only used if HELIOS_FLAGS_DONT_BLOCK is used with WriteFrame
 void HeliosDac::HeliosDacUsbDevice::BackgroundFrameHandler()
-{ 
+{
 	while (!closed)
 	{
 		// Wait until frame is ready to be sent
@@ -712,7 +712,7 @@ int HeliosDac::HeliosDacUsbDevice::GetName(char* dacName)
 	{
 		return HELIOS_ERROR_DEVICE_CLOSED;
 	}
-	
+
 	int errorCode;
 
 	std::lock_guard<std::mutex> lock(frameLock);
@@ -967,10 +967,16 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 	{
 		fprintf(stderr, "managementSocket open failed (error: %d)", plt_sockGetLastError());
 	}
+
+#ifdef WIN32
+	DWORD ms = 1000;
+	setsockopt(managementSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&ms, sizeof(ms));
+#else
 	struct timeval tv;
-	tv.tv_sec = 0;
-	tv.tv_usec = 500000;
+	tv.tv_sec = 1;
+	tv.tv_usec = 0;
 	setsockopt(managementSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+#endif
 
 	closed = false;
 
@@ -1182,12 +1188,16 @@ int HeliosDac::HeliosDacIdnDevice::GetFirmwareVersion()
 	if (firmwareVersion > 0)
 		return firmwareVersion;
 
-	char buffer[2] = { 0xE5, 0x2 };
+	char buffer[20] = { (char)0xE5, (char)0x2 };
 	int sentBytes = 0;
 	sentBytes = sendto(managementSocket, buffer, 2, 0, (const sockaddr*)&managementSocketAddr, sizeof(managementSocketAddr));
-	
+
 	if (sentBytes != 2)
+	{
+		int error = plt_sockGetLastError();
+		printf("Failed to send command for firmware check: %d\n", error);
 		return HELIOS_ERROR_NETWORK;
+	}
 
 	struct sockaddr responseAddr;
 	memcpy(&responseAddr, &managementSocketAddr, sizeof(managementSocketAddr));
@@ -1196,29 +1206,33 @@ int HeliosDac::HeliosDacIdnDevice::GetFirmwareVersion()
 	int numBytes = recvfrom(managementSocket, buffer, sizeof(buffer), 0, &responseAddr, &responseAddrLength);
 	if (numBytes > 3)
 	{
-		if (buffer[0] == 0xE6 && buffer[1] == 0x2)
+		if (buffer[0] == (char)0xE6 && buffer[1] == (char)0x2)
 		{
 			buffer[numBytes - 1] = '\0'; // Safety
 			int major = 0;
 			int minor = 0;
 			int patch = 0;
 #ifdef WIN32
-			if (sscanf_s(buffer, "%d.%d.%d", &major, &minor, &patch) == 3)
+			if (sscanf_s(buffer + 2, "%d.%d.%d", &major, &minor, &patch) == 3)
 #else
-			if (sscanf(buffer, "%d.%d.%d", &major, &minor, &patch) == 3)
+			if (sscanf(buffer + 2, "%d.%d.%d", &major, &minor, &patch) == 3)
 #endif
 			{
 				firmwareVersion = major * 10000 + minor * 100 + patch;
 				return firmwareVersion;
 			}
-			else 
+			else
 				return HELIOS_ERROR_NOT_SUPPORTED;
 		}
 		else
 			return HELIOS_ERROR_NOT_SUPPORTED;
 	}
 	else
+	{
+		int error = plt_sockGetLastError();
+		printf("Failed to receive response for firmware check: %d\n", error);
 		return HELIOS_ERROR_NOT_SUPPORTED;
+	}
 
 	return firmwareVersion;
 }
@@ -1281,7 +1295,46 @@ int HeliosDac::HeliosDacIdnDevice::Stop()
 //Sets persistent name of DAC
 int HeliosDac::HeliosDacIdnDevice::SetName(char* name)
 {
-	return HELIOS_ERROR_NOT_SUPPORTED; // TODO
+	if (closed)
+		return HELIOS_ERROR_DEVICE_CLOSED;
+
+	char buffer[35] = { (char)0xE5, (char)0x3 };
+#ifdef WIN32
+	strcpy_s(buffer + 2, 33, name);
+#else
+	strcpy(buffer + 2, name);
+#endif
+	buffer[22] = '\0'; // Safety
+	int sentBytes = 0;
+	sentBytes = sendto(managementSocket, buffer, 22, 0, (const sockaddr*)&managementSocketAddr, sizeof(managementSocketAddr));
+
+	if (sentBytes != 22)
+	{
+		int error = plt_sockGetLastError();
+		printf("Failed to send command for firmware check: %d\n", error);
+		return HELIOS_ERROR_NETWORK;
+	}
+
+	struct sockaddr responseAddr;
+	memcpy(&responseAddr, &managementSocketAddr, sizeof(managementSocketAddr));
+	int responseAddrLength = sizeof(managementSocketAddr);
+
+	int numBytes = recvfrom(managementSocket, buffer, sizeof(buffer), 0, &responseAddr, &responseAddrLength);
+	if (numBytes >= 2)
+	{
+		if (buffer[0] == (char)0xE6 && buffer[1] == (char)0x3)
+		{
+			return HELIOS_SUCCESS;
+		}
+	}
+	else
+	{
+		int error = plt_sockGetLastError();
+		printf("Failed to receive response for firmware check: %d\n", error);
+		return HELIOS_ERROR_NOT_SUPPORTED;
+	}
+
+	return HELIOS_ERROR_NOT_SUPPORTED;
 }
 
 //Erases the firmware of the DAC, allowing it to be updated
@@ -1294,7 +1347,7 @@ HeliosDac::HeliosDacIdnDevice::~HeliosDacIdnDevice()
 {
 	closed = true;
 	std::lock_guard<std::mutex>lock(frameLock); // Wait until all threads have closed
-	
+
 	if (context != NULL)
 	{
 		idnSendClose(context);
