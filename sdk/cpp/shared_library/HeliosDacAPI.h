@@ -55,7 +55,7 @@ HeliosDac* dacController;
 HELIOS_EXPORT int OpenDevices();
 
 // Gets status from the specified dac.
-// Return 1 if ready to receive new frame, 0 if not, -1 if communcation failed
+// Return 1 if ready to receive new frame, 0 if not, negative number if communcation failed
 HELIOS_EXPORT int GetStatus(unsigned int dacNum);
 
 // Sets libusb debug log level
@@ -79,13 +79,13 @@ HELIOS_EXPORT int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, H
 // Returns 1 if successful.
 HELIOS_EXPORT int SetShutter(unsigned int dacNum, bool shutterValue);
 
-// Returns the firmware version number. Returns -1 if communcation failed.
+// Returns the firmware version number. Returns negative number if communcation failed.
 HELIOS_EXPORT int GetFirmwareVersion(unsigned int dacNum);
 
 // Gets a descriptive name of the specified dac
 // Name buffer needs to be able to hold up to 32 bytes.
 // Returns 1 if successful, return 0 if the proper name couldn't be fetched from the DAC, but name is still populated with a fallback numbered name based on order of discovery by the library.
-// Return -1 if unsuccessful and name is not populated.
+// Return negative number if unsuccessful and name is not populated.
 HELIOS_EXPORT int GetName(unsigned int dacNum, char* name);
 
 // Gets a descriptive name of the specified dac
@@ -100,6 +100,15 @@ HELIOS_EXPORT int Stop(unsigned int dacNum);
 // Closes connection to all dacs and frees resources
 // Should be called when library is no longer needed (program exit for example)
 HELIOS_EXPORT int CloseDevices();
+
+// Gets the maximum frame size for this type of DAC, in number of points
+HELIOS_EXPORT int GetMaxFrameSize(unsigned int dacNum);
+
+// Gets the maximum sample rate in pps (points per second) for this type of DAC
+HELIOS_EXPORT int GetMaxSampleRate(unsigned int dacNum);
+
+// Gets the maximum sample rate in pps (points per second) for this type of DAC
+HELIOS_EXPORT int GetMinSampleRate(unsigned int dacNum);
 
 // Clears the GPNVM1 bit on the DACs microcontroller. This will cause the DAC to boot into SAM-BA bootloader which allows new firmware to be uploaded over USB.
 HELIOS_EXPORT int EraseFirmware(unsigned int dacNum);

@@ -44,41 +44,43 @@ on IDN network DACs, they will always be ready to receive a new frame.
 
 #define HELIOS_SDK_VERSION	10
 
-// Hard limits for original Helios DAC
-#define HELIOS_MAX_POINTS_LEGACY	0x1000
-#define HELIOS_MAX_RATE_LEGACY		0xFFFF
-#define HELIOS_MIN_RATE_LEGACY		7
+#define HELIOS_MAX_POINTS 0x3FFC
+#define HELIOS_MAX_PPS 100000
+#define HELIOS_MIN_PPS 1
+#define HELIOS_MAX_POINTS_OLD 0xFFF // For original USB model
+#define HELIOS_MAX_PPS_OLD 0xFFFF // For original USB model
+#define HELIOS_MIN_PPS_OLD 7 // For original USB model
 
 #define HELIOS_SUCCESS		1	
 
 // Functions return negative values if something went wrong	
-// Attempted to perform an action before calling OpenDevices()
+// Attempted to perform an action before calling OpenDevices().
 #define HELIOS_ERROR_NOT_INITIALIZED	-1
-// Attempted to perform an action with an invalid device number
+// Attempted to perform an action with an invalid device number.
 #define HELIOS_ERROR_INVALID_DEVNUM		-2
 // WriteFrame() called with null pointer to points or number of points being zero.
 #define HELIOS_ERROR_NULL_POINTS		-3
-// WriteFrame() called with a frame containing too many points
+// WriteFrame() called with a frame containing too many points.
 #define HELIOS_ERROR_TOO_MANY_POINTS	-4
-// WriteFrame() called with pps higher than maximum allowed
+// WriteFrame() called with pps higher than maximum allowed.
 #define HELIOS_ERROR_PPS_TOO_HIGH		-5
-// WriteFrame() called with pps lower than minimum allowed
+// WriteFrame() called with pps lower than minimum allowed.
 #define HELIOS_ERROR_PPS_TOO_LOW		-6
 
 // Errors from the HeliosDacDevice class begin at -1000
-// Attempted to perform an operation on a closed DAC device
+// Attempted to perform an operation on a closed DAC device.
 #define HELIOS_ERROR_DEVICE_CLOSED			-1000
-// Attempted to send a new frame with HELIOS_FLAGS_DONT_BLOCK before previous frame has completed transfer
+// Attempted to send a new frame with HELIOS_FLAGS_DONT_BLOCK before previous frame has completed transfer.
 #define HELIOS_ERROR_DEVICE_FRAME_READY		-1001
-// Operation failed because SendControl() failed (if operation failed because of libusb_interrupt_transfer failure, the error code will be a libusb error instead)
+// Operation failed because SendControl() failed (if operation failed because of libusb_interrupt_transfer failure, the error code will be a libusb error instead).
 #define HELIOS_ERROR_DEVICE_SEND_CONTROL	-1002
-// Received an unexpected result from a call to SendControl()
+// Received an unexpected result from a call to SendControl().
 #define HELIOS_ERROR_DEVICE_RESULT			-1003
-// Attempted to call SendControl() with a null buffer pointer
+// Attempted to call SendControl() with a null buffer pointer.
 #define HELIOS_ERROR_DEVICE_NULL_BUFFER		-1004
-// Attempted to call SendControl() with a control signal that is too long
+// Attempted to call SendControl() with a control signal that is too long.
 #define HELIOS_ERROR_DEVICE_SIGNAL_TOO_LONG	-1005
-// Attempted to call a function that isn't supported for this particular DAC model (for example SetShutter on network DACs, since they handle shutter logic automatically instead of manually)
+// Attempted to call a function that isn't supported for this particular DAC model (for example SetShutter on network DACs, since they handle shutter logic automatically instead of manually).
 #define HELIOS_ERROR_NOT_SUPPORTED			-1006
 // Error during sending network packet for IDN DACs. See console output for more information, or errno on Unix or WSAGetLastError() on Windows.
 #define HELIOS_ERROR_NETWORK				-1007
@@ -135,7 +137,7 @@ typedef struct
 	std::uint16_t r; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Red.
 	std::uint16_t g; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Green.
 	std::uint16_t b; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Blue.
-	std::uint16_t user1; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Deep blue or custom.
+	std::uint16_t user1; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Deep blue or custom. Optional.
 } HeliosPointHighRes;
 
 typedef struct
@@ -146,10 +148,10 @@ typedef struct
 	std::uint16_t g; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Green.
 	std::uint16_t b; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Blue.
 	std::uint16_t i; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Intensity. Optional and should be set to max value if not used.
-	std::uint16_t user1; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Deep blue or custom.
-	std::uint16_t user2; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Yellow or custom. 
-	std::uint16_t user3; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Cyan, beam brush, or custom. 
-	std::uint16_t user4; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Z position, X-prime, field change, or custom. 
+	std::uint16_t user1; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Deep blue or custom. Optional.
+	std::uint16_t user2; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Yellow or custom. Optional.
+	std::uint16_t user3; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Cyan, beam brush, or custom. Optional.
+	std::uint16_t user4; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Z position, X-prime, field change, or custom. Optional.
 } HeliosPointExt;
 
 class HeliosDac
@@ -234,6 +236,15 @@ public:
 	// Value 1 = shutter open, value 0 = shutter closed
 	int SetShutter(unsigned int devNum, bool level);
 
+	// Gets the maximum point rate in pps (points per second) for this DAC. Can vary between USB and IDN devices.
+	int GetMaxSampleRate(unsigned int devNum);
+
+	// Gets the minumum point rate in pps (points per second) for this DAC. Can vary between USB and IDN devices.
+	int GetMinSampleRate(unsigned int devNum);
+	
+	// Gets the max number of points in one frame for this DAC. Can vary between USB and IDN devices.
+	int GetMaxFrameSize(unsigned int devNum);
+
 	// Sets debug log level in libusb.
 	int SetLibusbDebugLogLevel(int logLevel);
 
@@ -259,6 +270,9 @@ private:
 		virtual int SetName(char* name) = 0;
 		virtual int SetShutter(bool level) = 0;
 		virtual int Stop() = 0;
+		virtual int GetMaxSampleRate() = 0;
+		virtual int GetMinSampleRate() = 0;
+		virtual int GetMaxFrameSize() = 0;
 		virtual int EraseFirmware() = 0;
 
 	};
@@ -281,6 +295,9 @@ private:
 		int SetName(char* name);
 		int SetShutter(bool level);
 		int Stop();
+		int GetMaxSampleRate() { return HELIOS_MAX_PPS_OLD; } // TODO read capabilities from DAC
+		int GetMinSampleRate() { return HELIOS_MIN_PPS_OLD; } // TODO read capabilities from DAC
+		int GetMaxFrameSize() { return HELIOS_MAX_POINTS_OLD; } // TODO read capabilities from DAC
 		int EraseFirmware();
 
 
@@ -301,6 +318,8 @@ private:
 		unsigned int frameBufferSize;
 		int frameResult = -1;
 		bool shutterIsOpen = false;
+		int maxSampleRate = 0xffff;
+		int minSampleRate = 7;
 	};
 
 	// Class for network (IDN) connected DACs such as HeliosPRO (but also work with other DACs supporting IDN), for internal use
@@ -321,6 +340,9 @@ private:
 		int SetName(char* name);
 		int SetShutter(bool level);
 		int Stop();
+		int GetMaxSampleRate() { return HELIOS_MAX_PPS; } // TODO read capabilities from DAC
+		int GetMinSampleRate() { return HELIOS_MIN_PPS; } // TODO read capabilities from DAC
+		int GetMaxFrameSize() { return HELIOS_MAX_POINTS; } // TODO read capabilities from DAC
 		int EraseFirmware();
 
 	private:
@@ -335,7 +357,7 @@ private:
 		std::chrono::time_point<std::chrono::high_resolution_clock> statusReadyTime;
 		bool firstFrame = true;
 		int managementSocket = -1;
-		sockaddr_in managementSocketAddr;
+		sockaddr_in managementSocketAddr = { 0 };
 
 		bool frameReady = false;
 		std::mutex frameLock;
