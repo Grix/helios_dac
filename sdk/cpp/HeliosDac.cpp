@@ -24,6 +24,7 @@ HeliosDac::HeliosDac()
 HeliosDac::~HeliosDac()
 {
 	CloseDevices();
+	plt_sockCleanup();
 }
 
 int HeliosDac::OpenDevices()
@@ -83,6 +84,7 @@ int HeliosDac::OpenDevices()
 
 	// Scanning IDN (Network) devices
 
+	plt_sockStartup();
 	std::vector<IDNCONTEXT*> idnContexts;
 
 #ifndef WIN32 
@@ -212,12 +214,6 @@ int HeliosDac::WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t fl
 	if (points == NULL || numOfPoints == 0)
 		return HELIOS_ERROR_NULL_POINTS;
 
-	if (pps > GetMaxSampleRate(devNum))
-		return HELIOS_ERROR_PPS_TOO_HIGH;
-
-	if (pps > GetMinSampleRate(devNum))
-		return HELIOS_ERROR_PPS_TOO_LOW;
-
 	std::unique_lock<std::mutex> lock(threadLock);
 	HeliosDacDevice* dev = NULL;
 	if (devNum < deviceList.size())
@@ -238,12 +234,6 @@ int HeliosDac::WriteFrameHighResolution(unsigned int devNum, unsigned int pps, u
 	if (points == NULL || numOfPoints == 0)
 		return HELIOS_ERROR_NULL_POINTS;
 
-	if (pps > GetMaxSampleRate(devNum))
-		return HELIOS_ERROR_PPS_TOO_HIGH;
-
-	if (pps > GetMinSampleRate(devNum))
-		return HELIOS_ERROR_PPS_TOO_LOW;
-
 	std::unique_lock<std::mutex> lock(threadLock);
 	HeliosDacDevice* dev = NULL;
 	if (devNum < deviceList.size())
@@ -263,12 +253,6 @@ int HeliosDac::WriteFrameExtended(unsigned int devNum, unsigned int pps, unsigne
 
 	if (points == NULL || numOfPoints == 0)
 		return HELIOS_ERROR_NULL_POINTS;
-
-	if (pps > GetMaxSampleRate(devNum))
-		return HELIOS_ERROR_PPS_TOO_HIGH;
-
-	if (pps > GetMinSampleRate(devNum))
-		return HELIOS_ERROR_PPS_TOO_LOW;
 
 	std::unique_lock<std::mutex> lock(threadLock);
 	HeliosDacDevice* dev = NULL;
@@ -439,6 +423,23 @@ int HeliosDac::GetMinSampleRate(unsigned int devNum)
 	return dev->GetMinSampleRate();
 }
 
+bool HeliosDac::GetSupportsHigherResolutions(unsigned int devNum)
+{
+	if (!inited)
+		return HELIOS_ERROR_NOT_INITIALIZED;
+
+	std::unique_lock<std::mutex> lock(threadLock);
+	HeliosDacDevice* dev = NULL;
+	if (devNum < deviceList.size())
+		dev = deviceList[devNum].get();
+	lock.unlock();
+
+	if (dev == NULL)
+		return HELIOS_ERROR_INVALID_DEVNUM;
+
+	return dev->GetSupportsHigherResolutions();
+}
+
 int HeliosDac::SetLibusbDebugLogLevel(int logLevel)
 {
 	if (!inited)
@@ -544,6 +545,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
 	// If pps is too low, try to duplicate frames to simulate a higher pps rather than failing
+	bool freePoints = false;
 	if (pps < GetMinSampleRate())
 	{
 		if (pps == 0)
@@ -553,22 +555,25 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 		if (numOfPoints * samplingFactor > GetMaxFrameSize())
 			return HELIOS_ERROR_PPS_TOO_LOW;
 
-		unsigned int adjustedBufferPos = numOfPoints * samplingFactor;
-		for (int i = numOfPoints - 1; i >= 0; i--)
+		HeliosPoint* duplicatedPoints = new HeliosPoint[numOfPoints * samplingFactor];
+		freePoints = true;
+
+		unsigned int adjustedBufferPos = 0;
+		for (int i = 0; i < numOfPoints; i++)
 		{
 			for (int j = 0; j < samplingFactor; j++)
 			{
-				points[adjustedBufferPos] = points[i];
-				adjustedBufferPos--;
+				duplicatedPoints[adjustedBufferPos++] = points[i];
 			}
 		}
 		numOfPoints = numOfPoints * samplingFactor;
 		pps = pps * samplingFactor;
+		points = duplicatedPoints;
 	}
 
 	// If pps is too high or frame size too high, subsample frames to simulate a lower pps/size rather than failing
 	int samplingFactor = 1;
-	if (pps > GetMinSampleRate() || numOfPoints > GetMaxFrameSize())
+	if (pps > GetMaxSampleRate() || numOfPoints > GetMaxFrameSize())
 	{
 		samplingFactor = pps / GetMaxSampleRate() + 1;
 		if ((numOfPoints / GetMaxFrameSize() + 1) > samplingFactor)
@@ -613,6 +618,9 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 
 	frameBufferSize = bufPos;
 
+	if (freePoints)
+		delete points;
+
 	if (!shutterIsOpen)
 		SetShutter(1);
 
@@ -638,6 +646,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
 	// If pps is too low, try to duplicate frames to simulate a higher pps rather than failing
+	bool freePoints = false;
 	if (pps < GetMinSampleRate())
 	{
 		if (pps == 0)
@@ -647,22 +656,25 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std
 		if (numOfPoints * samplingFactor > GetMaxFrameSize())
 			return HELIOS_ERROR_PPS_TOO_LOW;
 
-		unsigned int adjustedBufferPos = numOfPoints * samplingFactor;
-		for (int i = numOfPoints - 1; i >= 0; i--)
+		HeliosPointHighRes* duplicatedPoints = new HeliosPointHighRes[numOfPoints * samplingFactor];
+		freePoints = true;
+
+		unsigned int adjustedBufferPos = 0;
+		for (int i = 0; i < numOfPoints; i++)
 		{
 			for (int j = 0; j < samplingFactor; j++)
 			{
-				points[adjustedBufferPos] = points[i];
-				adjustedBufferPos--;
+				duplicatedPoints[adjustedBufferPos++] = points[i];
 			}
 		}
 		numOfPoints = numOfPoints * samplingFactor;
 		pps = pps * samplingFactor;
+		points = duplicatedPoints;
 	}
 
 	// If pps is too high or frame size too high, subsample frames to simulate a lower pps/size rather than failing
 	int samplingFactor = 1;
-	if (pps > GetMinSampleRate() || numOfPoints > GetMaxFrameSize())
+	if (pps > GetMaxSampleRate() || numOfPoints > GetMaxFrameSize())
 	{
 		samplingFactor = pps / GetMaxSampleRate() + 1;
 		if ((numOfPoints / GetMaxFrameSize() + 1) > samplingFactor)
@@ -711,6 +723,9 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std
 
 	frameBufferSize = bufPos;
 
+	if (freePoints)
+		delete points;
+
 	if (!shutterIsOpen)
 		SetShutter(1);
 
@@ -735,6 +750,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameExtended(unsigned int pps, std::uint
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
 	// If pps is too low, try to duplicate frames to simulate a higher pps rather than failing
+	bool freePoints = false;
 	if (pps < GetMinSampleRate())
 	{
 		if (pps == 0)
@@ -744,22 +760,25 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameExtended(unsigned int pps, std::uint
 		if (numOfPoints * samplingFactor > GetMaxFrameSize())
 			return HELIOS_ERROR_PPS_TOO_LOW;
 
-		unsigned int adjustedBufferPos = numOfPoints * samplingFactor;
-		for (int i = numOfPoints - 1; i >= 0; i--)
+		HeliosPointExt* duplicatedPoints = new HeliosPointExt[numOfPoints * samplingFactor];
+		freePoints = true;
+
+		unsigned int adjustedBufferPos = 0;
+		for (int i = 0; i < numOfPoints; i++)
 		{
 			for (int j = 0; j < samplingFactor; j++)
 			{
-				points[adjustedBufferPos] = points[i];
-				adjustedBufferPos--;
+				duplicatedPoints[adjustedBufferPos++] = points[i];
 			}
 		}
 		numOfPoints = numOfPoints * samplingFactor;
 		pps = pps * samplingFactor;
+		points = duplicatedPoints;
 	}
 
 	// If pps is too high or frame size too high, subsample frames to simulate a lower pps/size rather than failing
 	int samplingFactor = 1;
-	if (pps > GetMinSampleRate() || numOfPoints > GetMaxFrameSize())
+	if (pps > GetMaxSampleRate() || numOfPoints > GetMaxFrameSize())
 	{
 		samplingFactor = pps / GetMaxSampleRate() + 1;
 		if ((numOfPoints / GetMaxFrameSize() + 1) > samplingFactor)
@@ -807,6 +826,9 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameExtended(unsigned int pps, std::uint
 	frameBuffer[bufPos++] = flags;
 
 	frameBufferSize = bufPos;
+
+	if (freePoints)
+		delete points;
 
 	if (!shutterIsOpen)
 		SetShutter(1);
@@ -1078,19 +1100,12 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 
 	statusReadyTime = std::chrono::high_resolution_clock::now();
 
-	context->bufferLen = 0x4000;
-	context->bufferPtr = new uint8_t[0x4000];
+	context->bufferLen = HELIOS_MAX_POINTS * EXTENDED_SAMPLE_SIZE + 100;
+	context->bufferPtr = new uint8_t[HELIOS_MAX_POINTS * EXTENDED_SAMPLE_SIZE + 100];
 	context->startTime = plt_getMonoTimeUS();
 
 #if defined(_WIN32) || defined(WIN32)
-	// Initialize Winsock
-	WSADATA wsaData;
-	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (iResult != NO_ERROR)
-	{
-		logError("WSAStartup failed with error: %d", iResult);
-		return;
-	}
+	
 #else
 	// Initialize time reference and initialize the current time randomly
 	extern struct timespec plt_monoRef;
@@ -1156,6 +1171,24 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	if (frameReady)
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
+	if (pps == 0)
+		return HELIOS_ERROR_PPS_TOO_LOW;
+
+	// If pps is too high or frame size too high, subsample frames to simulate a lower pps/size rather than failing
+	int samplingFactor = 1;
+	if (pps > GetMaxSampleRate() || numOfPoints > GetMaxFrameSize())
+	{
+		samplingFactor = pps / GetMaxSampleRate() + 1;
+		if ((numOfPoints / GetMaxFrameSize() + 1) > samplingFactor)
+			samplingFactor = numOfPoints / GetMaxFrameSize() + 1;
+
+		pps = pps / samplingFactor;
+		numOfPoints = numOfPoints / samplingFactor;
+
+		if (pps < GetMinSampleRate())
+			return HELIOS_ERROR_TOO_MANY_POINTS;
+	}
+
 	if (idnOpenFrameXYRGB(context))
 		return false;
 
@@ -1168,7 +1201,8 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	}
 	firstFrame = false;
 
-	for (int i = 0; i < numOfPoints; i++)
+	int loopLength = numOfPoints * samplingFactor;
+	for (unsigned int i = 0; i < loopLength; i += samplingFactor)
 	{
 		if (idnPutSampleXYRGB(context, (points[i].x << 4) - 0x8000, (points[i].y << 4) - 0x8000, points[i].r, points[i].g, points[i].b))
 			return false;
@@ -1195,6 +1229,24 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 	if (frameReady)
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
+	if (pps == 0)
+		return HELIOS_ERROR_PPS_TOO_LOW;
+
+	// If pps is too high or frame size too high, subsample frames to simulate a lower pps/size rather than failing
+	int samplingFactor = 1;
+	if (pps > GetMaxSampleRate() || numOfPoints > GetMaxFrameSize())
+	{
+		samplingFactor = pps / GetMaxSampleRate() + 1;
+		if ((numOfPoints / GetMaxFrameSize() + 1) > samplingFactor)
+			samplingFactor = numOfPoints / GetMaxFrameSize() + 1;
+
+		pps = pps / samplingFactor;
+		numOfPoints = numOfPoints / samplingFactor;
+
+		if (pps < GetMinSampleRate())
+			return HELIOS_ERROR_TOO_MANY_POINTS;
+	}
+
 	if (idnOpenFrameHighResXYRGB(context))
 		return false;
 
@@ -1207,7 +1259,8 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 	}
 	firstFrame = false;
 
-	for (int i = 0; i < numOfPoints; i++)
+	int loopLength = numOfPoints * samplingFactor;
+	for (unsigned int i = 0; i < loopLength; i += samplingFactor)
 	{
 		if (idnPutSampleHighResXYRGB(context, points[i].x - 0x8000, points[i].y - 0x8000, points[i].r, points[i].g, points[i].b))
 			return false;
@@ -1235,6 +1288,24 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 	if (frameReady)
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
+	if (pps == 0)
+		return HELIOS_ERROR_PPS_TOO_LOW;
+
+	// If pps is too high or frame size too high, subsample frames to simulate a lower pps/size rather than failing
+	int samplingFactor = 1;
+	if (pps > GetMaxSampleRate() || numOfPoints > GetMaxFrameSize())
+	{
+		samplingFactor = pps / GetMaxSampleRate() + 1;
+		if ((numOfPoints / GetMaxFrameSize() + 1) > samplingFactor)
+			samplingFactor = numOfPoints / GetMaxFrameSize() + 1;
+
+		pps = pps / samplingFactor;
+		numOfPoints = numOfPoints / samplingFactor;
+
+		if (pps < GetMinSampleRate())
+			return HELIOS_ERROR_TOO_MANY_POINTS;
+	}
+
 	if (idnOpenFrameExtended(context))
 		return false;
 
@@ -1247,7 +1318,8 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 	}
 	firstFrame = false;
 
-	for (int i = 0; i < numOfPoints; i++)
+	int loopLength = numOfPoints * samplingFactor;
+	for (unsigned int i = 0; i < loopLength; i += samplingFactor)
 	{
 		if (idnPutSampleExtended(context, (int16_t)(points[i].x - 0x8000), (int16_t)(points[i].y - 0x8000), points[i].r, points[i].g, points[i].b, points[i].i, points[i].user1, points[i].user2, points[i].user3, points[i].user4))
 			return false;
@@ -1273,29 +1345,13 @@ int HeliosDac::HeliosDacIdnDevice::GetStatus()
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	if (frameReady || (std::chrono::high_resolution_clock::now() < statusReadyTime))
+	{
+		std::this_thread::sleep_for(std::chrono::microseconds(100)); // simulate a small delay to mimic behavior of USB device
 		return false;
+	}
 
 	return true; // No feedback in IDN
 }
-
-// Returns whether a specific DAC supports the new WriteFrameHighResolution() and WriteFrameExtended() functions. 
-bool HeliosDac::GetSupportsHigherResolutions(unsigned int devNum)
-{
-	if (!inited)
-		return HELIOS_ERROR_NOT_INITIALIZED;
-
-	std::unique_lock<std::mutex> lock(threadLock);
-	HeliosDacDevice* dev = NULL;
-	if (devNum < deviceList.size())
-		dev = deviceList[devNum].get();
-	lock.unlock();
-
-	if (dev == NULL)
-		return HELIOS_ERROR_INVALID_DEVNUM;
-
-	return dev->GetSupportsHigherResolutions();
-}
-
 
 // Sends frame to DAC
 int HeliosDac::HeliosDacIdnDevice::DoFrame()

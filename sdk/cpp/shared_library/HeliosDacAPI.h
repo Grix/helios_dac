@@ -102,12 +102,15 @@ HELIOS_EXPORT int Stop(unsigned int dacNum);
 HELIOS_EXPORT int CloseDevices();
 
 // Gets the maximum frame size for this type of DAC, in number of points
+// Note that it is safe to write frames outside this limit, as the frame will get automatically subsampled (at a performance cost)
 HELIOS_EXPORT int GetMaxFrameSize(unsigned int dacNum);
 
 // Gets the maximum sample rate in pps (points per second) for this type of DAC
+// Note that it is safe to write frames outside this limit, as the frame will get automatically subsampled (at a performance cost)
 HELIOS_EXPORT int GetMaxSampleRate(unsigned int dacNum);
 
-// Gets the maximum sample rate in pps (points per second) for this type of DAC
+// Gets the minimum sample rate in pps (points per second) for this type of DAC
+// Note that it is safe to write frames outside this limit, as points will get automatically duplicated to increase pps (at a performance cost)
 HELIOS_EXPORT int GetMinSampleRate(unsigned int dacNum);
 
 // Clears the GPNVM1 bit on the DACs microcontroller. This will cause the DAC to boot into SAM-BA bootloader which allows new firmware to be uploaded over USB.

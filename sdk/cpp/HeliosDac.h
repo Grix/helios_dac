@@ -237,12 +237,15 @@ public:
 	int SetShutter(unsigned int devNum, bool level);
 
 	// Gets the maximum point rate in pps (points per second) for this DAC. Can vary between USB and IDN devices.
+	// Note that it is safe to write frames outside this limit, as the frame will get automatically subsampled (at a performance cost)
 	int GetMaxSampleRate(unsigned int devNum);
 
 	// Gets the minumum point rate in pps (points per second) for this DAC. Can vary between USB and IDN devices.
+	// Note that it is safe to write frames outside this limit, as points will get automatically duplicated to increase pps (at a performance cost)
 	int GetMinSampleRate(unsigned int devNum);
 	
-	// Gets the max number of points in one frame for this DAC. Can vary between USB and IDN devices.
+	// Gets the maximum number of points in one frame for this DAC. Can vary between USB and IDN devices.
+	// Note that it is safe to write frames outside this limit, as the frame will get automatically subsampled (at a performance cost)
 	int GetMaxFrameSize(unsigned int devNum);
 
 	// Sets debug log level in libusb.
@@ -295,9 +298,9 @@ private:
 		int SetName(char* name);
 		int SetShutter(bool level);
 		int Stop();
-		int GetMaxSampleRate() { return HELIOS_MAX_PPS_OLD; } // TODO read capabilities from DAC
-		int GetMinSampleRate() { return HELIOS_MIN_PPS_OLD; } // TODO read capabilities from DAC
-		int GetMaxFrameSize() { return HELIOS_MAX_POINTS_OLD; } // TODO read capabilities from DAC
+		int GetMaxSampleRate() { return HELIOS_MAX_PPS_OLD; } // TODO read exact capabilities from DAC
+		int GetMinSampleRate() { return HELIOS_MIN_PPS_OLD; } // TODO read exact capabilities from DAC
+		int GetMaxFrameSize() { return HELIOS_MAX_POINTS_OLD; } // TODO read exact capabilities from DAC
 		int EraseFirmware();
 
 
@@ -340,9 +343,9 @@ private:
 		int SetName(char* name);
 		int SetShutter(bool level);
 		int Stop();
-		int GetMaxSampleRate() { return HELIOS_MAX_PPS; } // TODO read capabilities from DAC
-		int GetMinSampleRate() { return HELIOS_MIN_PPS; } // TODO read capabilities from DAC
-		int GetMaxFrameSize() { return HELIOS_MAX_POINTS; } // TODO read capabilities from DAC
+		int GetMaxSampleRate() { return HELIOS_MAX_PPS; } // TODO read exact capabilities from DAC
+		int GetMinSampleRate() { return HELIOS_MIN_PPS; } // TODO read exact capabilities from DAC
+		int GetMaxFrameSize() { return HELIOS_MAX_POINTS; } // TODO read exact capabilities from DAC
 		int EraseFirmware();
 
 	private:
