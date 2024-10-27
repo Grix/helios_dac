@@ -192,8 +192,8 @@ int idnPutSampleGeneric(IDNCONTEXT* context, int8_t* sampleBuffer, size_t sample
 
 	// Make sure there is enough buffer. Note: payload and bufferPtr are (uint8_t *) - and 
 	// pointer substraction is defined as the difference of (array) elements.
-	unsigned lenUsed = (unsigned)(ctx->payload - ctx->bufferPtr);
-	unsigned lenNeeded = lenUsed + (sampleBufferSize);
+	//unsigned lenUsed = (unsigned)(ctx->payload - ctx->bufferPtr);
+	//unsigned lenNeeded = lenUsed + (sampleBufferSize); // Not needed, buffer is inited large enough to handle max frame size
 
 
 	// Note: With IDN, the first two points and the last two points of a frame have special 
@@ -289,8 +289,8 @@ int idnPutSampleXYRGBI(IDNCONTEXT* context, int16_t x, int16_t y, uint8_t r, uin
 
 	// Make sure there is enough buffer. Note: payload and bufferPtr are (uint8_t *) - and 
 	// pointer substraction is defined as the difference of (array) elements.
-	unsigned lenUsed = (unsigned)(ctx->payload - ctx->bufferPtr);
-	unsigned lenNeeded = lenUsed + (XYRGBI_SAMPLE_SIZE); // Todo remove?
+	//unsigned lenUsed = (unsigned)(ctx->payload - ctx->bufferPtr);
+	//unsigned lenNeeded = lenUsed + (XYRGBI_SAMPLE_SIZE); // Not needed, buffer is inited large enough to handle max frame size
 
 
 	// Note: With IDN, the first two points and the last two points of a frame have special 
@@ -391,13 +391,13 @@ int idnPutSampleXYRGB(IDNCONTEXT* context, int16_t x, int16_t y, uint8_t r, uint
 	IDNCONTEXT* ctx = context;
 
 	// Sanity check
-	if (ctx->payload == (uint8_t*)0) 
+	if (ctx->payload == (uint8_t*)0)
 		return -1;
 
 	// Make sure there is enough buffer. Note: payload and bufferPtr are (uint8_t *) - and 
 	// pointer substraction is defined as the difference of (array) elements.
-	unsigned lenUsed = (unsigned)(ctx->payload - ctx->bufferPtr);
-	unsigned lenNeeded = lenUsed + (XYRGB_SAMPLE_SIZE); // Todo remove?
+	//unsigned lenUsed = (unsigned)(ctx->payload - ctx->bufferPtr);
+	//unsigned lenNeeded = lenUsed + (XYRGB_SAMPLE_SIZE);  // Not needed, buffer is inited large enough to handle max frame size
 
 	// Get pointer to next sample
 	uint8_t* p = ctx->payload;
@@ -489,8 +489,8 @@ int idnPutSampleHighResXYRGB(IDNCONTEXT* context, int16_t x, int16_t y, uint16_t
 
 	// Make sure there is enough buffer. Note: payload and bufferPtr are (uint8_t *) - and 
 	// pointer substraction is defined as the difference of (array) elements.
-	unsigned lenUsed = (unsigned)(ctx->payload - ctx->bufferPtr);
-	unsigned lenNeeded = lenUsed + (XYRGB_HIGHRES_SAMPLE_SIZE); // Todo remove?
+	//unsigned lenUsed = (unsigned)(ctx->payload - ctx->bufferPtr);
+	//unsigned lenNeeded = lenUsed + (XYRGB_HIGHRES_SAMPLE_SIZE);  // Not needed, buffer is inited large enough to handle max frame size
 
 	// Get pointer to next sample
 	uint8_t* p = ctx->payload;
@@ -565,7 +565,7 @@ int idnOpenFrameExtended(IDNCONTEXT* context)
 		descriptors[15] = htons(0x4010);     // 16 bit precision
 		descriptors[16] = htons(0x51E8);     // User 3 (Here configured as cyan)
 		descriptors[17] = htons(0x4010);     // 16 bit precision
-		descriptors[18] = htons(0x4201);     // User 4 (Here configured as X-prime) - TODO maybe shouldn't use X-prime because ISP-DB25 expects +-10V on it, but HeliosPRO can only do 5V on U4.
+		descriptors[18] = htons(0x4201);     // User 4 (Here configured as X-prime)
 		descriptors[19] = htons(0x4010);     // 16 bit precision
 
 		// Move sample chunk start and set flag in contentID field
@@ -596,8 +596,8 @@ int idnPutSampleExtended(IDNCONTEXT* context, int16_t x, int16_t y, uint16_t r, 
 
 	// Make sure there is enough buffer. Note: payload and bufferPtr are (uint8_t *) - and 
 	// pointer substraction is defined as the difference of (array) elements.
-	unsigned lenUsed = (unsigned)(ctx->payload - ctx->bufferPtr);
-	unsigned lenNeeded = lenUsed + (EXTENDED_SAMPLE_SIZE); // Todo remove?
+	//unsigned lenUsed = (unsigned)(ctx->payload - ctx->bufferPtr);
+	//unsigned lenNeeded = lenUsed + (EXTENDED_SAMPLE_SIZE);  // Not needed, buffer is inited large enough to handle max frame size
 
 	// Get pointer to next sample
 	uint8_t* p = ctx->payload;
@@ -697,7 +697,7 @@ int idnPushFrame(IDNCONTEXT* context)
 		packetHdr->sequence = htons(ctx->sequence++);
 
 		// Send the packet
-		if (idnSend(ctx, packetHdr, splitPtr - (uint8_t*)packetHdr)) 
+		if (idnSend(ctx, packetHdr, splitPtr - (uint8_t*)packetHdr))
 			return -1;
 
 		// Delete config flag (in case set - not config headers in fragments), set sequel fragment chunk type
@@ -727,7 +727,7 @@ int idnPushFrame(IDNCONTEXT* context)
 				splitPtr = (uint8_t*)channelMsgHdr + MAX_IDN_MESSAGE_LEN;
 
 				// Send the packet
-				if (idnSend(ctx, packetHdr, splitPtr - (uint8_t*)packetHdr)) 
+				if (idnSend(ctx, packetHdr, splitPtr - (uint8_t*)packetHdr))
 					return -1;
 			}
 			else
@@ -737,7 +737,7 @@ int idnPushFrame(IDNCONTEXT* context)
 				channelMsgHdr->contentID = htons(contentID | IDNFLG_CONTENTID_CONFIG_LSTFRG);
 
 				// Send the packet
-				if (idnSend(ctx, packetHdr, ctx->payload - (uint8_t*)packetHdr)) 
+				if (idnSend(ctx, packetHdr, ctx->payload - (uint8_t*)packetHdr))
 					return -1;
 
 				// Done sending the packet

@@ -1407,7 +1407,7 @@ int HeliosDac::HeliosDacIdnDevice::GetFirmwareVersion()
 
 	struct sockaddr responseAddr;
 	memcpy(&responseAddr, &managementSocketAddr, sizeof(managementSocketAddr));
-	int responseAddrLength = sizeof(managementSocketAddr);
+	socklen_t responseAddrLength = sizeof(managementSocketAddr);
 
 	int numBytes = recvfrom(managementSocket, buffer, sizeof(buffer), 0, &responseAddr, &responseAddrLength);
 	if (numBytes > 3)
@@ -1523,7 +1523,7 @@ int HeliosDac::HeliosDacIdnDevice::SetName(char* name)
 
 	struct sockaddr responseAddr;
 	memcpy(&responseAddr, &managementSocketAddr, sizeof(managementSocketAddr));
-	int responseAddrLength = sizeof(managementSocketAddr);
+	socklen_t responseAddrLength = sizeof(managementSocketAddr);
 
 	int numBytes = recvfrom(managementSocket, buffer, sizeof(buffer), 0, &responseAddr, &responseAddrLength);
 	if (numBytes >= 2)
