@@ -13,30 +13,35 @@ Open source, low cost USB DAC for the ISP-DB25 (ILDA) laser protocol. Allows you
 
 #### Third party software integration
 
-Navigate to the folder "sdk" to find the relevant code for interfacing with the Helios DAC in your software, and a readme with more detailed usage instructions. The core SDK is written in C++, documented in HeliosDac.h. But libraries with exported functions that you can call from many languages such as python or C# are available, documented in HeliosDacAPI.h. You can also find examples of usage in the examples folder.
+Navigate to the folder "sdk" to find the relevant code for interfacing with the Helios DAC in your software, and a readme with more detailed usage instructions. 
+
+NEW: The C++ sdk has been updated to include IDN network support. This means that if you implement/update the Helios library in your application, it will also seamlessly enable support for any other network DAC using the IDN protocol, including the Helios OpenIDN adapter, StageMate ISP, and upcoming Helios products.
+
+The reference SDK is written in C++, in the subfolder "cpp". But libraries with exported functions that you can call from many languages such as python or C# are available, documented in HeliosDacAPI.h. You can also find examples of usage in the examples folder.
 
 The C++ code depends on libusb. You can use the included libusb binary libraries for Win32, Mac or Linux, or you can build your own. You can find the libusb source on libusb.info, or binaries on https://sourceforge.net/projects/libusb/files/libusb-1.0/
 
 If you wish to use the shared library, there are ready-made builds for Win32 (.dll) and 64-bit linux (.so) in the sdk folder. NB: Only the Windows binary is guaranteed to be up to date. For Mac and Linux it is recommended to build your own or use the C++ classes.
 
-New: There is a native .NET library with example code in sdk/dotnet.
+New: There is a native .NET library with example code in sdk/dotnet. HOWEVER, the C# library is not yet updated with IDN (network) support, so it is not recommended for general use yet.
 
-If you are adding support for the Helios in your program, let me know and I can link it on the Helios' home page.
+If you are adding support for the Helios in your program, let me know and I can link it on the Helios' website.
 
-Steps to compiling shared library (.so) for Linux based systems yourself is below. For macOS, try replacing ".so" with ".dylib". For Windows, there is a Visual Studio project in the sdk source directory.
+Steps to compiling shared library (.so) for Linux based systems yourself is below. For macOS, try replacing ".so" with ".dylib". For Windows, there is a Visual Studio project in the source directory.
 
 ```shell
 g++ -Wall -std=c++14 -fPIC -O2 -c HeliosDacAPI.cpp
 g++ -Wall -std=c++14 -fPIC -O2 -c HeliosDac.cpp
 g++ -shared -o libHeliosDacAPI.so HeliosDacAPI.o HeliosDac.o libusb-1.0.so
 ```
-To use the device on Linux you either need root privileges or need to set up udev rules (see https://bitlasers.com/helios-laser-dac/)
+To use the device on Linux you either need root privileges or need to set up udev rules (see https://bitlasers.com/helios-laser-dac/). On Windows and Mac it should be plug and play.
 
 A more detailed guide for compiling for Raspberry Pi (Linux ARM) is also available in the docs folder.
 
 #### Hardware and firmware modification
 
 The PCB is drawn in Kicad. The firmware is written and built with Atmel Studio for the ATSAM4S2B microcontroller.
+NB: The license for the hardware and firmware, unlike the software, does not permit the sale of manufactured units.
 New firmware can be uploaded to the device over USB. To do this, you must reset the "GPNVM1" bit in the flash memory, which will make the microcontroller boot to the SAM-BA bootloader. You can do this by sending a special interrupt packet to the DAC. You can then access the flash using Atmel's SAM-BA software or BOSSA. There is an automatic tool for firmware updating:
 
 * Download the firmware updating tool (only for Windows as of now, Mac/Linux partially done): utility/FirmwareUpdater/cli/firmwareupdater_script.zip
