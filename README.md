@@ -16,6 +16,7 @@ Open source, low cost USB DAC for the ISP-DB25 (ILDA) laser protocol. Allows you
 Navigate to the folder "sdk" to find the relevant code for interfacing with the Helios DAC in your software, and a readme with more detailed usage instructions. 
 
 NEW: The C++ sdk has been updated to include IDN network support. This means that if you implement/update the Helios library in your application, it will also seamlessly enable support for any other network DAC using the IDN protocol, including the Helios OpenIDN adapter, StageMate ISP, and upcoming Helios products.
+** Other libraries than the C++ one has not yet been updated with IDN support.**
 
 The reference SDK is written in C++, in the subfolder "cpp". But libraries with exported functions that you can call from many languages such as python or C# are available, documented in HeliosDacAPI.h. You can also find examples of usage in the examples folder.
 

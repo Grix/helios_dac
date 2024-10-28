@@ -174,7 +174,7 @@ inline static int plt_sockGetLastError()
 
 inline static int plt_sockOpen(int domain, int type, int protocol)
 {
-    return socket(domain, type, protocol);
+    return (int)socket(domain, type, protocol);
 }
 
 

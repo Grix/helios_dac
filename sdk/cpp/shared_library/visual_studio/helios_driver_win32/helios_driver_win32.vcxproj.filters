@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\OpenLaserShowControllerV1.0.0-Mod.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\HeliosDacAPI.h">
       <Filter>Header Files</Filter>
     </ClInclude>

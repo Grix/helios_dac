@@ -222,7 +222,8 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>OpenLaserShowController.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -311,7 +312,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>OpenLaserShowController.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -323,7 +325,6 @@
     <ClInclude Include="..\..\..\idn\plt-windows.h" />
     <ClInclude Include="..\..\..\libusb.h" />
     <ClInclude Include="..\..\HeliosDacAPI.h" />
-    <ClInclude Include="..\..\OpenLaserShowControllerV1.0.0-Mod.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\HeliosDac.cpp" />

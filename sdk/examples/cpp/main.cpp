@@ -33,7 +33,8 @@ int main(void)
 		}
 	}
 
-	//connect to DACs and output frames
+	// Connect to DACs and output frames
+	// First scan for connected devices and open the connection(s).
 	HeliosDac helios;
 	int numDevs = helios.OpenDevices();
 
@@ -47,22 +48,22 @@ int main(void)
 	while (1)
 	{
 		i++;
-		if (i > 150) //cancel after 5 cycles, 30 frames each
+		if (i > 150)
 			break;
 
 		for (int j = 0; j < numDevs; j++)
 		{
-			//wait for ready status
+			// Wait for ready status. You must call GetStatus() until it returns 1 before each and every WriteFrame*() call that you do.
 			for (unsigned int k = 0; k < 512; k++)
 			{
 				if (helios.GetStatus(j) == 1)
 					break;
 			}
-			helios.WriteFrameHighResolution(j, 150000, HELIOS_FLAGS_DEFAULT, frame[i % 30], 1000); //send the next frame
+			helios.WriteFrameHighResolution(j, 40000, HELIOS_FLAGS_DEFAULT, frame[i % 30], 1000); // Send the next frame to the DAC.
 		}
 	}
 
-	//freeing connection
+	// Freeing connection when we're done
 	helios.CloseDevices();
 
 	return 0;
