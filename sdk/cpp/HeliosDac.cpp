@@ -1540,7 +1540,7 @@ int HeliosDac::HeliosDacIdnDevice::GetName(char* dacName)
 //Value 1 = shutter open, value 0 = shutter closed
 int HeliosDac::HeliosDacIdnDevice::SetShutter(bool level)
 {
-	return HELIOS_ERROR_NOT_SUPPORTED; // IDN handles shutter automatically
+	return HELIOS_SUCCESS; // IDN handles shutter automatically
 }
 
 //Stops output of DAC

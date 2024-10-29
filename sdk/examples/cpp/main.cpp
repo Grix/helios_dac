@@ -43,6 +43,16 @@ int main(void)
 		printf("No DACs found.\n");
 		return 0;
 	}
+	printf("Found %d DACs:\n", numDevs);
+	for (int j = 0; j < numDevs; j++)
+	{
+		char name[32];
+		if (helios.GetName(j, name) == HELIOS_SUCCESS)
+			printf("- %s\n", name);
+		else
+			printf("- (unknown dac)\n");
+	}
+	printf("Outputting animation...\n");
 
 	int i = 0;
 	while (1)

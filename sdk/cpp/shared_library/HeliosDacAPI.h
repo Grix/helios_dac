@@ -50,7 +50,7 @@ GetStatus() for timing purposes.
 
 bool inited = false;
 HeliosDac* dacController;
-HeliosPointHighRes* ezAudDacFrameBuffer = 0;
+HeliosPointHighRes** ezAudDacFrameBuffer = 0;
 
 // Unless otherwise specified, functions return a negative error code on failure and 1 on success.
 
@@ -193,6 +193,7 @@ HELIOS_EXPORT int EraseFirmware(unsigned int dacNum);
 	HELIOS_EXPORT bool STDCALL EzAudDacWriteFrameNR(const int *CardNum, const struct EAD_Pnt_s* data, int Bytes, uint16_t PPS, uint16_t Reps);
 	HELIOS_EXPORT int STDCALL EzAudDacGetStatus(const int *CardNum);
 	HELIOS_EXPORT bool STDCALL EzAudDacStop(const int *CardNum);
+	HELIOS_EXPORT int STDCALL EzAudDacSetShutter(const int *CardNum, bool level);
 	HELIOS_EXPORT bool STDCALL EzAudDacClose(void);
 
 #endif

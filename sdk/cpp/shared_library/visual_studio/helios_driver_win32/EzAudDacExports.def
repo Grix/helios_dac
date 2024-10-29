@@ -1,0 +1,9 @@
+LIBRARY HeliosLaserDAC
+EXPORTS
+	EzAudDacWriteFrame
+	EzAudDacWriteFrameNR
+	EzAudDacGetCardNum
+	EzAudDacGetStatus
+	EzAudDacClose
+	EzAudDacStop
+	EzAudDacSetShutter

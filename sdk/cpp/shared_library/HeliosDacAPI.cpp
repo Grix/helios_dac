@@ -185,56 +185,68 @@ int CloseDevices()
 
 bool STDCALL EzAudDacWriteFrameNR(const int *CardNum, const struct EAD_Pnt_s* data, int Bytes, uint16_t PPS, uint16_t Reps)
 {
-	if (ezAudDacFrameBuffer == 0)
-		ezAudDacFrameBuffer = new HeliosPointHighRes[HELIOS_MAX_POINTS];
-
 	unsigned int dacNum = *CardNum;
 	unsigned int numPoints = min(Bytes / sizeof(*data), HELIOS_MAX_POINTS);
-	
+
+	if (ezAudDacFrameBuffer[dacNum] == 0)
+		ezAudDacFrameBuffer[dacNum] = new HeliosPointHighRes[HELIOS_MAX_POINTS];
+
 	for (unsigned int i = 0; i < numPoints; i++)
 	{
-		ezAudDacFrameBuffer[i].x = data[i].X + 0x8000;
-		ezAudDacFrameBuffer[i].y = data[i].Y + 0x8000;
-		ezAudDacFrameBuffer[i].r = data[i].R + 0x8000;
-		ezAudDacFrameBuffer[i].g = data[i].G + 0x8000;
-		ezAudDacFrameBuffer[i].b = data[i].B + 0x8000;
-		ezAudDacFrameBuffer[i].user1 = 0;
+		ezAudDacFrameBuffer[dacNum][i].x = data[i].X << 4;
+		ezAudDacFrameBuffer[dacNum][i].y = data[i].Y << 4;
+		ezAudDacFrameBuffer[dacNum][i].r = data[i].R * 0x101;
+		ezAudDacFrameBuffer[dacNum][i].g = data[i].G * 0x101;
+		ezAudDacFrameBuffer[dacNum][i].b = data[i].B * 0x101;
+		ezAudDacFrameBuffer[dacNum][i].user1 = 0;
 	}
+
 	if (Reps == 1)
-		return WriteFrameHighResolution(dacNum, PPS, HELIOS_FLAGS_SINGLE_MODE | HELIOS_FLAGS_DONT_BLOCK, ezAudDacFrameBuffer, numPoints);
+		return WriteFrameHighResolution(dacNum, PPS, HELIOS_FLAGS_SINGLE_MODE | HELIOS_FLAGS_DONT_BLOCK, ezAudDacFrameBuffer[dacNum], numPoints);
 	else
-		return WriteFrameHighResolution(dacNum, PPS, HELIOS_FLAGS_DEFAULT | HELIOS_FLAGS_DONT_BLOCK, ezAudDacFrameBuffer, numPoints); //ignore reps over 1, play continuously instead
+		return WriteFrameHighResolution(dacNum, PPS, HELIOS_FLAGS_DEFAULT | HELIOS_FLAGS_DONT_BLOCK, ezAudDacFrameBuffer[dacNum], numPoints); //ignore reps over 1, play continuously instead
 }
 
 bool STDCALL EzAudDacWriteFrame(const int *CardNum, const struct EAD_Pnt_s* data, int Bytes, uint16_t PPS)
 {
-	if (ezAudDacFrameBuffer == 0)
-		ezAudDacFrameBuffer = new HeliosPointHighRes[HELIOS_MAX_POINTS];
-
 	unsigned int dacNum = *CardNum;
 	unsigned int numPoints = min(Bytes / sizeof(*data), HELIOS_MAX_POINTS);
 
+	if (ezAudDacFrameBuffer[dacNum] == 0)
+		ezAudDacFrameBuffer[dacNum] = new HeliosPointHighRes[HELIOS_MAX_POINTS];
+
 	for (unsigned int i = 0; i < numPoints; i++)
 	{
-		ezAudDacFrameBuffer[i].x = data[i].X + 0x8000;
-		ezAudDacFrameBuffer[i].y = data[i].Y + 0x8000;
-		ezAudDacFrameBuffer[i].r = data[i].R + 0x8000;
-		ezAudDacFrameBuffer[i].g = data[i].G + 0x8000;
-		ezAudDacFrameBuffer[i].b = data[i].B + 0x8000;
-		ezAudDacFrameBuffer[i].user1 = 0;
+		ezAudDacFrameBuffer[dacNum][i].x = data[i].X << 4;
+		ezAudDacFrameBuffer[dacNum][i].y = data[i].Y << 4;
+		ezAudDacFrameBuffer[dacNum][i].r = data[i].R * 0x101;
+		ezAudDacFrameBuffer[dacNum][i].g = data[i].G * 0x101;
+		ezAudDacFrameBuffer[dacNum][i].b = data[i].B * 0x101;
+		ezAudDacFrameBuffer[dacNum][i].user1 = 0;
 	}
-	return WriteFrameHighResolution(dacNum, PPS, HELIOS_FLAGS_DEFAULT | HELIOS_FLAGS_DONT_BLOCK, ezAudDacFrameBuffer, numPoints);
+	return WriteFrameHighResolution(dacNum, PPS, HELIOS_FLAGS_DEFAULT | HELIOS_FLAGS_DONT_BLOCK, ezAudDacFrameBuffer[dacNum], numPoints);
 }
 
 int STDCALL EzAudDacGetCardNum(void)
 {
-	return OpenDevices();
+	int num = OpenDevices();
+	if (num > 0 && ezAudDacFrameBuffer == 0)
+	{
+		ezAudDacFrameBuffer = new HeliosPointHighRes*[128] {0};
+	}
+	return num > 128 ? 128 : num;
 }
 
 int STDCALL EzAudDacGetStatus(const int *CardNum)
 {
 	unsigned int dacNum = *CardNum;
 	return GetStatus(dacNum);
+}
+
+int STDCALL EzAudDacSetShutter(const int* CardNum, bool level)
+{
+	unsigned int dacNum = *CardNum;
+	return SetShutter(dacNum, level);
 }
 
 bool STDCALL EzAudDacClose(void)
