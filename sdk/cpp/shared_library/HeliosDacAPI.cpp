@@ -6,8 +6,7 @@ See HeliosDacAPI.h for documentation
 
 Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
-HeliosDAC class
-OpenLaserShowControllerV1.0.0 header and .def file (only on windows, and optional)
+HeliosDAC.cpp/h and its dependencies in the idn folder
 
 git repo: https://github.com/Grix/helios_dac.git
 */
@@ -198,7 +197,6 @@ bool STDCALL EzAudDacWriteFrameNR(const int *CardNum, const struct EAD_Pnt_s* da
 		ezAudDacFrameBuffer[dacNum][i].r = data[i].R * 0x101;
 		ezAudDacFrameBuffer[dacNum][i].g = data[i].G * 0x101;
 		ezAudDacFrameBuffer[dacNum][i].b = data[i].B * 0x101;
-		ezAudDacFrameBuffer[dacNum][i].user1 = 0;
 	}
 
 	if (Reps == 1)
@@ -222,7 +220,6 @@ bool STDCALL EzAudDacWriteFrame(const int *CardNum, const struct EAD_Pnt_s* data
 		ezAudDacFrameBuffer[dacNum][i].r = data[i].R * 0x101;
 		ezAudDacFrameBuffer[dacNum][i].g = data[i].G * 0x101;
 		ezAudDacFrameBuffer[dacNum][i].b = data[i].B * 0x101;
-		ezAudDacFrameBuffer[dacNum][i].user1 = 0;
 	}
 	return WriteFrameHighResolution(dacNum, PPS, HELIOS_FLAGS_DEFAULT | HELIOS_FLAGS_DONT_BLOCK, ezAudDacFrameBuffer[dacNum], numPoints);
 }

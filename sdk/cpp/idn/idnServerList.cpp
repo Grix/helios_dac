@@ -234,7 +234,7 @@ static void createInterfaceNode(void* callbackArg, const char* ifName, uint32_t 
         // Allow broadcast on socket
         if (plt_sockSetBroadcast(ifNode->fdSocket) < 0)
         {
-            logError("setsockopt(broadcast) failed (error: %d)", plt_sockGetLastError());
+            logError("setsockopt(broadcast) failed (error: %d) (not necessarily a problem, but one of the network interfaces is not usable)", plt_sockGetLastError());
             break;
         }
 
@@ -247,7 +247,7 @@ static void createInterfaceNode(void* callbackArg, const char* ifName, uint32_t 
 
         if (bind(ifNode->fdSocket, (struct sockaddr*)&bindSockAddr, sizeof(bindSockAddr)) < 0)
         {
-            logError("bind() failed (error: %d) (not necessarily a problem, just that one network interface is not usable)", plt_sockGetLastError());
+            logError("bind() failed (error: %d) (not necessarily a problem, but one of the network interfaces is not usable)", plt_sockGetLastError());
             break;
         }
 

@@ -23,10 +23,10 @@ int main(void)
 			frame[i][j].x = x;
 			frame[i][j].y = y;
 			frame[i][j].r = 0xD000;
-			frame[i][j].g = 0xFF00;
+			frame[i][j].g = 0xFFFF;
 			frame[i][j].b = 0xD000;
-			frame[i][j].user1 = 0;
-			//frame[i][j].user2 = 0; // Used in WriteFrameExtended()
+			//frame[i][j].user1 = 0; // Use HeliosPointExt with WriteFrameExtended() if you need more channels
+			//frame[i][j].user2 = 0;
 			//frame[i][j].user3 = 0;
 			//frame[i][j].user4 = 0;
 			//frame[i][j].i = 0xFFFF;

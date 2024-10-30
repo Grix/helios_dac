@@ -77,7 +77,7 @@ HELIOS_EXPORT int GetStatus(unsigned int dacNum);
 //   Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
 //			(NB: then the function might return 1 even if the transfer fails)
 //   Bit 3 = IDN (Network) DACs do not provide an actual status feedback, so GetStatus() could in theory just return 1 all the time.
-//			 However, some programs may depends on the timing of the status signal, so by default an approximate timing is simulated.
+//			 However, some programs may depends on the timing of the status signal, so by default an approximate status timing is simulated.
 //			 If this flag bit is 1, this timing simulation is disabled, and GetStatus() returns 1 as soon as it can.
 //	 Bit 4-7 = reserved
 // points: pointer to point data. See point structure documentation in HeliosDac.h
@@ -95,7 +95,7 @@ HELIOS_EXPORT int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, H
 //   Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
 //			(NB: then the function might return 1 even if the transfer fails)
 //   Bit 3 = IDN (Network) DACs do not provide an actual status feedback, so GetStatus() could in theory just return 1 all the time.
-//			 However, some programs may depends on the timing of the status signal, so by default an approximate timing is simulated.
+//			 However, some programs may depends on the timing of the status signal, so by default an approximate status timing is simulated.
 //			 If this flag bit is 1, this timing simulation is disabled, and GetStatus() returns 1 as soon as it can.
 //	 Bit 4-7 = reserved
 // points: pointer to point data. See point structure documentation in HeliosDac.h
@@ -113,7 +113,7 @@ HELIOS_EXPORT int WriteFrameHighResolution(unsigned int dacNum, int pps, std::ui
 //   Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
 //			(NB: then the function might return 1 even if the transfer fails)
 //   Bit 3 = IDN (Network) DACs do not provide an actual status feedback, so GetStatus() could in theory just return 1 all the time.
-//			 However, some programs may depends on the timing of the status signal, so by default an approximate timing is simulated.
+//			 However, some programs may depends on the timing of the status signal, so by default an approximate status timing is simulated.
 //			 If this flag bit is 1, this timing simulation is disabled, and GetStatus() returns 1 as soon as it can.
 //	 Bit 4-7 = reserved
 // points: pointer to point data. See point structure documentation in HeliosDac.h
@@ -121,13 +121,11 @@ HELIOS_EXPORT int WriteFrameHighResolution(unsigned int dacNum, int pps, std::ui
 // Returns 1 if successful
 HELIOS_EXPORT int WriteFrameExtended(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPointExt* points, int numOfPoints);
 
-// Sets the shutter of the specified dac.
+// Sets the shutter of the specified dac. 
+// This is no longer strictly necessary to call, the library automatically opens the shutter when you write a frame.
 // Value 1 = shutter open, value 0 = shutter closed
 // Returns 1 if successful.
 HELIOS_EXPORT int SetShutter(unsigned int dacNum, bool shutterValue);
-
-// Returns the firmware version number.
-HELIOS_EXPORT int GetFirmwareVersion(unsigned int dacNum);
 
 // Gets a descriptive name of the specified dac
 // Name buffer needs to be able to hold up to 32 bytes.
@@ -147,6 +145,12 @@ HELIOS_EXPORT int Stop(unsigned int dacNum);
 // Closes connection to all dacs and frees resources
 // Should be called when library is no longer needed (program exit for example)
 HELIOS_EXPORT int CloseDevices();
+
+// Returns the firmware version number.
+// For Helios USB, the firmware version is just one simple integer, which is never higher than 255.
+// For Helios IDN DACs, the firmware version is an integer in this format: AABBCC, which corresponds to vAA.BB.CC. For example 10002 would be v1.0.2.
+// For non-Helios IDN DACs, this function may not work, as firmware version getting is not a part of the IDN spec. In that case, the function may block for a second and then return a negative number.
+HELIOS_EXPORT int GetFirmwareVersion(unsigned int dacNum);
 
 // Gets the maximum frame size for this type of DAC, in number of points
 // Note that it is safe to write frames outside this limit, but the frame will get automatically subsampled (at a performance cost)
@@ -174,7 +178,9 @@ HELIOS_EXPORT int SetLibusbDebugLogLevel(int logLevel);
 HELIOS_EXPORT int EraseFirmware(unsigned int dacNum);
 
 
-/* EzAudDac API */
+// EzAudDac API compatibility wrapper
+// Probably only relevant on Windows, hence the ifdef block.
+// Remember to use EzAudDacExports.def to export functions without mangling.
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 
 	struct EAD_Pnt_s {

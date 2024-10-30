@@ -141,7 +141,6 @@ typedef struct
 	std::uint16_t r; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Red.
 	std::uint16_t g; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Green.
 	std::uint16_t b; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Blue.
-	std::uint16_t user1; // Unsigned 16 bit (valid values from 0 to 0xFFFF). Deep blue or custom. Optional.
 } HeliosPointHighRes;
 
 typedef struct
@@ -190,7 +189,7 @@ public:
 	//   Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
 	//			(NB: then the function might return 1 even if the transfer fails)
 	//   Bit 3 = IDN (Network) DACs do not provide an actual status feedback, so GetStatus() could in theory just return 1 all the time.
-	//			 However, some programs may depends on the timing of the status signal, so by default an approximate timing is simulated.
+	//			 However, some programs may depends on the timing of the status signal, so by default an approximate status timing is simulated.
 	//			 If this flag bit is 1, this timing simulation is disabled, and GetStatus() returns 1 as soon as it can.
 	//	 Bit 4-7 = reserved
 	// points: pointer to point data. See point structure declaration earlier in this document.
@@ -207,7 +206,7 @@ public:
 	//   Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
 	//			(NB: then the function might return 1 even if the transfer fails)
 	//   Bit 3 = IDN (Network) DACs do not provide an actual status feedback, so GetStatus() could in theory just return 1 all the time.
-	//			 However, some programs may depends on the timing of the status signal, so by default an approximate timing is simulated.
+	//			 However, some programs may depends on the timing of the status signal, so by default an approximate status timing is simulated.
 	//			 If this flag bit is 1, this timing simulation is disabled, and GetStatus() returns 1 as soon as it can.
 	//	 Bit 4-7 = reserved
 	// points: pointer to point data. See point structure declaration earlier in this document.
@@ -224,7 +223,7 @@ public:
 	//   Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
 	//			(NB: then the function might return 1 even if the transfer fails)
 	//   Bit 3 = IDN (Network) DACs do not provide an actual status feedback, so GetStatus() could in theory just return 1 all the time.
-	//			 However, some programs may depends on the timing of the status signal, so by default an approximate timing is simulated.
+	//			 However, some programs may depends on the timing of the status signal, so by default an approximate status timing is simulated.
 	//			 If this flag bit is 1, this timing simulation is disabled, and GetStatus() returns 1 as soon as it can.
 	//	 Bit 4-7 = reserved
 	// points: pointer to point data. See point structure declaration earlier in this document.
@@ -233,14 +232,6 @@ public:
 
 	// Gets status of DAC, 1 means DAC is ready to receive frame, 0 means it is not.
 	int GetStatus(unsigned int devNum);
-
-	// Returns whether a specific DAC supports the new WriteFrameHighResolution() and WriteFrameExtended() functions. 
-	// The Original Helios USB device does not, at least not all firmware versions. HeliosPRO / IDN devices supports it.
-	// Note that it is safe to call these function even for DACs that don't support higher resolution data, in that case the data will be converted (though at a performance cost).
-	bool GetSupportsHigherResolutions(unsigned int devNum);
-
-	// Returns firmware version of DAC.
-	int GetFirmwareVersion(unsigned int devNum);
 
 	// Gets name of DAC (populates name, with at most 32 characters).
 	int GetName(unsigned int devNum, char* name);
@@ -252,8 +243,20 @@ public:
 	int Stop(unsigned int devNum);
 
 	// Sets shutter level of DAC.
+	// This is no longer strictly necessary to call, the library automatically opens the shutter when you write a frame.
 	// Value 1 = shutter open, value 0 = shutter closed
 	int SetShutter(unsigned int devNum, bool level);
+
+	// Returns firmware version of DAC.
+	// For Helios USB, the firmware version is just one simple integer, which is never higher than 255.
+	// For Helios IDN DACs, the firmware version is an integer in this format: AABBCC, which corresponds to vAA.BB.CC. For example 10002 would be v1.0.2.
+	// For non-Helios IDN DACs, this function may not work, as firmware version getting is not a part of the IDN spec. In that case, the function may block for a second and then return a negative number.
+	int GetFirmwareVersion(unsigned int devNum);
+
+	// Returns whether a specific DAC supports the new WriteFrameHighResolution() and WriteFrameExtended() functions. 
+	// The Original Helios USB device does not, at least not all firmware versions. HeliosPRO / IDN devices supports it.
+	// Note that it is safe to call these function even for DACs that don't support higher resolution data, in that case the data will be converted (though at a performance cost).
+	bool GetSupportsHigherResolutions(unsigned int devNum);
 
 	// Gets the maximum point rate in pps (points per second) for this DAC. Can vary between USB and IDN devices.
 	// Note that it is safe to write frames outside this limit, as the frame will get automatically subsampled (at a performance cost)
