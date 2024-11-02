@@ -6,7 +6,7 @@ int main(void)
 {
 	//make frames
 	//this is a simple scanning line, but for real graphics you should optimize with evenly spaced points, added points in sharp corners, inserting blanking lines, etc.
-	HeliosPointHighRes** frame = new HeliosPointHighRes*[30];
+	HeliosPointHighRes** frame = new HeliosPointHighRes *[30];
 	int x = 0;
 	int y = 0;
 	for (int i = 0; i < 30; i++)

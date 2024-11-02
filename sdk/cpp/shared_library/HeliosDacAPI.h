@@ -69,6 +69,10 @@ HELIOS_EXPORT int OpenDevicesOnlyUsb();
 HELIOS_EXPORT int GetStatus(unsigned int dacNum);
 
 // Writes and outputs a frame to the speficied dac, with the light-weight frame structure backwards compatible with the old Helios DAC library.
+// WriteFrame() uses the lightweight point structure designed for the original Helios DAC.
+// WriteFrameHighResolution() uses a higher resolution point structure supported by newer DAC models. If unsure, this one is recommended.
+// WriteFrameExtended() has additional optional channels and a higher resolution point structure supported by newer DAC models.
+// It is safe to call any of these functions even for DACs that don't support higher resolution data. In that case the data will automatically be converted (though at a slight performance cost).
 // dacNum: dac number (0 to n where n+1 is the return value from OpenDevices() )
 // pps: rate of output in points per second
 // flags: (default is 0)
@@ -84,41 +88,7 @@ HELIOS_EXPORT int GetStatus(unsigned int dacNum);
 // numOfPoints: number of points in the frame
 // Returns 1 if successful
 HELIOS_EXPORT int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints);
-
-// Writes and outputs a frame to the speficied dac, with a 16-bit resolution frame structure. Recommended for new integrations.
-// It is safe to call this function even for DACs that don't support higher resolution data. In that case the data will be converted (though at a slight performance cost).
-// dacNum: dac number (0 to n where n+1 is the return value from OpenDevices() )
-// pps: rate of output in points per second
-// flags: (default is 0)
-//	 Bit 0 (LSB) = if true, start output immediately, instead of waiting for current frame (if there is one) to finish playing
-//	 Bit 1 = if true, play frame only once, instead of repeating until another frame is written
-//   Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
-//			(NB: then the function might return 1 even if the transfer fails)
-//   Bit 3 = IDN (Network) DACs do not provide an actual status feedback, so GetStatus() could in theory just return 1 all the time.
-//			 However, some programs may depends on the timing of the status signal, so by default an approximate status timing is simulated.
-//			 If this flag bit is 1, this timing simulation is disabled, and GetStatus() returns 1 as soon as it can.
-//	 Bit 4-7 = reserved
-// points: pointer to point data. See point structure documentation in HeliosDac.h
-// numOfPoints: number of points in the frame
-// Returns 1 if successful
 HELIOS_EXPORT int WriteFrameHighResolution(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPointHighRes* points, int numOfPoints);
-
-// Writes and outputs a frame to the speficied dac, with an extended frame structure providing high resolution and multiple user-defined channels. 
-// It is safe to call this function even for DACs that don't support higher resolution data. In that case the data will be converted (though at a slight performance cost).
-// dacNum: dac number (0 to n where n+1 is the return value from OpenDevices() )
-// pps: rate of output in points per second
-// flags: (default is 0)
-//	 Bit 0 (LSB) = if true, start output immediately, instead of waiting for current frame (if there is one) to finish playing
-//	 Bit 1 = if true, play frame only once, instead of repeating until another frame is written
-//   Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
-//			(NB: then the function might return 1 even if the transfer fails)
-//   Bit 3 = IDN (Network) DACs do not provide an actual status feedback, so GetStatus() could in theory just return 1 all the time.
-//			 However, some programs may depends on the timing of the status signal, so by default an approximate status timing is simulated.
-//			 If this flag bit is 1, this timing simulation is disabled, and GetStatus() returns 1 as soon as it can.
-//	 Bit 4-7 = reserved
-// points: pointer to point data. See point structure documentation in HeliosDac.h
-// numOfPoints: number of points in the frame
-// Returns 1 if successful
 HELIOS_EXPORT int WriteFrameExtended(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPointExt* points, int numOfPoints);
 
 // Sets the shutter of the specified dac. 
@@ -152,20 +122,9 @@ HELIOS_EXPORT int CloseDevices();
 // For non-Helios IDN DACs, this function may not work, as firmware version getting is not a part of the IDN spec. In that case, the function may block for a second and then return a negative number.
 HELIOS_EXPORT int GetFirmwareVersion(unsigned int dacNum);
 
-// Gets the maximum frame size for this type of DAC, in number of points
-// Note that it is safe to write frames outside this limit, but the frame will get automatically subsampled (at a performance cost)
-HELIOS_EXPORT int GetMaxFrameSize(unsigned int dacNum);
-
-// Gets the maximum sample rate in pps (points per second) for this type of DAC
-// Note that it is safe to write frames outside this limit, but the frame will get automatically subsampled (at a performance cost)
-HELIOS_EXPORT int GetMaxSampleRate(unsigned int dacNum);
-
-// Gets the minimum sample rate in pps (points per second) for this type of DAC
-// Note that it is safe to write frames outside this limit, but points will get automatically duplicated to increase pps (at a performance cost)
-HELIOS_EXPORT int GetMinSampleRate(unsigned int dacNum);
-
-// Gets whether the specific DAC support 16-bit resolutions for position and color data. 
-// Note that it is safe to write high-res frames to low-res DACs, but points will get automatically converted (at a performance cost)
+// Returns whether a specific DAC supports the higher resolutions color/postion data of new WriteFrameHighResolution() and WriteFrameExtended() functions. 
+// The Original Helios USB device does not, at least not all firmware versions. HeliosPRO / IDN devices supports it.
+// Note that it is safe to call these function even for DACs that don't support higher resolution data, in that case the data will automatically be converted (though at a performance cost).
 // Returns 1 if yes, 0 if no, and a negative number on error.
 HELIOS_EXPORT int GetSupportsHigherResolutions(unsigned int dacNum);
 

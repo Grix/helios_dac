@@ -111,30 +111,6 @@ int SetShutter(unsigned int dacNum, bool value)
 	return dacController->SetShutter(dacNum, value);
 }
 
-int GetMaxFrameSize(unsigned int dacNum)
-{
-	if (!inited)
-		return HELIOS_ERROR_NOT_INITIALIZED;
-
-	return dacController->GetMaxFrameSize(dacNum);
-}
-
-int GetMaxSampleRate(unsigned int dacNum)
-{
-	if (!inited)
-		return HELIOS_ERROR_NOT_INITIALIZED;
-
-	return dacController->GetMaxSampleRate(dacNum);
-}
-
-int GetMinSampleRate(unsigned int dacNum)
-{
-	if (!inited)
-		return HELIOS_ERROR_NOT_INITIALIZED;
-
-	return dacController->GetMinSampleRate(dacNum);
-}
-
 int GetSupportsHigherResolutions(unsigned int dacNum)
 {
 	if (!inited)

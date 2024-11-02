@@ -219,7 +219,7 @@ int idnPutSampleGeneric(IDNCONTEXT* context, int8_t* sampleBuffer, size_t sample
 
 
 
-int idnOpenFrameXYRGBI(IDNCONTEXT* context)
+int idnOpenFrameXYRGBI(IDNCONTEXT* context, bool forceNewConfig)
 {
 	IDNCONTEXT* ctx = context;
 
@@ -238,7 +238,7 @@ int idnOpenFrameXYRGBI(IDNCONTEXT* context)
 	// Insert channel config header every 250 ms
 	unsigned now = plt_getMonoTimeUS();
 	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
-	if ((ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
+	if (forceNewConfig || (ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
 	{
 		// IDN-Stream channel configuration header
 		IDNHDR_CHANNEL_CONFIG* channelConfigHdr = (IDNHDR_CHANNEL_CONFIG*)sampleChunkHdr;
@@ -326,7 +326,7 @@ int idnPutSampleXYRGBI(IDNCONTEXT* context, int16_t x, int16_t y, uint8_t r, uin
 
 
 
-int idnOpenFrameXYRGB(IDNCONTEXT* context)
+int idnOpenFrameXYRGB(IDNCONTEXT* context, bool forceNewConfig)
 {
 	IDNCONTEXT* ctx = context;
 
@@ -345,7 +345,7 @@ int idnOpenFrameXYRGB(IDNCONTEXT* context)
 	// Insert channel config header every 250 ms
 	unsigned now = plt_getMonoTimeUS();
 	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
-	if ((ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
+	if (forceNewConfig || (ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
 	{
 		// IDN-Stream channel configuration header
 		IDNHDR_CHANNEL_CONFIG* channelConfigHdr = (IDNHDR_CHANNEL_CONFIG*)sampleChunkHdr;
@@ -420,7 +420,7 @@ int idnPutSampleXYRGB(IDNCONTEXT* context, int16_t x, int16_t y, uint8_t r, uint
 	return 0;
 }
 
-int idnOpenFrameHighResXYRGB(IDNCONTEXT* context)
+int idnOpenFrameHighResXYRGB(IDNCONTEXT* context, bool forceNewConfig)
 {
 	IDNCONTEXT* ctx = context;
 
@@ -439,7 +439,7 @@ int idnOpenFrameHighResXYRGB(IDNCONTEXT* context)
 	// Insert channel config header every 250 ms
 	unsigned now = plt_getMonoTimeUS();
 	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
-	if ((ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
+	if (forceNewConfig || (ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
 	{
 		// IDN-Stream channel configuration header
 		IDNHDR_CHANNEL_CONFIG* channelConfigHdr = (IDNHDR_CHANNEL_CONFIG*)sampleChunkHdr;
@@ -517,7 +517,7 @@ int idnPutSampleHighResXYRGB(IDNCONTEXT* context, int16_t x, int16_t y, uint16_t
 }
 
 
-int idnOpenFrameExtended(IDNCONTEXT* context)
+int idnOpenFrameExtended(IDNCONTEXT* context, bool forceNewConfig)
 {
 	IDNCONTEXT* ctx = context;
 
@@ -536,7 +536,7 @@ int idnOpenFrameExtended(IDNCONTEXT* context)
 	// Insert channel config header every 250 ms
 	unsigned now = plt_getMonoTimeUS();
 	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
-	if ((ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
+	if (forceNewConfig || (ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
 	{
 		// IDN-Stream channel configuration header
 		IDNHDR_CHANNEL_CONFIG* channelConfigHdr = (IDNHDR_CHANNEL_CONFIG*)sampleChunkHdr;
@@ -640,6 +640,7 @@ int idnPushFrame(IDNCONTEXT* context)
 
 	// Sanity check
 	if (ctx->payload == (uint8_t*)0) return -1;
+	if (ctx->scanSpeed == 0) { logError("[IDN] Invalid scan speed 0"); return -1; }
 	if (ctx->sampleCnt < 2) { logError("[IDN] Invalid sample count %u", ctx->sampleCnt); return -1; }
 
 	// ---------------------------------------------------------------------------------------------
@@ -661,6 +662,7 @@ int idnPushFrame(IDNCONTEXT* context)
 	ctx->sampleChunkHdr->flagsDuration = htonl((frameFlags << 24) | frameDuration);
 
 	// Should wait between frames to match frame rate, but instead we trust the host application to do this. 
+	// Simulated by default using the Helios library GetStatus() mechanism
 	/*if (ctx->frameCnt != 0)
 	{
 		unsigned usWait = ctx->usFrameTime - (plt_getMonoTimeUS() - ctx->frameTimestamp);
