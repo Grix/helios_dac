@@ -1,0 +1,1 @@
+IDN (ILDA Digital Network) is the protocol used by the network connection of the HeliosPRO. You shouldn't have to deal directly with any of the files in this folder, but in case you need documentation on IDN, see http://ilda-digital.com/

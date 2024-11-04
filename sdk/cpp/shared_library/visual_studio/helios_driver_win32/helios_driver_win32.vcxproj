@@ -170,8 +170,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libusb-1.0.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>OpenLaserShowController.def</ModuleDefinitionFile>
+      <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>EzAudDacExports.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
@@ -188,7 +188,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>..\..\..\libusb\$(PlatformName)\$(Configuration)\lib\libusb-1.0.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>OpenLaserShowController.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>EzAudDacExports.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
@@ -221,8 +221,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>OpenLaserShowController.def</ModuleDefinitionFile>
+      <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>EzAudDacExports.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -243,8 +243,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>..\..\libusb-1.0.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>OpenLaserShowController.def</ModuleDefinitionFile>
+      <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>EzAudDacExports.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
@@ -303,25 +303,36 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessToFile>false</PreprocessToFile>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>OpenLaserShowController.def</ModuleDefinitionFile>
+      <AdditionalDependencies>$(ProjectDir)..\..\..\libusb_bin\Windows\$(PlatformName)\$(Configuration)\dll\libusb-1.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>EzAudDacExports.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\HeliosDac.h" />
+    <ClInclude Include="..\..\..\idn\idn-hello.h" />
+    <ClInclude Include="..\..\..\idn\idn-stream.h" />
+    <ClInclude Include="..\..\..\idn\idn.h" />
+    <ClInclude Include="..\..\..\idn\idnServerList.h" />
+    <ClInclude Include="..\..\..\idn\plt-windows.h" />
+    <ClInclude Include="..\..\..\libusb.h" />
     <ClInclude Include="..\..\HeliosDacAPI.h" />
-    <ClInclude Include="..\..\libusb.h" />
-    <ClInclude Include="..\..\OpenLaserShowControllerV1.0.0-Mod.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\HeliosDac.cpp" />
+    <ClCompile Include="..\..\..\idn\idn.cpp" />
+    <ClCompile Include="..\..\..\idn\idnServerList.cpp" />
+    <ClCompile Include="..\..\..\idn\plt-windows.cpp" />
     <ClCompile Include="..\..\HeliosDacAPI.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="EzAudDacExports.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

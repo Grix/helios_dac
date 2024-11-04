@@ -5,23 +5,24 @@ gitlem@gmail.com
 
 Dependencies:
 Libusb 1.0 (GNU Lesser General Public License, see libusb.h)
-HeliosDAC class
-OpenLaserShowControllerV1.0.0 header and .def file (only on windows)
+HeliosDAC.cpp/h and its dependencies in the idn folder
 
 Standard: C++14
 
-This is the shared library extension of the Helios DAC SDK, used to produce a library file like .dll, .so or .dylib. 
-If such a file is not neccessary, you can simply use HeliosDAC.cpp and HeliosDAC.h directly in your source code, with no additional files or build steps needed.
+This is the shared library extension of the Helios DAC SDK, used to produce a dynamic library file like .dll, .so or .dylib. 
+This allows you to call the code from other languages than C++.
+If such a file is not neccessary, you can simply use HeliosDAC.cpp/.h and the files in the idn subfolder directly in your 
+source code, with no additional files or build steps needed.
 
 BASIC USAGE:
-1.	Call OpenDevices() or OLSC_Initialize() to open devices, returns number of available devices
-2.	To send a new frame, first call GetStatus() or OLSC_GetStatus(). If the function returns ready
-	(1 for GetStatus, OLSC_STATUS_BUFFER_EMPTY for OLSC_GetStatus), then you can call WriteFrame()
-	or OLSC_WriteFrame() / OLSC_WriteFrameEx().
+1.	Call OpenDevices() to open devices, returns number of available devices.
+2.	To send a new frame, first call GetStatus(). If the function returns ready (1),then you can call WriteFrame*().
 	The status should be polled until it returns ready. It can and sometimes will fail to return ready on the first try.
-3.  To stop output, use Stop() or OLSC_Pause(). To restart output you must send a new frame as described above.
-4.	When the DAC is no longer needed, free it using CloseDevices() or OLSC_Shutdown()
-See OpenLaserShowControllerV1.0.0-Mod.h for documentation on OLSC_* functions. Not recommended for cross-platform apps
+3.  To stop output, use Stop(). To restart output you must send a new frame as described above.
+4.	When the DAC is no longer needed, free it using CloseDevices()
+
+More more information on all functions, see their declarations below. 
+Unless otherwise specified, functions return a negative error code on failure.
 
 The DAC is double-buffered. When it receives its first frame, it starts outputting it. When a second frame is sent to
 the DAC while the first frame is being played, the second frame is stored in the DACs memory until the first frame
@@ -29,7 +30,10 @@ finishes playback, at which point the second, buffered frame will start playing.
 without having received and buffered a second frame, it will by default loop the first frame until a new frame is
 received (but the flag HELIOS_FLAG_SINGLE_MODE will make it stop playback instead).
 The GetStatus() function actually checks whether or not the buffer on the DAC is empty or full. If it is full, the DAC
-cannot receive a new frame until the currently playing frame finishes, freeing up the buffer.
+cannot receive a new frame until the currently playing frame finishes, freeing up the buffer. This is not applicable
+on IDN network DACs, they will always be ready to receive a new frame, but by default the GetStatus still simulates 
+the time it would take for the IDN DAC to play the frame, to stay backwards compatible with programs that depend on
+GetStatus() for timing purposes.
 */
 
 #pragma once
@@ -37,7 +41,6 @@ cannot receive a new frame until the currently playing frame finishes, freeing u
 #include "..\HeliosDac.h"
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-	#include "OpenLaserShowControllerV1.0.0-Mod.h"
 	#define HELIOS_EXPORT extern "C" __declspec (dllexport)
 #else
 	#define HELIOS_EXPORT extern "C"
@@ -46,51 +49,62 @@ cannot receive a new frame until the currently playing frame finishes, freeing u
 #define STDCALL __stdcall
 
 bool inited = false;
-bool flipX = true;
-
 HeliosDac* dacController;
+HeliosPointHighRes** ezAudDacFrameBuffer = 0;
+
+// Unless otherwise specified, functions return a negative error code on failure and 1 on success.
 
 // Initializes drivers, opens connection to all devices.
 // Returns number of available devices.
 // NB: To re-scan for newly connected DACs after this function has once been called before, you must first call CloseDevices()
 HELIOS_EXPORT int OpenDevices();
 
+// Initializes drivers, opens connection to only USB devices (skips IDN/network scan).
+// Returns number of available devices.
+// NB: To re-scan for newly connected DACs after this function has once been called before, you must first call CloseDevices()
+HELIOS_EXPORT int OpenDevicesOnlyUsb();
+
 // Gets status from the specified dac.
-// Return 1 if ready to receive new frame, 0 if not, -1 if communcation failed
+// Return 1 if ready to receive new frame, 0 if not, negative number if communcation failed
 HELIOS_EXPORT int GetStatus(unsigned int dacNum);
 
-// Sets libusb debug log level
-// See libusb.h for log level values
-HELIOS_EXPORT int SetLibusbDebugLogLevel(int logLevel);
-
-// Writes and outputs a frame to the speficied dac
+// Writes and outputs a frame to the speficied dac, with the light-weight frame structure backwards compatible with the old Helios DAC library.
+// WriteFrame() uses the lightweight point structure designed for the original Helios DAC.
+// WriteFrameHighResolution() uses a higher resolution point structure supported by newer DAC models. If unsure, this one is recommended.
+// WriteFrameExtended() has additional optional channels and a higher resolution point structure supported by newer DAC models.
+// It is safe to call any of these functions even for DACs that don't support higher resolution data. In that case the data will automatically be converted (though at a slight performance cost).
 // dacNum: dac number (0 to n where n+1 is the return value from OpenDevices() )
 // pps: rate of output in points per second
 // flags: (default is 0)
 //	 Bit 0 (LSB) = if true, start output immediately, instead of waiting for current frame (if there is one) to finish playing
 //	 Bit 1 = if true, play frame only once, instead of repeating until another frame is written
-//	 Bit 2-7 = reserved
+//   Bit 2 = if 1, don't let WriteFrame() block execution while waiting for the transfer to finish 
+//			(NB: then the function might return 1 even if the transfer fails)
+//   Bit 3 = IDN (Network) DACs do not provide an actual status feedback, so GetStatus() could in theory just return 1 all the time.
+//			 However, some programs may depends on the timing of the status signal, so by default an approximate status timing is simulated.
+//			 If this flag bit is 1, this timing simulation is disabled, and GetStatus() returns 1 as soon as it can.
+//	 Bit 4-7 = reserved
 // points: pointer to point data. See point structure documentation in HeliosDac.h
 // numOfPoints: number of points in the frame
 // Returns 1 if successful
 HELIOS_EXPORT int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints);
+HELIOS_EXPORT int WriteFrameHighResolution(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPointHighRes* points, int numOfPoints);
+HELIOS_EXPORT int WriteFrameExtended(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPointExt* points, int numOfPoints);
 
-// Sets the shutter of the specified dac.
+// Sets the shutter of the specified dac. 
+// This is no longer strictly necessary to call, the library automatically opens the shutter when you write a frame.
 // Value 1 = shutter open, value 0 = shutter closed
 // Returns 1 if successful.
 HELIOS_EXPORT int SetShutter(unsigned int dacNum, bool shutterValue);
 
-// Returns the firmware version number. Returns -1 if communcation failed.
-HELIOS_EXPORT int GetFirmwareVersion(unsigned int dacNum);
-
 // Gets a descriptive name of the specified dac
-// Name is max 32 bytes long, char needs to be able to hold 32 bytes
+// Name buffer needs to be able to hold up to 32 bytes.
 // Returns 1 if successful, return 0 if the proper name couldn't be fetched from the DAC, but name is still populated with a fallback numbered name based on order of discovery by the library.
-// Return -1 if unsuccessful and name is not populated.
+// Return negative number if unsuccessful and name is not populated.
 HELIOS_EXPORT int GetName(unsigned int dacNum, char* name);
 
 // Gets a descriptive name of the specified dac
-// Name is max 31 bytes long including null terminator
+// Name must be max 20 characters long (21 bytes including null terminator).
 // Returns 1 if successful, return 0 if the transfer failed
 HELIOS_EXPORT int SetName(unsigned int dacNum, char* name);
 
@@ -102,11 +116,30 @@ HELIOS_EXPORT int Stop(unsigned int dacNum);
 // Should be called when library is no longer needed (program exit for example)
 HELIOS_EXPORT int CloseDevices();
 
+// Returns the firmware version number.
+// For Helios USB, the firmware version is just one simple integer, which is never higher than 255.
+// For Helios IDN DACs, the firmware version is an integer in this format: AABBCC, which corresponds to vAA.BB.CC. For example 10002 would be v1.0.2.
+// For non-Helios IDN DACs, this function may not work, as firmware version getting is not a part of the IDN spec. In that case, the function may block for a second and then return a negative number.
+HELIOS_EXPORT int GetFirmwareVersion(unsigned int dacNum);
+
+// Returns whether a specific DAC supports the higher resolutions color/postion data of new WriteFrameHighResolution() and WriteFrameExtended() functions. 
+// The Original Helios USB device does not, at least not all firmware versions. HeliosPRO / IDN devices supports it.
+// Note that it is safe to call these function even for DACs that don't support higher resolution data, in that case the data will automatically be converted (though at a performance cost).
+// Returns 1 if yes, 0 if no, and a negative number on error.
+HELIOS_EXPORT int GetSupportsHigherResolutions(unsigned int dacNum);
+
+// Sets libusb debug log level. May be needed for advanced debugging.
+// See libusb.h for log level values
+HELIOS_EXPORT int SetLibusbDebugLogLevel(int logLevel);
+
 // Clears the GPNVM1 bit on the DACs microcontroller. This will cause the DAC to boot into SAM-BA bootloader which allows new firmware to be uploaded over USB.
+// Don't call this unless you know what you are doing.
 HELIOS_EXPORT int EraseFirmware(unsigned int dacNum);
 
 
-/* EzAudDac API */
+// EzAudDac API compatibility wrapper
+// Probably only relevant on Windows, hence the ifdef block.
+// Remember to use EzAudDacExports.def to export functions without mangling.
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 
 	struct EAD_Pnt_s {
@@ -125,6 +158,7 @@ HELIOS_EXPORT int EraseFirmware(unsigned int dacNum);
 	HELIOS_EXPORT bool STDCALL EzAudDacWriteFrameNR(const int *CardNum, const struct EAD_Pnt_s* data, int Bytes, uint16_t PPS, uint16_t Reps);
 	HELIOS_EXPORT int STDCALL EzAudDacGetStatus(const int *CardNum);
 	HELIOS_EXPORT bool STDCALL EzAudDacStop(const int *CardNum);
+	HELIOS_EXPORT int STDCALL EzAudDacSetShutter(const int *CardNum, bool level);
 	HELIOS_EXPORT bool STDCALL EzAudDacClose(void);
 
 #endif

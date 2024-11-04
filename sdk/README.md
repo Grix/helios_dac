@@ -1,15 +1,19 @@
-This is the shared library extension of the Helios DAC SDK, used to produce a library file for dynamic linking, like .dll, .so or .dylib. It has compatibility functions with the EzAudDac functions. 
-If dynamic linking is not neccessary, you can simply use the files in the parent folder (HeliosDAC.cpp, HeliosDAC.h and the source files in the idn folder) directly in your source code, with no additional files or build steps needed.
+There are currently official libraries for C++ and C#, see the respective subfolders. 
+There also exists Rust and Javascript libraries from third parties, but they are not covered here.
 
-BASIC USAGE:
-1.	Call OpenDevices()  to open devices, returns number of available devices.
-2.	To send a new frame, first call GetStatus(). If the function returns ready, (1), then you can call WriteFrame\*().
-	The status should be polled until it returns ready. It can and sometimes will fail to return ready on the first try.
-3.  To stop output, use Stop(). To restart output you must send a new frame as described above.
-4.	When the DAC is no longer needed, free it using CloseDevices().
+Common to all languages:
 
-When the DAC receives its first frame, it starts outputting it. When a second frame is sent to
-the DAC while the first frame is being played, the second frame is stored in the DACs memory until the first frame
+BASIC USAGE, common to all languages:
+1.	Call OpenDevices() to open devices, returns number of available devices. All following functions need to have the device index (zero indexed) passed as an argument, for example 0 if you are controlling the first DAC found).
+2.  Call SetShutter(1) to open the shutter of your laser projector if it has any (PS: The C++ library does this automatically, but it's good practice anyway).
+3.	To send a frame to the DAC, first call GetStatus(). If the function returns ready (1), 
+	then you can call WriteFrame(). The status should be repeatedly polled until it returns ready. 
+	It can fail to return ready on the first try.
+4.  To stop output, use Stop(). To restart output you must send a new frame as described above.
+5.	When the DAC is no longer needed, destroy the instance (destructors will free everything and close the connection)
+
+The DAC is double-buffered. When it receives its first frame, it starts outputting it. When a second frame is sent to 
+the DAC while the first frame is being played, the second frame is stored in the DACs memory until the first frame 
 finishes playback, at which point the second, buffered frame will start playing. If the DAC finished playback of a frame
 without having received and buffered a second frame, it will by default loop the first frame until a new frame is
 received (but the flag HELIOS_FLAG_SINGLE_MODE will make it stop playback instead).

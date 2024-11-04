@@ -22,7 +22,10 @@ Compile
 ```shell
 g++ -Wall -std=c++14 -fPIC -O2 -c HeliosDacAPI.cpp
 g++ -Wall -std=c++14 -fPIC -O2 -c HeliosDac.cpp
-g++ -shared -o libHeliosDacAPI.so HeliosDacAPI.o HeliosDac.o libusb-1.0.so
+g++ -Wall -std=c++14 -fPIC -O2 -c idn/idn.cpp
+g++ -Wall -std=c++14 -fPIC -O2 -c idn/idnServerList.cpp
+g++ -Wall -std=c++14 -fPIC -O2 -c idn/plt-posix.c
+g++ -shared -o libHeliosDacAPI.so HeliosDacAPI.o HeliosDac.o plt-posix.o idn.o idnServerList.o libusb-1.0.so
 ```
 
 So after compiling, copy the library file libHeliosDacAPI.so in the
