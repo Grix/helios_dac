@@ -6,7 +6,7 @@ int main(void)
 {
 	//make frames
 	//this is a simple scanning line, but for real graphics you should optimize with evenly spaced points, added points in sharp corners, inserting blanking lines, etc.
-	HeliosPointHighRes** frame = new HeliosPointHighRes *[30];
+	HeliosPointHighRes** frame = new HeliosPointHighRes*[30];
 	int x = 0;
 	int y = 0;
 	for (int i = 0; i < 30; i++)
@@ -69,7 +69,8 @@ int main(void)
 				if (helios.GetStatus(j) == 1)
 					break;
 			}
-			helios.WriteFrameHighResolution(j, 40000, HELIOS_FLAGS_DEFAULT, frame[i % 30], 1000); // Send the next frame to the DAC.
+			// Send the next frame to the DAC.
+			helios.WriteFrameHighResolution(j, 40000, HELIOS_FLAGS_DEFAULT, frame[i % 30], 1000);
 		}
 	}
 
