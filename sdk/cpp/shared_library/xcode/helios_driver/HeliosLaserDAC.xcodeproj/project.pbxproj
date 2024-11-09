@@ -1,0 +1,350 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B672D5762CDF8E8B009B5F53 /* HeliosDac.h in Headers */ = {isa = PBXBuildFile; fileRef = B672D5732CDF8E8B009B5F53 /* HeliosDac.h */; };
+		B672D5772CDF8E8B009B5F53 /* HeliosDac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B672D5742CDF8E8B009B5F53 /* HeliosDac.cpp */; };
+		B672D5792CDF8EAA009B5F53 /* libusb-1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = B672D5782CDF8EAA009B5F53 /* libusb-1.0.0.dylib */; };
+		B672D57B2CDF8F2E009B5F53 /* libusb.h in Headers */ = {isa = PBXBuildFile; fileRef = B672D57A2CDF8F2D009B5F53 /* libusb.h */; };
+		B672D5822CDF907B009B5F53 /* HeliosDacAPI.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B672D5802CDF907B009B5F53 /* HeliosDacAPI.cpp */; };
+		B672D5832CDF907B009B5F53 /* HeliosDacAPI.h in Headers */ = {isa = PBXBuildFile; fileRef = B672D5812CDF907B009B5F53 /* HeliosDacAPI.h */; };
+		B672D58C2CDF96E7009B5F53 /* idn.h in Headers */ = {isa = PBXBuildFile; fileRef = B672D5842CDF96E7009B5F53 /* idn.h */; };
+		B672D58D2CDF96E7009B5F53 /* idn-stream.h in Headers */ = {isa = PBXBuildFile; fileRef = B672D5852CDF96E7009B5F53 /* idn-stream.h */; };
+		B672D58E2CDF96E7009B5F53 /* idn-hello.h in Headers */ = {isa = PBXBuildFile; fileRef = B672D5862CDF96E7009B5F53 /* idn-hello.h */; };
+		B672D58F2CDF96E7009B5F53 /* idnServerList.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B672D5872CDF96E7009B5F53 /* idnServerList.cpp */; };
+		B672D5902CDF96E7009B5F53 /* idn.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B672D5882CDF96E7009B5F53 /* idn.cpp */; };
+		B672D5912CDF96E7009B5F53 /* plt-posix.c in Sources */ = {isa = PBXBuildFile; fileRef = B672D5892CDF96E7009B5F53 /* plt-posix.c */; };
+		B672D5922CDF96E7009B5F53 /* plt-posix.h in Headers */ = {isa = PBXBuildFile; fileRef = B672D58A2CDF96E7009B5F53 /* plt-posix.h */; };
+		B672D5932CDF96E7009B5F53 /* idnServerList.h in Headers */ = {isa = PBXBuildFile; fileRef = B672D58B2CDF96E7009B5F53 /* idnServerList.h */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B672D5682CDF8E3E009B5F53 /* libHeliosLaserDAC.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libHeliosLaserDAC.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		B672D5732CDF8E8B009B5F53 /* HeliosDac.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HeliosDac.h; path = ../../../HeliosDac.h; sourceTree = SOURCE_ROOT; };
+		B672D5742CDF8E8B009B5F53 /* HeliosDac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HeliosDac.cpp; path = ../../../HeliosDac.cpp; sourceTree = SOURCE_ROOT; };
+		B672D5782CDF8EAA009B5F53 /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "../../../libusb_bin/macOS/libusb-1.0.0.dylib"; sourceTree = "<group>"; };
+		B672D57A2CDF8F2D009B5F53 /* libusb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libusb.h; path = ../../../libusb.h; sourceTree = SOURCE_ROOT; };
+		B672D5802CDF907B009B5F53 /* HeliosDacAPI.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HeliosDacAPI.cpp; path = ../../HeliosDacAPI.cpp; sourceTree = SOURCE_ROOT; };
+		B672D5812CDF907B009B5F53 /* HeliosDacAPI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HeliosDacAPI.h; path = ../../HeliosDacAPI.h; sourceTree = SOURCE_ROOT; };
+		B672D5842CDF96E7009B5F53 /* idn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = idn.h; path = ../../../idn/idn.h; sourceTree = "<group>"; };
+		B672D5852CDF96E7009B5F53 /* idn-stream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "idn-stream.h"; path = "../../../idn/idn-stream.h"; sourceTree = "<group>"; };
+		B672D5862CDF96E7009B5F53 /* idn-hello.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "idn-hello.h"; path = "../../../idn/idn-hello.h"; sourceTree = "<group>"; };
+		B672D5872CDF96E7009B5F53 /* idnServerList.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = idnServerList.cpp; path = ../../../idn/idnServerList.cpp; sourceTree = "<group>"; };
+		B672D5882CDF96E7009B5F53 /* idn.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = idn.cpp; path = ../../../idn/idn.cpp; sourceTree = "<group>"; };
+		B672D5892CDF96E7009B5F53 /* plt-posix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "plt-posix.c"; path = "../../../idn/plt-posix.c"; sourceTree = "<group>"; };
+		B672D58A2CDF96E7009B5F53 /* plt-posix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "plt-posix.h"; path = "../../../idn/plt-posix.h"; sourceTree = "<group>"; };
+		B672D58B2CDF96E7009B5F53 /* idnServerList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = idnServerList.h; path = ../../../idn/idnServerList.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B672D5662CDF8E3E009B5F53 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B672D5792CDF8EAA009B5F53 /* libusb-1.0.0.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		B672D55F2CDF8E3E009B5F53 = {
+			isa = PBXGroup;
+			children = (
+				B672D57F2CDF906C009B5F53 /* shared_library */,
+				B672D5782CDF8EAA009B5F53 /* libusb-1.0.0.dylib */,
+				B672D57A2CDF8F2D009B5F53 /* libusb.h */,
+				B672D5742CDF8E8B009B5F53 /* HeliosDac.cpp */,
+				B672D5732CDF8E8B009B5F53 /* HeliosDac.h */,
+				B672D5862CDF96E7009B5F53 /* idn-hello.h */,
+				B672D5852CDF96E7009B5F53 /* idn-stream.h */,
+				B672D5882CDF96E7009B5F53 /* idn.cpp */,
+				B672D5842CDF96E7009B5F53 /* idn.h */,
+				B672D5872CDF96E7009B5F53 /* idnServerList.cpp */,
+				B672D58B2CDF96E7009B5F53 /* idnServerList.h */,
+				B672D5892CDF96E7009B5F53 /* plt-posix.c */,
+				B672D58A2CDF96E7009B5F53 /* plt-posix.h */,
+				B672D5692CDF8E3E009B5F53 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B672D5692CDF8E3E009B5F53 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B672D5682CDF8E3E009B5F53 /* libHeliosLaserDAC.dylib */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B672D57F2CDF906C009B5F53 /* shared_library */ = {
+			isa = PBXGroup;
+			children = (
+				B672D5802CDF907B009B5F53 /* HeliosDacAPI.cpp */,
+				B672D5812CDF907B009B5F53 /* HeliosDacAPI.h */,
+			);
+			name = shared_library;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		B672D5642CDF8E3E009B5F53 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B672D5832CDF907B009B5F53 /* HeliosDacAPI.h in Headers */,
+				B672D58D2CDF96E7009B5F53 /* idn-stream.h in Headers */,
+				B672D5762CDF8E8B009B5F53 /* HeliosDac.h in Headers */,
+				B672D5932CDF96E7009B5F53 /* idnServerList.h in Headers */,
+				B672D5922CDF96E7009B5F53 /* plt-posix.h in Headers */,
+				B672D58C2CDF96E7009B5F53 /* idn.h in Headers */,
+				B672D57B2CDF8F2E009B5F53 /* libusb.h in Headers */,
+				B672D58E2CDF96E7009B5F53 /* idn-hello.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		B672D5672CDF8E3E009B5F53 /* HeliosLaserDAC */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B672D56C2CDF8E3E009B5F53 /* Build configuration list for PBXNativeTarget "HeliosLaserDAC" */;
+			buildPhases = (
+				B672D5642CDF8E3E009B5F53 /* Headers */,
+				B672D5652CDF8E3E009B5F53 /* Sources */,
+				B672D5662CDF8E3E009B5F53 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HeliosLaserDAC;
+			productName = helios_driver;
+			productReference = B672D5682CDF8E3E009B5F53 /* libHeliosLaserDAC.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B672D5602CDF8E3E009B5F53 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					B672D5672CDF8E3E009B5F53 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = B672D5632CDF8E3E009B5F53 /* Build configuration list for PBXProject "HeliosLaserDAC" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = B672D55F2CDF8E3E009B5F53;
+			productRefGroup = B672D5692CDF8E3E009B5F53 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B672D5672CDF8E3E009B5F53 /* HeliosLaserDAC */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B672D5652CDF8E3E009B5F53 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B672D5912CDF96E7009B5F53 /* plt-posix.c in Sources */,
+				B672D5772CDF8E8B009B5F53 /* HeliosDac.cpp in Sources */,
+				B672D5822CDF907B009B5F53 /* HeliosDacAPI.cpp in Sources */,
+				B672D58F2CDF96E7009B5F53 /* idnServerList.cpp in Sources */,
+				B672D5902CDF96E7009B5F53 /* idn.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		B672D56A2CDF8E3E009B5F53 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		B672D56B2CDF8E3E009B5F53 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		B672D56D2CDF8E3E009B5F53 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Y62YL762Z5;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				EXECUTABLE_PREFIX = lib;
+				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)";
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		B672D56E2CDF8E3E009B5F53 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Y62YL762Z5;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				EXECUTABLE_PREFIX = lib;
+				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)";
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B672D5632CDF8E3E009B5F53 /* Build configuration list for PBXProject "HeliosLaserDAC" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B672D56A2CDF8E3E009B5F53 /* Debug */,
+				B672D56B2CDF8E3E009B5F53 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B672D56C2CDF8E3E009B5F53 /* Build configuration list for PBXNativeTarget "HeliosLaserDAC" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B672D56D2CDF8E3E009B5F53 /* Debug */,
+				B672D56E2CDF8E3E009B5F53 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = B672D5602CDF8E3E009B5F53 /* Project object */;
+}

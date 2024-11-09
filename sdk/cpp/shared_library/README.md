@@ -1,6 +1,8 @@
 This is the shared library extension of the Helios DAC SDK, used to produce a library file for dynamic linking, like .dll, .so or .dylib. It has compatibility functions with the EzAudDac functions. 
 If dynamic linking is not neccessary, you can simply use the files in the parent folder (HeliosDAC.cpp, HeliosDAC.h and the source files in the idn folder) directly in your source code, with no additional files or build steps needed.
 
+NB: These libraries depend on libusb. In addition to HeliosLaserDAC.dll/dylib/so you also need libusb-1.0.dll/dylib/so in the same folder, or installed on the computer some other way. You can find these files in the ../libusb_bin folder.
+
 BASIC USAGE:
 1.	Call OpenDevices()  to open devices, returns number of available devices.
 2.	To send a new frame, first call GetStatus(). If the function returns ready, (1), then you can call WriteFrame\*().
