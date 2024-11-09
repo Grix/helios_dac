@@ -4,7 +4,7 @@ Digital to Analog Converter for laser projectors.
 * https://bitlasers.com/helios-laser-dac/
 
 Open source, low cost USB DAC for the ISP-DB25 (ILDA) laser protocol. Allows you to control an ILDA laser projector via computer over USB. Supports lots of third party software (see link above). This repository consists of:
-* SDK (with examples in C++, Python and C#/.NET)
+* SDK for supporting the Helios USB and IDN DACs in your software (with examples in C++, Python and C#/.NET)
 * Hardware (PCB schematic in KiCAD)
 * Firmware (Atmel Studio project)
 * Extras (firmware update tool, media etc.)
@@ -16,7 +16,7 @@ Open source, low cost USB DAC for the ISP-DB25 (ILDA) laser protocol. Allows you
 Navigate to the folder "sdk" to find the relevant code for interfacing with the Helios DAC in your software, and a readme with more detailed usage instructions. 
 
 NEW: The C++ sdk has been updated to include IDN network support. This means that if you implement/update the Helios library in your application, it will also seamlessly enable support for any other network DAC using the IDN protocol, including the Helios OpenIDN adapter, StageMate ISP, and upcoming Helios products.
-** Other libraries than the C++ one has not yet been updated with IDN support.**
+**Other libraries than the C++ one has not yet been updated with IDN support.**
 
 The reference SDK is written in C++, in the subfolder "cpp". But libraries with exported functions that you can call from many languages such as python or C# are available, documented in HeliosDacAPI.h. You can also find examples of usage in the examples folder.
 
@@ -42,7 +42,7 @@ A more detailed guide for compiling for Raspberry Pi (Linux ARM) is also availab
 #### Hardware and firmware modification
 
 The PCB is drawn in Kicad. The firmware is written and built with Atmel Studio for the ATSAM4S2B microcontroller.
-NB: The license for the hardware and firmware, unlike the software, does not permit the sale of manufactured units.
+**NB: The license for the hardware and firmware, unlike the software, does not permit the sale of manufactured units.**
 New firmware can be uploaded to the device over USB. To do this, you must reset the "GPNVM1" bit in the flash memory, which will make the microcontroller boot to the SAM-BA bootloader. You can do this by sending a special interrupt packet to the DAC. You can then access the flash using Atmel's SAM-BA software or BOSSA. There is an automatic tool for firmware updating:
 
 * Download the firmware updating tool (only for Windows as of now, Mac/Linux partially done): utility/FirmwareUpdater/cli/firmwareupdater_script.zip
