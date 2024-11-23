@@ -1110,7 +1110,6 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 	std::lock_guard<std::mutex> lock(frameLock);
 	std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-	int actualLength = 0;
 	for (int i = 0; i < 32; i++)
 		name[i] = 0;
 
@@ -1142,16 +1141,27 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 	context->fdSocket = plt_sockOpen(AF_INET, SOCK_DGRAM, 0);
 	if (context->fdSocket < 0)
 	{
-#if defined(_WIN32) || defined(WIN32)
-		logError("socket() error %d", WSAGetLastError());
-#else
-		logError("socket() errno = %d", errno);
-#endif
+		logError("socket() error when initing IDN device connection: %d", plt_sockGetLastError());
 
 		return;
 	}
 
+	// Set buffer size
+#if defined(_WIN32) || defined(WIN32)
+	DWORD bufferSize = 0xFFFF;
+	int res = setsockopt(context->fdSocket, SOL_SOCKET, SO_SNDBUF, (const char*)&bufferSize, sizeof(bufferSize));
+#else
+	int bufferSize = 0xFFFF;
+	int res = setsockopt(context->fdSocket, SOL_SOCKET, SO_SNDBUF, (const void*)&bufferSize, sizeof(bufferSize));
+#endif
+	if (res != 0)
+	{
+		logError("Error setting max UDP buffer size for IDN device: %d", plt_sockGetLastError());
+		return;
+	}
+
 	managementSocketAddr = { 0 };
+
 	managementSocketAddr.sin_family = AF_INET;
 	managementSocketAddr.sin_port = htons(MANAGEMENT_PORT);
 	managementSocketAddr.sin_addr = context->serverSockAddr.sin_addr;
@@ -1168,7 +1178,7 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 	struct timeval tv;
 	tv.tv_sec = 1;
 	tv.tv_usec = 0;
-	setsockopt(managementSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+	setsockopt(managementSocket, SOL_SOCKET, SO_RCVTIMEO, (const void*)&tv, sizeof(tv));
 #endif
 
 	closed = false;
@@ -1240,7 +1250,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 
 	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0) && !firstFrame)
 	{
-		statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)) * 0.98)); // Now plus duration of frame
+		statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)))) - std::chrono::microseconds(100); // Now plus approximate duration of frame
 	}
 	firstFrame = false;
 
@@ -1328,7 +1338,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 
 	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0) && !firstFrame)
 	{
-		statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)) * 0.98)); // Now plus duration of frame
+		statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)))) - std::chrono::microseconds(100); // Now plus approximate duration of frame
 	}
 	firstFrame = false;
 
@@ -1417,7 +1427,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 
 	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0) && !firstFrame)
 	{
-		statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)) * 0.98)); // Now plus duration of frame
+		statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)))) - std::chrono::microseconds(100); // Now plus approximate duration of frame
 	}
 	firstFrame = false;
 
@@ -1452,7 +1462,7 @@ int HeliosDac::HeliosDacIdnDevice::GetStatus()
 
 	if (frameReady || (std::chrono::high_resolution_clock::now() < statusReadyTime))
 	{
-		std::this_thread::sleep_for(std::chrono::microseconds(100)); // simulate a small delay to mimic behavior of USB device
+		std::this_thread::sleep_for(std::chrono::microseconds(100)); // simulate a small delay to mimic behavior of USB device, for backwards compatibility
 		return false;
 	}
 
