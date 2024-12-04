@@ -1115,12 +1115,12 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 
 	statusReadyTime = std::chrono::high_resolution_clock::now();
 
-	context->bufferLen = 0xFF00;
-	context->bufferPtr = new uint8_t[0xFF00];
+	context->bufferLen = IDN_BUFFER_SIZE;
+	context->bufferPtr = new uint8_t[IDN_BUFFER_SIZE];
 	context->startTime = plt_getMonoTimeUS();
 
 #if defined(_WIN32) || defined(WIN32)
-	
+
 #else
 	// Initialize time reference and initialize the current time randomly
 	extern struct timespec plt_monoRef;
@@ -1146,8 +1146,8 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 		return;
 	}
 
-	// Set buffer size
-#if defined(_WIN32) || defined(WIN32)
+	// Ensure UDP socket buffer size is big enough. No longer required after switching to wave mode.
+/*#if defined(_WIN32) || defined(WIN32)
 	DWORD bufferSize = 0xFFFF;
 	int res = setsockopt(context->fdSocket, SOL_SOCKET, SO_SNDBUF, (const char*)&bufferSize, sizeof(bufferSize));
 #else
@@ -1157,8 +1157,9 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 	if (res != 0)
 	{
 		logError("Error setting max UDP buffer size for IDN device: %d", plt_sockGetLastError());
-		return;
+		//return;
 	}
+	*/
 
 	managementSocketAddr = { 0 };
 
@@ -1241,6 +1242,9 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 		if (pps < GetMinSampleRate())
 			return HELIOS_ERROR_TOO_MANY_POINTS;
 	}
+
+	if (firstFrame)
+		context->frameTimestamp = plt_getMonoTimeUS();
 
 	if (idnOpenFrameXYRGB(context, false))
 		return false;
@@ -1329,6 +1333,9 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 		if (pps < GetMinSampleRate())
 			return HELIOS_ERROR_TOO_MANY_POINTS;
 	}
+
+	if (firstFrame)
+		context->frameTimestamp = plt_getMonoTimeUS();
 
 	if (idnOpenFrameHighResXYRGB(context, false))
 		return false;
@@ -1419,6 +1426,9 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 			return HELIOS_ERROR_TOO_MANY_POINTS;
 	}
 
+	if (firstFrame)
+		context->frameTimestamp = plt_getMonoTimeUS();
+
 	if (idnOpenFrameExtended(context, false))
 		return false;
 
@@ -1466,7 +1476,7 @@ int HeliosDac::HeliosDacIdnDevice::GetStatus()
 		return false;
 	}
 
-	return true; // No feedback in IDN
+	return true; // No true feedback in IDN
 }
 
 // Sends frame to DAC
@@ -1609,7 +1619,7 @@ int HeliosDac::HeliosDacIdnDevice::Stop()
 
 	idnOpenFrameXYRGB(context, true);
 	context->scanSpeed = 1000;
-	context->jitterFreeFlag = 1;
+	//context->jitterFreeFlag = 1;
 	for (int i = 0; i < 4; i++)
 		idnPutSampleXYRGB(context, 0, 0, 0, 0, 0);
 	idnPushFrame(context);

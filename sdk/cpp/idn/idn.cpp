@@ -3,6 +3,7 @@
 // Functions for ILDA Digital Network DAC communication
 
 #include "idn.h"
+#include <thread>
 
 
 
@@ -144,16 +145,24 @@ int idnOpenFrameGeneric(IDNCONTEXT* context, uint16_t* channelDescriptors, size_
 	// Insert channel config header every 250 ms
 	unsigned now = plt_getMonoTimeUS();
 	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
+	if (!forceNewConfig)
+	{
+		if (ctx->bytesPerSample != numChannelDescriptors)
+			forceNewConfig = true;
+	}
 	if (forceNewConfig || (ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
 	{
+		if (forceNewConfig)
+			ctx->serviceDataMatch++;
+
 		// IDN-Stream channel configuration header update
 		IDNHDR_CHANNEL_CONFIG* channelConfigHdr = (IDNHDR_CHANNEL_CONFIG*)sampleChunkHdr;
 		channelConfigHdr->wordCount = numChannelDescriptors / 2;
 		if (numChannelDescriptors % 2 == 1)
 			channelConfigHdr->wordCount++;
-		channelConfigHdr->flags = IDNFLG_CHNCFG_ROUTING;
+		channelConfigHdr->flags = IDNFLG_CHNCFG_ROUTING | (((ctx->serviceDataMatch & 1) | 2) << 4);
 		channelConfigHdr->serviceID = ctx->serviceId;
-		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_DISCRETE;
+		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_CONTINUOUS;
 
 		uint16_t* descriptors = (uint16_t*)&channelConfigHdr[1];
 		int i;
@@ -177,6 +186,7 @@ int idnOpenFrameGeneric(IDNCONTEXT* context, uint16_t* channelDescriptors, size_
 	ctx->sampleChunkHdr = sampleChunkHdr;
 	ctx->payload = (uint8_t*)&sampleChunkHdr[1];
 	ctx->sampleCnt = 0;
+	ctx->bytesPerSample = (uint8_t)numChannelDescriptors;
 
 	return 0;
 }
@@ -238,14 +248,22 @@ int idnOpenFrameXYRGBI(IDNCONTEXT* context, bool forceNewConfig)
 	// Insert channel config header every 250 ms
 	unsigned now = plt_getMonoTimeUS();
 	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
+	if (!forceNewConfig)
+	{
+		if (ctx->bytesPerSample != XYRGBI_SAMPLE_SIZE)
+			forceNewConfig = true;
+	}
 	if (forceNewConfig || (ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
 	{
+		if (forceNewConfig)
+			ctx->serviceDataMatch++;
+
 		// IDN-Stream channel configuration header
 		IDNHDR_CHANNEL_CONFIG* channelConfigHdr = (IDNHDR_CHANNEL_CONFIG*)sampleChunkHdr;
 		channelConfigHdr->wordCount = 4;
-		channelConfigHdr->flags = IDNFLG_CHNCFG_ROUTING;
+		channelConfigHdr->flags = IDNFLG_CHNCFG_ROUTING | (((ctx->serviceDataMatch & 1) | 2) << 4);
 		channelConfigHdr->serviceID = ctx->serviceId;
-		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_DISCRETE;
+		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_CONTINUOUS;
 
 		// Standard IDTF-to-IDN descriptors
 		uint16_t* descriptors = (uint16_t*)&channelConfigHdr[1];
@@ -272,6 +290,7 @@ int idnOpenFrameXYRGBI(IDNCONTEXT* context, bool forceNewConfig)
 	ctx->sampleChunkHdr = sampleChunkHdr;
 	ctx->payload = (uint8_t*)&sampleChunkHdr[1];
 	ctx->sampleCnt = 0;
+	ctx->bytesPerSample = XYRGBI_SAMPLE_SIZE;
 
 	return 0;
 }
@@ -345,14 +364,22 @@ int idnOpenFrameXYRGB(IDNCONTEXT* context, bool forceNewConfig)
 	// Insert channel config header every 250 ms
 	unsigned now = plt_getMonoTimeUS();
 	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
+	if (!forceNewConfig)
+	{
+		if (ctx->bytesPerSample != XYRGB_SAMPLE_SIZE)
+			forceNewConfig = true;
+	}
 	if (forceNewConfig || (ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
 	{
+		if (forceNewConfig)
+			ctx->serviceDataMatch++;
+
 		// IDN-Stream channel configuration header
 		IDNHDR_CHANNEL_CONFIG* channelConfigHdr = (IDNHDR_CHANNEL_CONFIG*)sampleChunkHdr;
 		channelConfigHdr->wordCount = 4;
-		channelConfigHdr->flags = IDNFLG_CHNCFG_ROUTING;
+		channelConfigHdr->flags = IDNFLG_CHNCFG_ROUTING | (((ctx->serviceDataMatch & 1) | 2) << 4);
 		channelConfigHdr->serviceID = ctx->serviceId;
-		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_DISCRETE;
+		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_CONTINUOUS;
 
 		// Standard IDTF-to-IDN descriptors
 		uint16_t* descriptors = (uint16_t*)&channelConfigHdr[1];
@@ -379,6 +406,7 @@ int idnOpenFrameXYRGB(IDNCONTEXT* context, bool forceNewConfig)
 	ctx->sampleChunkHdr = sampleChunkHdr;
 	ctx->payload = (uint8_t*)&sampleChunkHdr[1];
 	ctx->sampleCnt = 0;
+	ctx->bytesPerSample = XYRGB_SAMPLE_SIZE;
 
 	return 0;
 }
@@ -439,14 +467,22 @@ int idnOpenFrameHighResXYRGB(IDNCONTEXT* context, bool forceNewConfig)
 	// Insert channel config header every 250 ms
 	unsigned now = plt_getMonoTimeUS();
 	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
+	if (!forceNewConfig)
+	{
+		if (ctx->bytesPerSample != XYRGB_HIGHRES_SAMPLE_SIZE)
+			forceNewConfig = true;
+	}
 	if (forceNewConfig || (ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
 	{
+		if (forceNewConfig)
+			ctx->serviceDataMatch++;
+
 		// IDN-Stream channel configuration header
 		IDNHDR_CHANNEL_CONFIG* channelConfigHdr = (IDNHDR_CHANNEL_CONFIG*)sampleChunkHdr;
 		channelConfigHdr->wordCount = 5;
-		channelConfigHdr->flags = IDNFLG_CHNCFG_ROUTING;
+		channelConfigHdr->flags = IDNFLG_CHNCFG_ROUTING | (((ctx->serviceDataMatch & 1) | 2) << 4);
 		channelConfigHdr->serviceID = ctx->serviceId;
-		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_DISCRETE;
+		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_CONTINUOUS;
 
 		// Standard IDTF-to-IDN descriptors
 		uint16_t* descriptors = (uint16_t*)&channelConfigHdr[1];
@@ -475,6 +511,7 @@ int idnOpenFrameHighResXYRGB(IDNCONTEXT* context, bool forceNewConfig)
 	ctx->sampleChunkHdr = sampleChunkHdr;
 	ctx->payload = (uint8_t*)&sampleChunkHdr[1];
 	ctx->sampleCnt = 0;
+	ctx->bytesPerSample = XYRGB_HIGHRES_SAMPLE_SIZE;
 
 	return 0;
 }
@@ -536,14 +573,22 @@ int idnOpenFrameExtended(IDNCONTEXT* context, bool forceNewConfig)
 	// Insert channel config header every 250 ms
 	unsigned now = plt_getMonoTimeUS();
 	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
+	if (!forceNewConfig)
+	{
+		if (ctx->bytesPerSample != EXTENDED_SAMPLE_SIZE)
+			forceNewConfig = true;
+	}
 	if (forceNewConfig || (ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
 	{
+		if (forceNewConfig)
+			ctx->serviceDataMatch++;
+
 		// IDN-Stream channel configuration header
 		IDNHDR_CHANNEL_CONFIG* channelConfigHdr = (IDNHDR_CHANNEL_CONFIG*)sampleChunkHdr;
 		channelConfigHdr->wordCount = 10;
-		channelConfigHdr->flags = IDNFLG_CHNCFG_ROUTING;
+		channelConfigHdr->flags = IDNFLG_CHNCFG_ROUTING | (((ctx->serviceDataMatch & 1) | 2) << 4);
 		channelConfigHdr->serviceID = ctx->serviceId;
-		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_DISCRETE;
+		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_CONTINUOUS;
 
 		// Standard IDTF-to-IDN descriptors
 		uint16_t* descriptors = (uint16_t*)&channelConfigHdr[1];
@@ -582,6 +627,7 @@ int idnOpenFrameExtended(IDNCONTEXT* context, bool forceNewConfig)
 	ctx->sampleChunkHdr = sampleChunkHdr;
 	ctx->payload = (uint8_t*)&sampleChunkHdr[1];
 	ctx->sampleCnt = 0;
+	ctx->bytesPerSample = EXTENDED_SAMPLE_SIZE;
 
 	return 0;
 }
@@ -641,73 +687,73 @@ int idnPushFrame(IDNCONTEXT* context)
 	// Sanity check
 	if (ctx->payload == (uint8_t*)0) return -1;
 	if (ctx->scanSpeed == 0) { logError("[IDN] Invalid scan speed 0"); return -1; }
-	if (ctx->sampleCnt < 2) { logError("[IDN] Invalid sample count %u", ctx->sampleCnt); return -1; }
+	if (ctx->sampleCnt == 0) { logError("[IDN] Invalid sample count %u", ctx->sampleCnt); return -1; }
 
 	// ---------------------------------------------------------------------------------------------
 
 	// Sample chunk header: Calculate frame duration based on scan speed.
-	// In case jitter-free option is set: Scan frames 2.. only once.
-
 	// IDN channel message header: Set timestamp; Update internal timestamps.
-	unsigned now = plt_getMonoTimeUS();
+	//unsigned now = plt_getMonoTimeUS();
 	//if (ctx->frameCnt == 0 || (now-1000 < ctx->frameTimestamp))
-	ctx->frameTimestamp = now;
+	//ctx->frameTimestamp = now;
 	//else
 	//	ctx->scanSpeed = (((uint64_t)(ctx->sampleCnt - 1)) * 1000000ull) / (now - ctx->frameTimestamp);
-
-	uint32_t frameDuration = (((uint64_t)(ctx->sampleCnt - 1)) * 1000000ull) / (uint64_t)ctx->scanSpeed;
-	uint8_t frameFlags = 0;
-	if (ctx->jitterFreeFlag && ctx->frameCnt != 0)
-		frameFlags |= IDNFLG_GRAPHIC_FRAME_ONCE;
-	ctx->sampleChunkHdr->flagsDuration = htonl((frameFlags << 24) | frameDuration);
-
-	// Should wait between frames to match frame rate, but instead we trust the host application to do this. 
-	// Simulated by default using the Helios library GetStatus() mechanism
-	/*if (ctx->frameCnt != 0)
-	{
-		unsigned usWait = ctx->usFrameTime - (plt_getMonoTimeUS() - ctx->frameTimestamp);
-		if ((int)usWait > 0) plt_usleep(usWait);
-	}*/
-
 
 	// ---------------------------------------------------------------------------------------------
 
 	// Calculate header pointers, get message contentID (because of byte order)
 	IDNHDR_PACKET* packetHdr = (IDNHDR_PACKET*)ctx->bufferPtr;
 	IDNHDR_CHANNEL_MESSAGE* channelMsgHdr = (IDNHDR_CHANNEL_MESSAGE*)&packetHdr[1];
+	uint8_t* currentChunkDataPtr = (uint8_t*)(ctx->sampleChunkHdr) + sizeof(IDNHDR_SAMPLE_CHUNK); 
 	uint16_t contentID = ntohs(channelMsgHdr->contentID);
 	contentID |= (((ctx->serviceId - 1) & 0x3F) << 8); // channel ID
 
-
-	channelMsgHdr->timestamp = htonl(ctx->frameTimestamp);
-	ctx->frameCnt++;
-	ctx->frameTimestamp += frameDuration;
-	//#ifdef DEBUG
-		//printf("frameduration: %d\n", frameDuration);
-	//#endif
-
-	// Message header: Calculate message length. Must not exceed 0xFF00 octets !!
-	unsigned msgLength = ctx->payload - (uint8_t*)channelMsgHdr;
-	if (msgLength > MAX_IDN_MESSAGE_LEN)
+	// Split across multiple wave messages with the size below MTU
+	do
 	{
-		// Fragmented frame (split across multiple messages), set message length and chunk type
-		channelMsgHdr->totalSize = htons(MAX_IDN_MESSAGE_LEN);
-		channelMsgHdr->contentID = htons(contentID | IDNVAL_CNKTYPE_LPGRF_FRAME_FIRST);
-		uint8_t* splitPtr = (uint8_t*)channelMsgHdr + MAX_IDN_MESSAGE_LEN;
+		unsigned int headerSize = currentChunkDataPtr - (uint8_t*)packetHdr;
+		unsigned int samplesInPacket = (MAX_IDN_MESSAGE_LEN - headerSize) / ctx->bytesPerSample;
+		if (samplesInPacket > ctx->sampleCnt)
+			samplesInPacket = ctx->sampleCnt;
+		uint32_t duration = ((uint64_t)samplesInPacket * 1000000ull) / (uint64_t)ctx->scanSpeed;
+		unsigned int msgLength = headerSize + samplesInPacket * ctx->bytesPerSample;
 
-		// Set IDN-Hello sequence number (used on UDP for lost packet tracking)
-		packetHdr->sequence = htons(ctx->sequence++);
+		packetHdr->command = IDNCMD_RT_CNLMSG;
+		packetHdr->flags = ctx->clientGroup;
+		packetHdr->sequence = htons(ctx->sequence++); // Set IDN-Hello sequence number (used on UDP for lost packet tracking)
+
+		channelMsgHdr->totalSize = htons(msgLength - sizeof(IDNHDR_MESSAGE));
+		channelMsgHdr->contentID = htons(contentID | IDNVAL_CNKTYPE_LPGRF_WAVE);
+		channelMsgHdr->timestamp = htonl(ctx->frameTimestamp);
+		ctx->frameCnt++;
+		ctx->frameTimestamp += duration;
+
+		uint8_t frameFlags = (((ctx->serviceDataMatch & 1) | 2) << 4);
+		ctx->sampleChunkHdr->flagsDuration = htonl((frameFlags << 24) | duration);
 
 		// Send the packet
-		if (idnSend(ctx, packetHdr, splitPtr - (uint8_t*)packetHdr))
+		if (idnSend(ctx, packetHdr, msgLength))
+		{
+			ctx->payload = (uint8_t*)0;
 			return -1;
+		}
 
 		// Delete config flag (in case set - not config headers in fragments), set sequel fragment chunk type
 		contentID &= ~IDNFLG_CONTENTID_CONFIG_LSTFRG;
-		contentID |= IDNVAL_CNKTYPE_LPGRF_FRAME_SEQUEL;
+		
+		ctx->sampleCnt -= samplesInPacket;
+		currentChunkDataPtr = (uint8_t*)packetHdr + msgLength;
+		ctx->sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)(currentChunkDataPtr - sizeof(IDNHDR_SAMPLE_CHUNK));
+		channelMsgHdr = (IDNHDR_CHANNEL_MESSAGE*)((uint8_t*)ctx->sampleChunkHdr - sizeof(IDNHDR_CHANNEL_MESSAGE));
+		packetHdr = (IDNHDR_PACKET*)((uint8_t*)channelMsgHdr - sizeof(IDNHDR_PACKET));
+
+
+		//channelMsgHdr = (IDNHDR_CHANNEL_MESSAGE*)&packetHdr[1];
+		//ctx->sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
+		//currentChunkDataPtr = (uint8_t*)&ctx->sampleChunkHdr[1];
 
 		// Send remaining fragments
-		while (1)
+		/*while (1)
 		{
 			// Allocate message header (overwrite previous packet data), fragment number shared with timestamp
 			channelMsgHdr = (IDNHDR_CHANNEL_MESSAGE*)(splitPtr - sizeof(IDNHDR_CHANNEL_MESSAGE));
@@ -745,21 +791,8 @@ int idnPushFrame(IDNCONTEXT* context)
 				// Done sending the packet
 				break;
 			}
-		}
-	}
-	else
-	{
-		// Regular frame (single message), set message length and chunk type
-		channelMsgHdr->totalSize = htons((unsigned short)msgLength);
-		channelMsgHdr->contentID = htons(contentID | IDNVAL_CNKTYPE_LPGRF_FRAME);
-
-		// Set IDN-Hello sequence number (used on UDP for lost packet tracking)
-		packetHdr->sequence = htons(ctx->sequence++);
-
-		// Send the packet
-		if (idnSend(ctx, packetHdr, ctx->payload - (uint8_t*)packetHdr))
-			return -1;
-	}
+		}*/
+	} while (ctx->sampleCnt > 0 && (currentChunkDataPtr + ctx->sampleCnt * ctx->bytesPerSample) < (ctx->bufferPtr+ctx->bufferLen));
 
 	// Invalidate payload - cause error in case of invalid call order
 	ctx->payload = (uint8_t*)0;
@@ -789,6 +822,7 @@ int idnSendVoid(IDNCONTEXT* context)
 
 	// Populate message header fields
 	channelMsgHdr->totalSize = htons((unsigned short)(ctx->payload - (uint8_t*)channelMsgHdr));
+	//ctx->frameTimestamp = plt_getMonoTimeUS();
 	channelMsgHdr->timestamp = htonl(plt_getMonoTimeUS());
 	ctx->frameCnt = 0;
 

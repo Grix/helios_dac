@@ -46,7 +46,7 @@ GetStatus() for timing purposes.
 #include <chrono>
 #include <algorithm>
 
-#define HELIOS_SDK_VERSION	10
+#define HELIOS_SDK_VERSION	11
 
 // Frame limits
 // For original USB model
@@ -54,12 +54,10 @@ GetStatus() for timing purposes.
 #define HELIOS_MAX_PPS		0xFFFF
 #define HELIOS_MIN_PPS		7
 // For IDN, max points depend on the complexity of those points
-// In theory, many of these limits could be improved, by enabling frame fragmentation, smarter PPS calculation etc, but I keep it simple to minimize compatibility problems.
-#define HELIOS_MAX_POINTS_IDN			((MAX_IDN_MESSAGE_LEN - 100) / XYRGB_SAMPLE_SIZE)  // 9311
-#define HELIOS_MAX_POINTS_IDN_HIGHRES	((MAX_IDN_MESSAGE_LEN - 100) / XYRGB_HIGHRES_SAMPLE_SIZE) // 6518
-#define HELIOS_MAX_POINTS_IDN_EXT		((MAX_IDN_MESSAGE_LEN - 100) / EXTENDED_SAMPLE_SIZE) // 3259
-#define HELIOS_MAX_PPS_IDN				100000
-#define HELIOS_MIN_PPS_IDN				HELIOS_MIN_PPS // 7
+// In theory, many of these limits could be improved, by smarter PPS calculation etc, but I keep it simple to minimize compatibility problems.
+#define IDN_BUFFER_SIZE			0x20000
+#define HELIOS_MAX_PPS_IDN		100000
+#define HELIOS_MIN_PPS_IDN		HELIOS_MIN_PPS // 7
 
 #define HELIOS_SUCCESS		1	
 
@@ -340,7 +338,7 @@ private:
 		void BackgroundFrameHandler();
 		unsigned int GetMaxSampleRate() { return HELIOS_MAX_PPS_IDN; }
 		unsigned int GetMinSampleRate() { return HELIOS_MIN_PPS_IDN; }
-		unsigned int GetMaxFrameSize(unsigned int bytesPerPoint) { return ((MAX_IDN_MESSAGE_LEN - 100) / bytesPerPoint); }
+		unsigned int GetMaxFrameSize(unsigned int bytesPerPoint) { return ((IDN_BUFFER_SIZE - 100) / bytesPerPoint); }
 
 		IDNCONTEXT* context;
 		int firmwareVersion = 0;

@@ -78,8 +78,7 @@ typedef struct
 #define DEFAULT_FRAMERATE               30
 #define DEFAULT_SCANSPEED               30000
 
-#define MAX_IDN_MESSAGE_LEN             0xFF00      // IDN-Message maximum length (due to lower layer transport)
-//#define MAX_IDN_MESSAGE_LEN             0x0800      // Message len for fragmentation tests
+#define MAX_IDN_MESSAGE_LEN             1454      // IDN-Message maximum length (due to MTU limit to avoid fragmentation)
 
 #define XYRGB_SAMPLE_SIZE               7
 #define XYRGBI_SAMPLE_SIZE              8
@@ -109,9 +108,11 @@ typedef struct
 	uint32_t startTimestamp;				// Timestamp of first frame in current active session
 	uint32_t frameTimestamp;                // Timestamp of the last frame
 	uint32_t cfgTimestamp;                  // Timestamp of the last channel configuration
+	uint8_t serviceDataMatch;			// SDM flag, change when new config is written
 
 	// Buffer related
 	uint8_t* payload;                       // Pointer to the end of the buffer
+	uint8_t bytesPerSample;
 
 	// IDN-Hello related
 	uint16_t sequence;                      // IDN-Hello sequence number (UDP packet tracking)
