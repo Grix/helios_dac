@@ -715,6 +715,8 @@ int idnPushFrame(IDNCONTEXT* context)
 		unsigned int samplesInPacket = (MAX_IDN_MESSAGE_LEN - headerSize) / ctx->bytesPerSample;
 		if (samplesInPacket > ctx->sampleCnt)
 			samplesInPacket = ctx->sampleCnt;
+		else if (ctx->sampleCnt - samplesInPacket < 20)
+			samplesInPacket -= 20;
 		uint32_t duration = ((uint64_t)samplesInPacket * 1000000ull) / (uint64_t)ctx->scanSpeed;
 		unsigned int msgLength = headerSize + samplesInPacket * ctx->bytesPerSample;
 
@@ -747,6 +749,9 @@ int idnPushFrame(IDNCONTEXT* context)
 		channelMsgHdr = (IDNHDR_CHANNEL_MESSAGE*)((uint8_t*)ctx->sampleChunkHdr - sizeof(IDNHDR_CHANNEL_MESSAGE));
 		packetHdr = (IDNHDR_PACKET*)((uint8_t*)channelMsgHdr - sizeof(IDNHDR_PACKET));
 
+		//auto then = std::chrono::high_resolution_clock::now() + std::chrono::microseconds(duration - 5);
+		//while (std::chrono::high_resolution_clock::now() < then);
+		//std::this_thread::sleep_for(std::chrono::microseconds(duration / 3));
 
 		//channelMsgHdr = (IDNHDR_CHANNEL_MESSAGE*)&packetHdr[1];
 		//ctx->sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
