@@ -345,6 +345,8 @@ private:
 		char name[32];
 		bool closed = true;
 		std::chrono::time_point<std::chrono::high_resolution_clock> statusReadyTime;
+		//std::chrono::time_point<std::chrono::high_resolution_clock> streamStartTime;
+		std::chrono::milliseconds bufferTime = std::chrono::milliseconds(30);
 		bool firstFrame = true;
 		int managementSocket = -1;
 		sockaddr_in managementSocketAddr = { 0 };

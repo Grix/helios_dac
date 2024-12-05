@@ -1252,9 +1252,13 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	context->scanSpeed = pps;
 	context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
 
-	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0) && !firstFrame)
+	if (firstFrame || (statusReadyTime < std::chrono::high_resolution_clock::now() - bufferTime * 2))
+		statusReadyTime = std::chrono::high_resolution_clock::now();
+
+	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0))// && !firstFrame)
 	{
-		statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)))) - std::chrono::microseconds(100); // Now plus approximate duration of frame
+		//statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)))) - std::chrono::microseconds(100); // Now plus approximate duration of frame
+		statusReadyTime += std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints))));
 	}
 	firstFrame = false;
 
@@ -1343,9 +1347,13 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 	context->scanSpeed = pps;
 	context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
 
-	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0) && !firstFrame)
+	if (firstFrame || (statusReadyTime < std::chrono::high_resolution_clock::now() - bufferTime * 2))
+		statusReadyTime = std::chrono::high_resolution_clock::now();
+
+	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0))// && !firstFrame)
 	{
-		statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)))) - std::chrono::microseconds(100); // Now plus approximate duration of frame
+		//statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)))) - std::chrono::microseconds(100); // Now plus approximate duration of frame
+		statusReadyTime += std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints))));
 	}
 	firstFrame = false;
 
@@ -1435,9 +1443,13 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 	context->scanSpeed = pps;
 	context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
 
-	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0) && !firstFrame)
+	if (firstFrame || (statusReadyTime < std::chrono::high_resolution_clock::now() - bufferTime * 2))
+		statusReadyTime = std::chrono::high_resolution_clock::now();
+
+	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0))// && !firstFrame)
 	{
-		statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)))) - std::chrono::microseconds(100); // Now plus approximate duration of frame
+		//statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)))) - std::chrono::microseconds(100); // Now plus approximate duration of frame
+		statusReadyTime += std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints))));
 	}
 	firstFrame = false;
 
@@ -1470,9 +1482,9 @@ int HeliosDac::HeliosDacIdnDevice::GetStatus()
 	if (closed)
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
-	if (frameReady || (std::chrono::high_resolution_clock::now() < statusReadyTime))
+	if (frameReady || (std::chrono::high_resolution_clock::now() < (statusReadyTime - bufferTime)))
 	{
-		std::this_thread::sleep_for(std::chrono::microseconds(100)); // simulate a small delay to mimic behavior of USB device, for backwards compatibility
+		std::this_thread::sleep_for(std::chrono::microseconds(50)); // simulate a small delay to mimic behavior of USB device, for backwards compatibility
 		return false;
 	}
 
@@ -1627,7 +1639,7 @@ int HeliosDac::HeliosDacIdnDevice::Stop()
 	std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
 	firstFrame = true;
-	statusReadyTime = std::chrono::high_resolution_clock::now();
+	//statusReadyTime = std::chrono::high_resolution_clock::now();
 
 	if (idnSendVoid(context) == 0)
 		return HELIOS_SUCCESS;
