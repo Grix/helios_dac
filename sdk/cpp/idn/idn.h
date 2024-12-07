@@ -108,7 +108,7 @@ typedef struct
 	uint32_t startTimestamp;				// Timestamp of first frame in current active session
 	uint32_t frameTimestamp;                // Timestamp of the last frame
 	uint32_t cfgTimestamp;                  // Timestamp of the last channel configuration
-	uint8_t serviceDataMatch;			// SDM flag, change when new config is written
+	uint8_t serviceDataMatch;				// SDM flag, change when new config is written
 
 	// Buffer related
 	uint8_t* payload;                       // Pointer to the end of the buffer
@@ -143,7 +143,7 @@ int idnOpenFrameHighResXYRGB(IDNCONTEXT* context, bool forceNewConfig);
 int idnPutSampleHighResXYRGB(IDNCONTEXT* context, int16_t x, int16_t y, uint16_t r, uint16_t g, uint16_t b);
 int idnOpenFrameExtended(IDNCONTEXT* context, bool forceNewConfig);
 int idnPutSampleExtended(IDNCONTEXT* context, int16_t x, int16_t y, uint16_t r, uint16_t g, uint16_t b, uint16_t i, uint16_t u1, uint16_t u2, uint16_t u3, uint16_t u4);
-int idnPushFrame(IDNCONTEXT* context);
+int idnPushFrame(IDNCONTEXT* context, bool sleepAllowed);
 int idnSendVoid(IDNCONTEXT* context);
 int idnSendClose(IDNCONTEXT* context);
 

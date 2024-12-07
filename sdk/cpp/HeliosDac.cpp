@@ -263,7 +263,7 @@ int HeliosDac::CloseDevices()
 
 	std::lock_guard<std::mutex> lock(threadLock);
 	inited = false;
-	deviceList.clear(); //various destructors will clean all devices
+	deviceList.clear(); // Various destructors will clean all devices
 
 	libusb_exit(NULL);
 
@@ -1253,7 +1253,10 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
 
 	if (firstFrame || (statusReadyTime < std::chrono::high_resolution_clock::now() - bufferTime * 2))
+	{
+		printf("Reset statusReadyTime");
 		statusReadyTime = std::chrono::high_resolution_clock::now();
+	}
 
 	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0))// && !firstFrame)
 	{
@@ -1497,7 +1500,9 @@ int HeliosDac::HeliosDacIdnDevice::DoFrame()
 	if (closed)
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
-	if (idnPushFrame(context) != 0)
+	bool isBufferFilled = (std::chrono::high_resolution_clock::now() < (statusReadyTime - bufferTime/2));
+
+	if (idnPushFrame(context, false /*isBufferFilled*/) != 0)
 		return HELIOS_ERROR_NETWORK; // TODO return more specific error code
 
 	return HELIOS_SUCCESS;
@@ -1632,9 +1637,9 @@ int HeliosDac::HeliosDacIdnDevice::Stop()
 	idnOpenFrameXYRGB(context, true);
 	context->scanSpeed = 1000;
 	//context->jitterFreeFlag = 1;
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 20; i++)
 		idnPutSampleXYRGB(context, 0, 0, 0, 0, 0);
-	idnPushFrame(context);
+	idnPushFrame(context, false);
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(50));
 

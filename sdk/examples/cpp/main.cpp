@@ -1,13 +1,15 @@
-//Example program scanning a line from top to bottom on the Helios
+// Example program scanning a line from top to bottom on the Helios
 
 #include "../../cpp/HeliosDac.h"
 
 int main(void)
 {
-	//make frames
-	//this is a simple scanning line, but for real graphics you should optimize with evenly spaced points, added points in sharp corners, inserting blanking lines, etc.
+	// Assemble test frames
+	// This is a simple line moving upward in a loop, but for real graphics you should optimize the point stream for laser scanners 
+	// by interpolating long vectors including blanked sections, adding points at sharp corners, etc.
 	HeliosPointHighRes** frame = new HeliosPointHighRes*[30];
-	const int numPointsPerFrame = 1000;
+	const int numPointsPerFrame = 800;
+	const int pointsPerSecond = 30000;
 	int x = 0;
 	int y = 0;
 	for (int i = 0; i < 30; i++)
@@ -59,19 +61,27 @@ int main(void)
 	while (1)
 	{
 		i++;
-		if (i > 2000)
+		if (i > 20000)
 			break;
 
+		// Send each frame to the DAC.
 		for (int j = 0; j < numDevs; j++)
 		{
 			// Wait for ready status. You must call GetStatus() until it returns 1 before each and every WriteFrame*() call that you do.
 			for (unsigned int k = 0; k < 1024; k++)
-			{
+			{ 
 				if (helios.GetStatus(j) == 1)
+				{
+					helios.WriteFrameHighResolution(j, pointsPerSecond, HELIOS_FLAGS_DEFAULT | HELIOS_FLAGS_DONT_BLOCK, frame[i % 30], numPointsPerFrame);
 					break;
+				}
 			}
-			// Send the next frame to the DAC.
-			helios.WriteFrameHighResolution(j, 40000, HELIOS_FLAGS_DEFAULT | HELIOS_FLAGS_DONT_BLOCK, frame[(i/5) % 30], numPointsPerFrame);
+			// In this loop, timing is handled by the GetStatus polling, which only returns 1 once there is room in the DAC to send the next frame,
+			// which in practice means that after an initial filling of the DAC buffer, it will return 1 when precisely matching the desired framerate (pointsPerSecond / numPointsPerFrame),
+			// including any clock drift caused by the DAC having a slightly faster or slower playback than the host computer.
+
+			// Here we use the HELIOS_FLAGS_DONT_BLOCK flag in WriteFrame() because this test app can connect to several DACs from the single-threaded main function.
+			// But if your app is already handling each DAC in its own thread (like it probably should), you can remove that flag.
 		}
 	}
 

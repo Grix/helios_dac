@@ -181,6 +181,12 @@ public:
 	// NB: To re-scan for newly connected DACs after this function has once been called before, you must first call CloseDevices().
 	int OpenDevicesOnlyUsb();
 
+	// Initializes drivers, opens connection to only IDN network devices (skips USB scan).
+	// Can be used if you have already implemented a Helios USB interface separately.
+	// Returns number of available devices.
+	// NB: To re-scan for newly connected DACs after this function has once been called before, you must first call CloseDevices().
+	int OpenDevicesOnlyNetwork();
+
 	// Closes and frees all devices.
 	int CloseDevices();
 
@@ -234,6 +240,10 @@ public:
 	// Note that it is safe to call these function even for DACs that don't support higher resolution data, in that case the data will automatically be converted (though at a performance cost).
 	// Returns 1 if yes, 0 if no, and a negative number on error.
 	int GetSupportsHigherResolutions(unsigned int devNum);
+
+	// Returns whether a specific DAC is a USB Helios DAC (as opposed to an IDN network DAC).
+	// Returns 1 if yes, 0 if no, and a negative number on error.
+	int GetIsUsb(unsigned int devNum);
 
 	// Sets debug log level in libusb.
 	int SetLibusbDebugLogLevel(int logLevel);
@@ -346,7 +356,7 @@ private:
 		bool closed = true;
 		std::chrono::time_point<std::chrono::high_resolution_clock> statusReadyTime;
 		//std::chrono::time_point<std::chrono::high_resolution_clock> streamStartTime;
-		std::chrono::milliseconds bufferTime = std::chrono::milliseconds(30);
+		std::chrono::milliseconds bufferTime = std::chrono::milliseconds(50);
 		bool firstFrame = true;
 		int managementSocket = -1;
 		sockaddr_in managementSocketAddr = { 0 };
