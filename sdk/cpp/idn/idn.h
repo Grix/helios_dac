@@ -78,7 +78,7 @@ typedef struct
 #define DEFAULT_FRAMERATE               30
 #define DEFAULT_SCANSPEED               30000
 
-#define MAX_IDN_MESSAGE_LEN             1454      // IDN-Message maximum length (due to MTU limit to avoid fragmentation)
+#define MAX_IDN_MESSAGE_LEN             4400//1454      // IDN-Message maximum length (due to MTU limit to avoid fragmentation)
 
 #define XYRGB_SAMPLE_SIZE               7
 #define XYRGBI_SAMPLE_SIZE              8

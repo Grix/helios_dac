@@ -756,8 +756,8 @@ int idnPushFrame(IDNCONTEXT* context, bool sleepAllowed)
 			uint64_t now = plt_getMonoTimeUS();
 			long timeLeft = ctx->frameTimestamp - now - 1000;
 			//printf("Time now: %d, target: %d, left: %d\n", now, ctx->frameTimestamp, timeLeft);
-			if (timeLeft > 500)
-				plt_usleep(timeLeft);
+			//if (timeLeft > 500)
+			plt_usleep(timeLeft);
 
 			//auto then = std::chrono::steady_clock::now();
 			//while (std::chrono::steady_clock::now() - then < std::chrono::microseconds(timeLeft));
