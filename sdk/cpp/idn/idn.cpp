@@ -143,7 +143,7 @@ int idnOpenFrameGeneric(IDNCONTEXT* context, uint16_t* channelDescriptors, size_
 	contentID |= (((ctx->serviceId - 1) & 0x3F) << 8); // channel ID
 
 	// Insert channel config header every 250 ms
-	unsigned now = plt_getMonoTimeUS();
+	uint64_t now = plt_getMonoTimeUS();
 	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
 	if (!forceNewConfig)
 	{
@@ -246,7 +246,7 @@ int idnOpenFrameXYRGBI(IDNCONTEXT* context, bool forceNewConfig)
 	contentID |= (((ctx->serviceId - 1) & 0x3F) << 8); // channel ID
 
 	// Insert channel config header every 250 ms
-	unsigned now = plt_getMonoTimeUS();
+	uint64_t now = plt_getMonoTimeUS();
 	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
 	if (!forceNewConfig)
 	{
@@ -362,7 +362,7 @@ int idnOpenFrameXYRGB(IDNCONTEXT* context, bool forceNewConfig)
 	contentID |= (((ctx->serviceId - 1) & 0x3F) << 8); // channel ID
 
 	// Insert channel config header every 250 ms
-	unsigned now = plt_getMonoTimeUS();
+	uint64_t now = plt_getMonoTimeUS();
 	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
 	if (!forceNewConfig)
 	{
@@ -571,7 +571,7 @@ int idnOpenFrameExtended(IDNCONTEXT* context, bool forceNewConfig)
 	contentID |= (((ctx->serviceId - 1) & 0x3F) << 8); // channel ID
 
 	// Insert channel config header every 250 ms
-	unsigned now = plt_getMonoTimeUS();
+	uint64_t now = plt_getMonoTimeUS();
 	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
 	if (!forceNewConfig)
 	{
@@ -715,7 +715,7 @@ int idnPushFrame(IDNCONTEXT* context, bool sleepAllowed)
 		unsigned int samplesInPacket = (MAX_IDN_MESSAGE_LEN - headerSize) / ctx->bytesPerSample;
 		if (samplesInPacket > ctx->sampleCnt)
 			samplesInPacket = ctx->sampleCnt;
-		else if (ctx->sampleCnt - samplesInPacket < 20)
+		else if (ctx->sampleCnt - samplesInPacket < 20 && samplesInPacket > 40)
 			samplesInPacket -= 20;
 		uint32_t duration = ((uint64_t)samplesInPacket * 1000000ull) / (uint64_t)ctx->scanSpeed;
 		unsigned int msgLength = headerSize + samplesInPacket * ctx->bytesPerSample;
@@ -726,7 +726,7 @@ int idnPushFrame(IDNCONTEXT* context, bool sleepAllowed)
 
 		channelMsgHdr->totalSize = htons(msgLength - sizeof(IDNHDR_MESSAGE));
 		channelMsgHdr->contentID = htons(contentID | IDNVAL_CNKTYPE_LPGRF_WAVE);
-		channelMsgHdr->timestamp = htonl(ctx->frameTimestamp);
+		channelMsgHdr->timestamp = htonl((uint32_t)ctx->frameTimestamp);
 		ctx->frameCnt++;
 		ctx->frameTimestamp += duration;
 
@@ -749,58 +749,21 @@ int idnPushFrame(IDNCONTEXT* context, bool sleepAllowed)
 		channelMsgHdr = (IDNHDR_CHANNEL_MESSAGE*)((uint8_t*)ctx->sampleChunkHdr - sizeof(IDNHDR_CHANNEL_MESSAGE));
 		packetHdr = (IDNHDR_PACKET*)((uint8_t*)channelMsgHdr - sizeof(IDNHDR_PACKET));
 
-		if (sleepAllowed)
+		if (sleepAllowed && ctx->sampleCnt > 0)
 		{
-			auto then = std::chrono::high_resolution_clock::now() + std::chrono::microseconds(duration - 5);
-			while (std::chrono::high_resolution_clock::now() < then);
+			// This is not entirely accurate, as all sleep functions. 
+			// If you want lower jitter and thus latency, you can implement your own busy-waiting instead.
+			uint64_t now = plt_getMonoTimeUS();
+			long timeLeft = ctx->frameTimestamp - now - 1000;
+			//printf("Time now: %d, target: %d, left: %d\n", now, ctx->frameTimestamp, timeLeft);
+			if (timeLeft > 500)
+				plt_usleep(timeLeft);
+
+			//auto then = std::chrono::steady_clock::now();
+			//while (std::chrono::steady_clock::now() - then < std::chrono::microseconds(timeLeft));
+			//printf("Waited %d us\n", plt_getMonoTimeUS() - now);
 		}
-		//if (sleepAllowed)
-		//	std::this_thread::sleep_for(std::chrono::microseconds(duration / 3));
 
-		//channelMsgHdr = (IDNHDR_CHANNEL_MESSAGE*)&packetHdr[1];
-		//ctx->sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
-		//currentChunkDataPtr = (uint8_t*)&ctx->sampleChunkHdr[1];
-
-		// Send remaining fragments
-		/*while (1)
-		{
-			// Allocate message header (overwrite previous packet data), fragment number shared with timestamp
-			channelMsgHdr = (IDNHDR_CHANNEL_MESSAGE*)(splitPtr - sizeof(IDNHDR_CHANNEL_MESSAGE));
-			channelMsgHdr->timestamp = htonl(++now);
-
-			// Allocate and populate packet header
-			packetHdr = (IDNHDR_PACKET*)((uint8_t*)channelMsgHdr - sizeof(IDNHDR_PACKET));
-			packetHdr->command = IDNCMD_RT_CNLMSG;
-			packetHdr->flags = ctx->clientGroup;
-			packetHdr->sequence = htons(ctx->sequence++);
-
-			// Calculate remaining message length
-			msgLength = ctx->payload - (uint8_t*)channelMsgHdr;
-			if (msgLength > MAX_IDN_MESSAGE_LEN)
-			{
-				// Middle sequel fragment
-				channelMsgHdr->totalSize = htons(MAX_IDN_MESSAGE_LEN);
-				channelMsgHdr->contentID = htons(contentID);
-				splitPtr = (uint8_t*)channelMsgHdr + MAX_IDN_MESSAGE_LEN;
-
-				// Send the packet
-				if (idnSend(ctx, packetHdr, splitPtr - (uint8_t*)packetHdr))
-					return -1;
-			}
-			else
-			{
-				// Last sequel fragment, set last fragment flag
-				channelMsgHdr->totalSize = htons((unsigned short)msgLength);
-				channelMsgHdr->contentID = htons(contentID | IDNFLG_CONTENTID_CONFIG_LSTFRG);
-
-				// Send the packet
-				if (idnSend(ctx, packetHdr, ctx->payload - (uint8_t*)packetHdr))
-					return -1;
-
-				// Done sending the packet
-				break;
-			}
-		}*/
 	} while (ctx->sampleCnt > 0 && (currentChunkDataPtr + ctx->sampleCnt * ctx->bytesPerSample) < (ctx->bufferPtr+ctx->bufferLen));
 
 	// Invalidate payload - cause error in case of invalid call order
@@ -832,7 +795,7 @@ int idnSendVoid(IDNCONTEXT* context)
 	// Populate message header fields
 	channelMsgHdr->totalSize = htons((unsigned short)(ctx->payload - (uint8_t*)channelMsgHdr));
 	//ctx->frameTimestamp = plt_getMonoTimeUS();
-	channelMsgHdr->timestamp = htonl(plt_getMonoTimeUS());
+	channelMsgHdr->timestamp = htonl((uint32_t)plt_getMonoTimeUS());
 	ctx->frameCnt = 0;
 
 	// Send the packet
@@ -872,7 +835,7 @@ int idnSendClose(IDNCONTEXT* context)
 
 	// Populate message header fields
 	channelMsgHdr->totalSize = htons((unsigned short)(ctx->payload - (uint8_t*)channelMsgHdr));
-	channelMsgHdr->timestamp = htonl(plt_getMonoTimeUS());
+	channelMsgHdr->timestamp = htonl((uint32_t)plt_getMonoTimeUS());
 
 	// Send the packet
 	if (idnSend(context, packetHdr, ctx->payload - (uint8_t*)packetHdr))

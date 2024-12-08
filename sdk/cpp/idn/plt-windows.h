@@ -41,6 +41,7 @@
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 #include <vector>
+#include <thread>
 
 #pragma comment(lib, "IPHLPAPI.lib")
 #pragma comment(lib, "ws2_32.lib")
@@ -64,7 +65,7 @@ inline static int plt_validateMonoTime()
     extern int plt_monoValid;
     extern LARGE_INTEGER plt_monoCtrFreq;
     extern LARGE_INTEGER plt_monoCtrRef;
-    extern uint32_t plt_monoTimeUS;
+    extern uint64_t plt_monoTimeUS;
 
     extern void logError(const char* fmt, ...);
 
@@ -85,28 +86,55 @@ inline static int plt_validateMonoTime()
         }
 
         // Initialize internal time randomly
-        plt_monoTimeUS = (uint32_t)((plt_monoCtrRef.QuadPart * 1000000) / plt_monoCtrFreq.QuadPart);
+        plt_monoTimeUS = (uint64_t)((plt_monoCtrRef.QuadPart * 1000000) / plt_monoCtrFreq.QuadPart);
     }
 
     return 0;
 }
 
 
-inline static uint32_t plt_getMonoTimeUS(void)
+inline static uint64_t plt_getMonoTimeUS(void)
 {
     extern LARGE_INTEGER plt_monoCtrFreq;
     extern LARGE_INTEGER plt_monoCtrRef;
-    extern uint32_t plt_monoTimeUS;
+    extern uint64_t plt_monoTimeUS;
 
     // Get current time
     LARGE_INTEGER pctNow;
     QueryPerformanceCounter(&pctNow);
 
     // Update internal time and system time reference
-    plt_monoTimeUS += (uint32_t)(((pctNow.QuadPart - plt_monoCtrRef.QuadPart) * 1000000) / plt_monoCtrFreq.QuadPart);
+    plt_monoTimeUS += (uint64_t)(((pctNow.QuadPart - plt_monoCtrRef.QuadPart) * 1000000) / plt_monoCtrFreq.QuadPart);
     plt_monoCtrRef = pctNow;
+    //printf("now: %d\n", plt_monoTimeUS);
 
     return plt_monoTimeUS;
+}
+
+
+inline static int plt_usleep(long usec)
+{
+    if (usec < 0)
+        usec = 0;
+
+    std::this_thread::sleep_for(std::chrono::microseconds(usec)); // Fallback
+    return 0;
+
+    LARGE_INTEGER ft;
+    ft.QuadPart = -static_cast<int64_t>(usec * 10);  // '-' using relative time
+
+    HANDLE timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    if (timer == NULL)
+    {
+        std::this_thread::sleep_for(std::chrono::microseconds(usec)); // Fallback
+        return 0;
+    }
+
+    SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
+    WaitForSingleObject(timer, INFINITE);
+    CloseHandle(timer);
+
+    return 0;
 }
 
 
@@ -186,8 +214,8 @@ inline static int plt_sockClose(int fdSocket)
 
 inline static int plt_sockSetBroadcast(int fdSocket)
 {
-    char bcastOptStr[] = "1";
-    return setsockopt(fdSocket, SOL_SOCKET, SO_BROADCAST, bcastOptStr, sizeof(bcastOptStr));
+    DWORD bcastOptStr[] = { 1 };
+    return setsockopt(fdSocket, SOL_SOCKET, SO_BROADCAST, (char*)bcastOptStr, sizeof(bcastOptStr));
 }
 
 

@@ -8,8 +8,8 @@ int main(void)
 	// This is a simple line moving upward in a loop, but for real graphics you should optimize the point stream for laser scanners 
 	// by interpolating long vectors including blanked sections, adding points at sharp corners, etc.
 	HeliosPointHighRes** frame = new HeliosPointHighRes*[30];
-	const int numPointsPerFrame = 800;
-	const int pointsPerSecond = 30000;
+	const int numPointsPerFrame = 1000;
+	const int pointsPerSecond = 50000;
 	int x = 0;
 	int y = 0;
 	for (int i = 0; i < 30; i++)
@@ -72,7 +72,7 @@ int main(void)
 			{ 
 				if (helios.GetStatus(j) == 1)
 				{
-					helios.WriteFrameHighResolution(j, pointsPerSecond, HELIOS_FLAGS_DEFAULT | HELIOS_FLAGS_DONT_BLOCK, frame[i % 30], numPointsPerFrame);
+					helios.WriteFrameHighResolution(j, pointsPerSecond, HELIOS_FLAGS_DEFAULT | HELIOS_FLAGS_DONT_BLOCK | HELIOS_FLAGS_SINGLE_MODE, frame[i % 30], numPointsPerFrame);
 					break;
 				}
 			}
@@ -82,6 +82,9 @@ int main(void)
 
 			// Here we use the HELIOS_FLAGS_DONT_BLOCK flag in WriteFrame() because this test app can connect to several DACs from the single-threaded main function.
 			// But if your app is already handling each DAC in its own thread (like it probably should), you can remove that flag.
+
+			// We also use the HELIOS_FLAGS_SINGLE_MODE flag, because network (IDN) DACs always play the frame only once. Therefore, it is recommended to always 
+			// use this flag, and instead implement your own frame looping system if you need to repeat a frame.
 		}
 	}
 

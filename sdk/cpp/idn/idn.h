@@ -103,11 +103,11 @@ typedef struct
 	unsigned bufferLen;                     // Length of work buffer
 	uint8_t* bufferPtr;                     // Pointer to work buffer
 
-	uint32_t startTime;                     // System time at stream start (log reference)
-	uint32_t frameCnt;                      // Number of sent frames
-	uint32_t startTimestamp;				// Timestamp of first frame in current active session
-	uint32_t frameTimestamp;                // Timestamp of the last frame
-	uint32_t cfgTimestamp;                  // Timestamp of the last channel configuration
+	uint64_t startTime;                     // System time at stream start (log reference)
+	uint64_t frameCnt;                      // Number of sent frames
+	uint64_t startTimestamp;				// Timestamp of first frame in current active session
+	uint64_t frameTimestamp;                // Timestamp of the last frame
+	uint64_t cfgTimestamp;                  // Timestamp of the last channel configuration
 	uint8_t serviceDataMatch;				// SDM flag, change when new config is written
 
 	// Buffer related
@@ -123,6 +123,7 @@ typedef struct
 
 	std::string name;
 	int serviceId;
+	uint8_t unitId[16];
 
 
 } IDNCONTEXT;

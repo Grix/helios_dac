@@ -45,6 +45,7 @@ GetStatus() for timing purposes.
 #include <memory>
 #include <chrono>
 #include <algorithm>
+#include <queue>
 
 #define HELIOS_SDK_VERSION	11
 
@@ -59,53 +60,77 @@ GetStatus() for timing purposes.
 #define HELIOS_MAX_PPS_IDN		100000
 #define HELIOS_MIN_PPS_IDN		HELIOS_MIN_PPS // 7
 
+// Default return value of functions
 #define HELIOS_SUCCESS		1	
 
-// Functions return negative values if something went wrong	
+// Functions return negative values if something went wrong:
+
 // Attempted to perform an action before calling OpenDevices().
 #define HELIOS_ERROR_NOT_INITIALIZED	-1
+
 // Attempted to perform an action with an invalid device number.
 #define HELIOS_ERROR_INVALID_DEVNUM		-2
+
 // WriteFrame() called with null pointer to points or number of points being zero.
 #define HELIOS_ERROR_NULL_POINTS		-3
+
 // WriteFrame() called with a frame containing too many points.
 #define HELIOS_ERROR_TOO_MANY_POINTS	-4
+
 // WriteFrame() called with pps higher than maximum allowed.
 #define HELIOS_ERROR_PPS_TOO_HIGH		-5
+
 // WriteFrame() called with pps lower than minimum allowed.
 #define HELIOS_ERROR_PPS_TOO_LOW		-6
 
-// Errors from the HeliosDacDevice class begin at -1000
+// Errors from the HeliosDacDevice class begin at -1000:
+
 // Attempted to perform an operation on a closed DAC device.
 #define HELIOS_ERROR_DEVICE_CLOSED			-1000
+
 // Attempted to send a new frame with HELIOS_FLAGS_DONT_BLOCK before previous frame has completed transfer.
 #define HELIOS_ERROR_DEVICE_FRAME_READY		-1001
+
 // Operation failed because SendControl() failed (if operation failed because of libusb_interrupt_transfer failure, the error code will be a libusb error instead).
 #define HELIOS_ERROR_DEVICE_SEND_CONTROL	-1002
+
 // Received an unexpected result from a call to SendControl().
 #define HELIOS_ERROR_DEVICE_RESULT			-1003
+
 // Attempted to call SendControl() with a null buffer pointer.
 #define HELIOS_ERROR_DEVICE_NULL_BUFFER		-1004
+
 // Attempted to call SendControl() with a control signal that is too long.
 #define HELIOS_ERROR_DEVICE_SIGNAL_TOO_LONG	-1005
+
 // Attempted to call a function that isn't supported for this particular DAC model (for example SetShutter on network DACs, since they handle shutter logic automatically instead of manually).
 #define HELIOS_ERROR_NOT_SUPPORTED			-1006
+
 // Error during sending network packet for IDN DACs. See console output for more information, or errno on Unix or WSAGetLastError() on Windows.
 #define HELIOS_ERROR_NETWORK				-1007
 
 // Errors from libusb are the libusb error code added to -5000. See libusb.h for libusb error codes.
 #define HELIOS_ERROR_LIBUSB_BASE		-5000
 
-// Bitmask flags used in flags parameter for WriteFrame*(). Can be OR'ed together to enable multiple flags
+// ---------------------------------
+
+// Bitmask flags used in flags parameter for WriteFrame*(). Can be OR'ed together to enable multiple flags:
+
 // No flags defined.
-#define HELIOS_FLAGS_DEFAULT			0
+#define HELIOS_FLAGS_DEFAULT		0
+
 // Written frame should start playing immediately, even if previously submitted frames are queued up in the frame buffer.
 // NB: This flag is NOT SUPPORTED by network-enabled DACs and is thus considered deprecated.
 #define HELIOS_FLAGS_START_IMMEDIATELY	(1 << 0)
+
 // Written frame should only be played exactly once, instead of being looped indefinitely if no more frames are written after this one.
+// NB: This flag is not applicable on network (IDN) DACs, they always play the frame only once. Therefore, it is recommended to always 
+// use this flag, and instead implement your own frame looping system if you need to repeat the frame.
 #define HELIOS_FLAGS_SINGLE_MODE		(1 << 1)
+
 // WriteFrame() should not block execution while the frame is transfered to the DAC, instead the transfer is processed a separate thread.
 #define HELIOS_FLAGS_DONT_BLOCK			(1 << 2)
+
 // For network-enabled DACs, there is no status feedback, so GetStatus() could in theory return true immediately. This flag makes it so.
 // If the flag is NOT defined (default), then a timer simulates the time it would take the DAC to play the frame and makes GetStatus()
 // return false during that time instead. This is done for compatibility reasons if your software depends on this feedback for timing.
@@ -354,9 +379,8 @@ private:
 		int firmwareVersion = 0;
 		char name[32];
 		bool closed = true;
-		std::chrono::time_point<std::chrono::high_resolution_clock> statusReadyTime;
-		//std::chrono::time_point<std::chrono::high_resolution_clock> streamStartTime;
-		std::chrono::milliseconds bufferTime = std::chrono::milliseconds(50);
+		uint64_t statusReadyTime;
+		uint32_t bufferTimeMs = 2;
 		bool firstFrame = true;
 		int managementSocket = -1;
 		sockaddr_in managementSocketAddr = { 0 };

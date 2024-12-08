@@ -97,7 +97,7 @@ inline static int plt_validateMonoTime()
 {
     extern int plt_monoValid;
     extern struct timespec plt_monoRef;
-    extern uint32_t plt_monoTimeUS;
+    extern uint64_t plt_monoTimeUS;
     
 
     if(!plt_monoValid)
@@ -111,7 +111,7 @@ inline static int plt_validateMonoTime()
         
         
         // Initialize internal time randomly
-        plt_monoTimeUS = (uint32_t)((plt_monoRef.tv_sec * 1000000ul) + (plt_monoRef.tv_nsec / 1000));
+        plt_monoTimeUS = (uint64_t)((plt_monoRef.tv_sec * 1000000ul) + (plt_monoRef.tv_nsec / 1000));
         plt_monoValid = 1;
     }
 
@@ -119,10 +119,10 @@ inline static int plt_validateMonoTime()
 }
 
 
-inline static uint32_t plt_getMonoTimeUS()
+inline static uint64_t plt_getMonoTimeUS()
 {
     extern struct timespec plt_monoRef;
-    extern uint32_t plt_monoTimeUS;
+    extern uint64_t plt_monoTimeUS;
 
     // Get current time
     struct timespec tsNow, tsDiff;
@@ -145,23 +145,25 @@ inline static uint32_t plt_getMonoTimeUS()
     }
 
     // Update internal time and system time reference
-    plt_monoTimeUS += (uint32_t)((tsDiff.tv_sec * 1000000) + (tsDiff.tv_nsec / 1000));
+    plt_monoTimeUS += (uint64_t)((tsDiff.tv_sec * 1000000) + (tsDiff.tv_nsec / 1000));
     plt_monoRef = tsNow;
 
     return plt_monoTimeUS;
 }
 
 
-inline static int plt_usleep(unsigned usec)
+inline static int plt_usleep(long usec)
 {
+    if (usec < 0)
+        usec = 0;
     return usleep(usec);
 }
 
-
+/*
 inline static FILE *plt_fopen(const char *filename, const char *mode)
 {
     return fopen(filename, mode);
-}
+}*/
 
 
 inline static int plt_sockStartup()
