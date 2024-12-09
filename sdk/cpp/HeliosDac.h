@@ -56,7 +56,8 @@ GetStatus() for timing purposes.
 #define HELIOS_MIN_PPS		7
 // For IDN, max points depend on the complexity of those points
 // In theory, many of these limits could be improved, by smarter PPS calculation etc, but I keep it simple to minimize compatibility problems.
-#define IDN_BUFFER_SIZE			0x20000
+#define HELIOS_MAX_POINTS_IDN	0x2000
+#define IDN_BUFFER_SIZE			(HELIOS_MAX_POINTS_IDN*EXTENDED_SAMPLE_SIZE+200)
 #define HELIOS_MAX_PPS_IDN		100000
 #define HELIOS_MIN_PPS_IDN		HELIOS_MIN_PPS // 7
 
@@ -379,14 +380,22 @@ private:
 		int firmwareVersion = 0;
 		char name[32];
 		bool closed = true;
-		uint64_t statusReadyTime;
-		uint32_t bufferTimeMs = 2;
+		//uint64_t statusReadyTime; // TODO can we remove this now that we use a simple buffer?
+		//uint32_t bufferTimeMs = 50;
+		//uint8_t* queuedFrameBuffer;
+		//int queuedFrameType = 0; // 0 = HeliosPoint, 1 = HeliosPointHighRes, 2 = HeliosPointExt
+		//int queuedFrameNumPoints = 0;
+		//int queuedFramePps = 1;
+		//std::queue<std::unique_ptr<QueuedFrame>> frameQueue;
+		//int frameQueueDuration = 0;
+
 		bool firstFrame = true;
 		int managementSocket = -1;
 		sockaddr_in managementSocketAddr = { 0 };
-		bool frameReady = false;
+		//bool frameReady = false;
 		std::mutex frameLock;
 		int frameResult = -1;
+
 	};
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;

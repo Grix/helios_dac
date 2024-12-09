@@ -1123,11 +1123,15 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 	for (int i = 0; i < 32; i++)
 		name[i] = 0;
 
-	statusReadyTime = plt_getMonoTimeUS();
+	//statusReadyTime = plt_getMonoTimeUS();
+
+	//queuedFrameBuffer = (uint8_t*)new HeliosPointExt[HELIOS_MAX_POINTS_IDN];
 
 	context->bufferLen = IDN_BUFFER_SIZE;
 	context->bufferPtr = new uint8_t[IDN_BUFFER_SIZE];
+	context->queuedBufferPtr = new uint8_t[IDN_BUFFER_SIZE];
 	context->startTime = plt_getMonoTimeUS();
+	context->averageSleepError = 2000;
 
 #if defined(_WIN32) || defined(WIN32)
 
@@ -1198,33 +1202,18 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 	frameHandlerThread.detach();
 }
 
-// Sends a raw frame buffer (implemented as bulk transfer) to a dac device
+// Queues up a raw frame buffer to be sent to the DAC. Legacy low-res point format.
 // Returns 1 if success
 int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints)
 {
 	if (closed)
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
-	if (frameReady)
+	if (context->frameReady)
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
 	if (pps == 0)
 		return HELIOS_ERROR_PPS_TOO_LOW;
-
-	uint64_t durationUs = (1000000 / ((double)pps / numOfPoints));
-	uint64_t now = plt_getMonoTimeUS();
-	uint64_t timeoutTime = statusReadyTime + durationUs + bufferTimeMs * 1000 * 5;
-	if (bufferTimeMs < 3)
-		timeoutTime += 20000;
-
-	if (firstFrame || now > timeoutTime)//(statusReadyTime < timeoutTime))
-	{
-		if (!firstFrame)
-			printf("Warning: IDN DAC WriteFrame too late, had to reset status timing.\n");
-		statusReadyTime = now;
-	}
-	//else
-	//	printf("Timeout leeway: %d\n", (now - timeoutTime).count());
 
 	// If pps is too low, try to duplicate frames to simulate a higher pps rather than failing
 	bool freePoints = false;
@@ -1268,70 +1257,48 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 			return HELIOS_ERROR_TOO_MANY_POINTS;
 	}
 
-	if (firstFrame)
-		context->frameTimestamp = now;
-
-	if (idnOpenFrameXYRGB(context, false))
+	if (idnOpenFrameXYRGBI(context, false))
 		return false;
 
-	context->scanSpeed = pps;
-	context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
-
-	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0))// && !firstFrame)
-	{
-		//statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)))) - std::chrono::microseconds(100); // Now plus approximate duration of frame
-		statusReadyTime += durationUs;
-	}
-	firstFrame = false;
+	context->queuedFrameScanSpeed = pps;
+	//context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
 
 	unsigned int loopLength = numOfPoints * samplingFactor;
 	for (unsigned int i = 0; i < loopLength; i += samplingFactor)
 	{
-		if (idnPutSampleXYRGB(context, (points[i].x << 4) - 0x8000, (points[i].y << 4) - 0x8000, points[i].r, points[i].g, points[i].b))
+		if (idnPutSampleXYRGBI(context, (points[i].x << 4) - 0x8000, (points[i].y << 4) - 0x8000, points[i].r, points[i].g, points[i].b, points[i].i))
 			return false;
 	}
 
 	if (freePoints)
 		delete points;
 
-	if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
+	context->frameReady = true;
+
+	return HELIOS_SUCCESS;
+	/*if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
 	{
-		frameReady = true;
+		context->frameReady = true;
 		return HELIOS_SUCCESS;
 	}
 	else
 	{
 		return DoFrame();
-	}
+	}*/
 }
 
-// Sends a raw frame buffer (implemented as bulk transfer) to a dac device
+// Queues up a raw frame buffer to be sent to the DAC. Modern high-res point format.
 // Returns 1 if success
 int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std::uint8_t flags, HeliosPointHighRes* points, unsigned int numOfPoints)
 {
 	if (closed)
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
-	if (frameReady)
+	if (context->frameReady)
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
 	if (pps == 0)
 		return HELIOS_ERROR_PPS_TOO_LOW;
-
-	uint64_t durationUs = (1000000 / ((double)pps / numOfPoints));
-	uint64_t now = plt_getMonoTimeUS();
-	uint64_t timeoutTime = statusReadyTime + durationUs + bufferTimeMs*1000 * 5;
-	if (bufferTimeMs < 3)
-		timeoutTime += 20000;
-
-	if (firstFrame || now > timeoutTime)//(statusReadyTime < timeoutTime))
-	{
-		if (!firstFrame)
-			printf("Warning: IDN DAC WriteFrame too late, had to reset status timing.\n");
-		statusReadyTime = now;
-	}
-	//else
-	//	printf("Timeout leeway: %d\n", (now - timeoutTime).count());
 
 	// If pps is too low, try to duplicate frames to simulate a higher pps rather than failing
 	bool freePoints = false;
@@ -1375,21 +1342,11 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 			return HELIOS_ERROR_TOO_MANY_POINTS;
 	}
 
-	if (firstFrame)
-		context->frameTimestamp = now;
-
 	if (idnOpenFrameHighResXYRGB(context, false))
 		return false;
 
-	context->scanSpeed = pps;
-	context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
-
-	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0))// && !firstFrame)
-	{
-		//statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)))) - std::chrono::microseconds(100); // Now plus approximate duration of frame
-		statusReadyTime += durationUs;
-	}
-	firstFrame = false;
+	context->queuedFrameScanSpeed = pps;
+	//context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
 
 	unsigned int loopLength = numOfPoints * samplingFactor;
 	for (unsigned int i = 0; i < loopLength; i += samplingFactor)
@@ -1401,7 +1358,10 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 	if (freePoints)
 		delete points;
 
-	if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
+	context->frameReady = true;
+	return HELIOS_SUCCESS;
+
+	/*if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
 	{
 		frameReady = true;
 		return HELIOS_SUCCESS;
@@ -1409,37 +1369,22 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 	else
 	{
 		return DoFrame();
-	}
+	}*/
 }
 
 
-// Sends a raw frame buffer (implemented as bulk transfer) to a dac device
+// Queues up a raw frame buffer to be sent to the DAC. Extended point format with optional user1-4 channels.
 // Returns 1 if success
 int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint8_t flags, HeliosPointExt* points, unsigned int numOfPoints)
 {
 	if (closed)
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
-	if (frameReady)
+	if (context->frameReady)
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
 	if (pps == 0)
 		return HELIOS_ERROR_PPS_TOO_LOW;
-
-	uint64_t durationUs = (1000000 / ((double)pps / numOfPoints));
-	uint64_t now = plt_getMonoTimeUS();
-	uint64_t timeoutTime = statusReadyTime + durationUs + bufferTimeMs * 1000 * 5;
-	if (bufferTimeMs < 3)
-		timeoutTime += 20000;
-
-	if (firstFrame || now > timeoutTime)//(statusReadyTime < timeoutTime))
-	{
-		if (!firstFrame)
-			printf("Warning: IDN DAC WriteFrame too late, had to reset status timing.\n");
-		statusReadyTime = now;
-	}
-	//else
-	//	printf("Timeout leeway: %d\n", (now - timeoutTime).count());
 
 	// If pps is too low, try to duplicate frames to simulate a higher pps rather than failing
 	bool freePoints = false;
@@ -1483,21 +1428,11 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 			return HELIOS_ERROR_TOO_MANY_POINTS;
 	}
 
-	if (firstFrame)
-		context->frameTimestamp = now;
-
 	if (idnOpenFrameExtended(context, false))
 		return false;
 
-	context->scanSpeed = pps;
-	context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
-
-	if (((flags & HELIOS_FLAGS_DONT_SIMULATE_TIMING) == 0))// && !firstFrame)
-	{
-		//statusReadyTime = std::chrono::high_resolution_clock::now() + std::chrono::microseconds((long long)((1000000 / ((double)pps / numOfPoints)))) - std::chrono::microseconds(100); // Now plus approximate duration of frame
-		statusReadyTime += (1000000 / ((double)pps / numOfPoints));
-	}
-	firstFrame = false;
+	context->queuedFrameScanSpeed = pps;
+	//context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
 
 	unsigned int loopLength = numOfPoints * samplingFactor;
 	for (unsigned int i = 0; i < loopLength; i += samplingFactor)
@@ -1509,15 +1444,18 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 	if (freePoints)
 		delete points;
 
-	if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
+	context->frameReady = true;
+
+	return HELIOS_SUCCESS;
+	/*if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
 	{
-		frameReady = true;
+		context->frameReady = true;
 		return HELIOS_SUCCESS;
 	}
 	else
 	{
 		return DoFrame();
-	}
+	}*/
 }
 
 
@@ -1528,11 +1466,11 @@ int HeliosDac::HeliosDacIdnDevice::GetStatus()
 	if (closed)
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
-	if (frameReady || (plt_getMonoTimeUS() < (statusReadyTime - bufferTimeMs * 1000)))
+	if (context->frameReady)// || (plt_getMonoTimeUS() < (statusReadyTime - bufferTimeMs * 1000)))
 	{
-		auto then = std::chrono::steady_clock::now();
-		while (std::chrono::steady_clock::now() - then < std::chrono::microseconds(50));
-		//plt_usleep(50); // Simulate a small delay to mimic behavior of USB device, for backwards compatibility
+		//auto then = std::chrono::steady_clock::now();
+		//while (std::chrono::steady_clock::now() - then < std::chrono::microseconds(50)); // Simulate a small delay to mimic behavior of USB device, for backwards compatibility
+		plt_usleep(50); // Simulate a small delay to mimic behavior of USB device, for backwards compatibility
 		return false;
 	}
 
@@ -1545,9 +1483,7 @@ int HeliosDac::HeliosDacIdnDevice::DoFrame()
 	if (closed)
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
-	//bool isBufferFilled = (plt_getMonoTimeUS() < (statusReadyTime - bufferTimeMs*1000/2));
-
-	if (idnPushFrame(context, true /*isBufferFilled*/) != 0)
+	if (idnPushFrame(context) != 0)
 		return HELIOS_ERROR_NETWORK; // TODO return more specific error code
 
 	return HELIOS_SUCCESS;
@@ -1560,15 +1496,47 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 	while (!closed)
 	{
 		// Wait until frame is ready to be sent
-		while ((!frameReady) && (!closed))
-			plt_usleep(100);
+		//while ((!frameReady) && (!closed))
+		//	plt_usleep(100);
+
+		//if (closed)
+		//	return;
+
+
+		// This is not entirely accurate, as all sleep functions. 
+		// If you want lower jitter and thus latency, you can implement your own busy-waiting instead.
+		uint64_t now = plt_getMonoTimeUS();
+
+		if (context->frameTimestamp == 0)
+			context->frameTimestamp = now;
+
+		long long timeLeft = context->frameTimestamp - now - context->averageSleepError - 100;
+		if (timeLeft < 0)
+			timeLeft = 0;
+
+		//if (timeLeft > 500)
+		//plt_usleep(timeLeft);
 
 		if (closed)
 			return;
 
+#ifndef NDEBUG
+		printf("IDN timing: Time now: %d, target: %d, left: %d, sleep err: %d\n", now, context->frameTimestamp, timeLeft, context->averageSleepError);
+#endif
+		while (plt_getMonoTimeUS() < (context->frameTimestamp - 100))
+		{
+			auto then = std::chrono::steady_clock::now() + std::chrono::microseconds(10);
+			while (std::chrono::steady_clock::now() < then);
+		}
+		printf("Waited %d us\n", plt_getMonoTimeUS() - now);
+
+
+		uint64_t sleepError = (plt_getMonoTimeUS() - now) - timeLeft;
+		context->averageSleepError = (context->averageSleepError * NUM_SLEEP_ERROR_SAMPLES + sleepError) / (NUM_SLEEP_ERROR_SAMPLES + 1);
+
 		DoFrame();
 
-		frameReady = false;
+		//frameReady = false;
 	}
 }
 
@@ -1679,12 +1647,12 @@ int HeliosDac::HeliosDacIdnDevice::Stop()
 	if (closed)
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
-	idnOpenFrameXYRGB(context, true);
-	context->scanSpeed = 1000;
+	idnOpenFrameXYRGBI(context, true);
+	context->queuedFrameScanSpeed = 1000;
 	//context->jitterFreeFlag = 1;
 	for (int i = 0; i < 20; i++)
-		idnPutSampleXYRGB(context, 0, 0, 0, 0, 0);
-	idnPushFrame(context, false);
+		idnPutSampleXYRGBI(context, 0, 0, 0, 0, 0, 0);
+	idnPushFrame(context);
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(50));
 

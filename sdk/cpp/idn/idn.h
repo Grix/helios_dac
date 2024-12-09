@@ -78,14 +78,14 @@ typedef struct
 #define DEFAULT_FRAMERATE               30
 #define DEFAULT_SCANSPEED               30000
 
-#define MAX_IDN_MESSAGE_LEN             4400//1454      // IDN-Message maximum length (due to MTU limit to avoid fragmentation)
+#define MAX_IDN_MESSAGE_LEN             (1454*4)      // IDN-Message maximum length (1454 is MTU limit to avoid fragmentation)
 
 #define XYRGB_SAMPLE_SIZE               7
 #define XYRGBI_SAMPLE_SIZE              8
 #define XYRGB_HIGHRES_SAMPLE_SIZE       10
 #define EXTENDED_SAMPLE_SIZE			20
 
-
+#define NUM_SLEEP_ERROR_SAMPLES			200
 
 // -------------------------------------------------------------------------------------------------
 //  Typedefs
@@ -96,12 +96,13 @@ typedef struct
 	int fdSocket;                           // Socket file descriptor
 	struct sockaddr_in serverSockAddr;      // Target server address
 	unsigned char clientGroup;              // Client group to send on
-	//unsigned usFrameTime;                   // Time for one frame in microseconds (1000000/frameRate)
-	int jitterFreeFlag;                     // Scan frames only once to exactly match frame rate
-	unsigned scanSpeed;                     // Scan speed in samples per second
+	//unsigned usFrameTime;                 // Time for one frame in microseconds (1000000/frameRate)
+	//int jitterFreeFlag;                   // Scan frames only once to exactly match frame rate
+	unsigned int scanSpeed;                 // Scan speed in samples per second
 
-	unsigned bufferLen;                     // Length of work buffer
+	unsigned int bufferLen;                 // Length of work buffer
 	uint8_t* bufferPtr;                     // Pointer to work buffer
+	uint8_t* queuedBufferPtr;               // Pointer to work buffer 2, acting as a double buffer
 
 	uint64_t startTime;                     // System time at stream start (log reference)
 	uint64_t frameCnt;                      // Number of sent frames
@@ -109,17 +110,27 @@ typedef struct
 	uint64_t frameTimestamp;                // Timestamp of the last frame
 	uint64_t cfgTimestamp;                  // Timestamp of the last channel configuration
 	uint8_t serviceDataMatch;				// SDM flag, change when new config is written
+	uint64_t averageSleepError;			    // Compensation for too long plt_usleep() timings
 
 	// Buffer related
-	uint8_t* payload;                       // Pointer to the end of the buffer
 	uint8_t bytesPerSample;
+	uint8_t previousBytesPerSample;
 
 	// IDN-Hello related
 	uint16_t sequence;                      // IDN-Hello sequence number (UDP packet tracking)
 
 	// IDN-Stream related
-	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr;    // Current sample chunk header
+	uint8_t* sendBufferPosition;			// Start of next samples waiting to be sent
 	uint32_t sampleCnt;                     // Current number of samples
+
+	// Queue buffer, fills while the current buffer is being transmitted
+	unsigned int queuedFrameScanSpeed;
+	uint8_t queuedFrameBytesPerSample;
+	uint32_t queuedFrameSampleCnt;
+	uint8_t* queuedBufferPosition;          // Pointer to the end of the buffer
+	//IDNHDR_SAMPLE_CHUNK* queuedFrameSampleChunkHdr;
+	bool frameReady;
+	bool timestampIsOk;
 
 	std::string name;
 	int serviceId;
@@ -144,7 +155,7 @@ int idnOpenFrameHighResXYRGB(IDNCONTEXT* context, bool forceNewConfig);
 int idnPutSampleHighResXYRGB(IDNCONTEXT* context, int16_t x, int16_t y, uint16_t r, uint16_t g, uint16_t b);
 int idnOpenFrameExtended(IDNCONTEXT* context, bool forceNewConfig);
 int idnPutSampleExtended(IDNCONTEXT* context, int16_t x, int16_t y, uint16_t r, uint16_t g, uint16_t b, uint16_t i, uint16_t u1, uint16_t u2, uint16_t u3, uint16_t u4);
-int idnPushFrame(IDNCONTEXT* context, bool sleepAllowed);
+int idnPushFrame(IDNCONTEXT* context);
 int idnSendVoid(IDNCONTEXT* context);
 int idnSendClose(IDNCONTEXT* context);
 

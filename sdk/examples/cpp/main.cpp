@@ -8,8 +8,8 @@ int main(void)
 	// This is a simple line moving upward in a loop, but for real graphics you should optimize the point stream for laser scanners 
 	// by interpolating long vectors including blanked sections, adding points at sharp corners, etc.
 	HeliosPointHighRes** frame = new HeliosPointHighRes*[30];
-	const int numPointsPerFrame = 1000;
-	const int pointsPerSecond = 50000;
+	const int numPointsPerFrame = 500;
+	const int pointsPerSecond = 20000;
 	int x = 0;
 	int y = 0;
 	for (int i = 0; i < 30; i++)
@@ -76,9 +76,8 @@ int main(void)
 					break;
 				}
 			}
-			// In this loop, timing is handled by the GetStatus polling, which only returns 1 once there is room in the DAC to send the next frame,
-			// which in practice means that after an initial filling of the DAC buffer, it will return 1 when precisely matching the desired framerate (pointsPerSecond / numPointsPerFrame),
-			// including any clock drift caused by the DAC having a slightly faster or slower playback than the host computer.
+			// In this loop, timing is handled by the GetStatus polling, which only returns 1 once there is room in the DAC to send the next frame.
+			// You need to call this function in time, to not let the buffers in the DAC underrun.
 
 			// Here we use the HELIOS_FLAGS_DONT_BLOCK flag in WriteFrame() because this test app can connect to several DACs from the single-threaded main function.
 			// But if your app is already handling each DAC in its own thread (like it probably should), you can remove that flag.
