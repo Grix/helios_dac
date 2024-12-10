@@ -535,6 +535,7 @@ int idnPushFrame(IDNCONTEXT* context)
 	{
 		if (ctx->frameReady)
 		{
+			printf("Switching frame\n");
 			ctx->sendBufferPosition = ctx->queuedBufferPtr + 100;
 			ctx->bytesPerSample = ctx->queuedFrameBytesPerSample;
 			ctx->sampleCnt = ctx->queuedFrameSampleCnt;
@@ -549,11 +550,13 @@ int idnPushFrame(IDNCONTEXT* context)
 		}
 		else
 		{
-			logError("[IDN] Buffer underrun. Send frames faster, or make them bigger to get more leeway."); 
+			if (ctx->frameCnt != 0)
+				logError("[IDN] Buffer underrun. Send frames faster, or make them bigger to get more leeway."); 
 			ctx->timestampIsOk = false;
 			return -1;
 		}
 	}
+	printf("Sending frame\n");
 
 	if (ctx->scanSpeed == 0) { logError("[IDN] Invalid scan speed 0"); return -1; }
 	if (ctx->sampleCnt < 20) { logError("[IDN] Invalid sample count %u", ctx->sampleCnt); return -1; }

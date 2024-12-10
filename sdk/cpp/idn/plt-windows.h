@@ -117,11 +117,8 @@ inline static int plt_usleep(long usec)
     if (usec < 0)
         usec = 0;
 
-    std::this_thread::sleep_for(std::chrono::microseconds(usec)); // Fallback
-    return 0;
-
-    LARGE_INTEGER ft;
-    ft.QuadPart = -static_cast<int64_t>(usec * 10);  // '-' using relative time
+    LARGE_INTEGER then;
+    then.QuadPart = -static_cast<int64_t>(usec * 10);  // '-' using relative time
 
     HANDLE timer = CreateWaitableTimer(NULL, TRUE, NULL);
     if (timer == NULL)
@@ -130,7 +127,7 @@ inline static int plt_usleep(long usec)
         return 0;
     }
 
-    SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
+    SetWaitableTimer(timer, &then, 0, NULL, NULL, 0);
     WaitForSingleObject(timer, INFINITE);
     CloseHandle(timer);
 

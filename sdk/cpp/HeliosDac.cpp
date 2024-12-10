@@ -1355,10 +1355,11 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 			return false;
 	}
 
+	context->frameReady = true;
+
 	if (freePoints)
 		delete points;
 
-	context->frameReady = true;
 	return HELIOS_SUCCESS;
 
 	/*if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
@@ -1510,7 +1511,7 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 		if (context->frameTimestamp == 0)
 			context->frameTimestamp = now;
 
-		long long timeLeft = context->frameTimestamp - now - context->averageSleepError - 100;
+		long long timeLeft = context->frameTimestamp - now;// -context->averageSleepError - 100;
 		if (timeLeft < 0)
 			timeLeft = 0;
 
@@ -1521,14 +1522,14 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 			return;
 
 #ifndef NDEBUG
-		printf("IDN timing: Time now: %d, target: %d, left: %d, sleep err: %d\n", now, context->frameTimestamp, timeLeft, context->averageSleepError);
+		printf("IDN timing: Time now: %d, left: %d, sleep err: %d\n", now, timeLeft, context->averageSleepError);
 #endif
-		while (plt_getMonoTimeUS() < (context->frameTimestamp - 100))
+		while (plt_getMonoTimeUS() < (context->frameTimestamp))
 		{
 			auto then = std::chrono::steady_clock::now() + std::chrono::microseconds(10);
 			while (std::chrono::steady_clock::now() < then);
 		}
-		printf("Waited %d us\n", plt_getMonoTimeUS() - now);
+		//printf("Waited %d us\n", plt_getMonoTimeUS() - now);
 
 
 		uint64_t sleepError = (plt_getMonoTimeUS() - now) - timeLeft;
