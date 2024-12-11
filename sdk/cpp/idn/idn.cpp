@@ -535,7 +535,7 @@ int idnPushFrame(IDNCONTEXT* context)
 	{
 		if (ctx->frameReady)
 		{
-			printf("Switching frame\n");
+			//printf("Switching frame\n");
 			ctx->sendBufferPosition = ctx->queuedBufferPtr + 100;
 			ctx->bytesPerSample = ctx->queuedFrameBytesPerSample;
 			ctx->sampleCnt = ctx->queuedFrameSampleCnt;
@@ -543,7 +543,7 @@ int idnPushFrame(IDNCONTEXT* context)
 
 			uint8_t* tempPointer = ctx->bufferPtr;
 			ctx->bufferPtr = ctx->queuedBufferPtr;
-			ctx->queuedBufferPtr = ctx->bufferPtr;
+			ctx->queuedBufferPtr = tempPointer;
 			ctx->queuedBufferPosition = (uint8_t*)0;
 
 			ctx->frameReady = false;
@@ -556,7 +556,7 @@ int idnPushFrame(IDNCONTEXT* context)
 			return -1;
 		}
 	}
-	printf("Sending frame\n");
+	//printf("Sending frame\n");
 
 	if (ctx->scanSpeed == 0) { logError("[IDN] Invalid scan speed 0"); return -1; }
 	if (ctx->sampleCnt < 20) { logError("[IDN] Invalid sample count %u", ctx->sampleCnt); return -1; }
@@ -605,11 +605,14 @@ int idnPushFrame(IDNCONTEXT* context)
 	packetHeader->sequence = htons(ctx->sequence++); // Set IDN-Hello sequence number (used on UDP for lost packet tracking)
 
 	unsigned int headerSize = samples - (uint8_t*)packetHeader;
-	unsigned int samplesInPacket = (MAX_IDN_MESSAGE_LEN - headerSize) / ctx->bytesPerSample;
-	if (samplesInPacket > ctx->sampleCnt)
-		samplesInPacket = ctx->sampleCnt;
-	else if (ctx->sampleCnt - samplesInPacket < 20 && samplesInPacket > 40)
-		samplesInPacket -= 20;
+	unsigned int maxSamplesPerPacket = (MAX_IDN_MESSAGE_LEN - headerSize) / ctx->bytesPerSample;
+	unsigned int numPacketsNeeded = (ctx->sampleCnt / maxSamplesPerPacket) + 1;
+	unsigned int samplesInPacket = ctx->sampleCnt / numPacketsNeeded;
+	//unsigned int samplesInPacket = (MAX_IDN_MESSAGE_LEN - headerSize) / ctx->bytesPerSample;
+	//if (samplesInPacket > ctx->sampleCnt)
+	//	samplesInPacket = ctx->sampleCnt;
+	//else if (ctx->sampleCnt - samplesInPacket < 20 && samplesInPacket > 40)
+	//	samplesInPacket -= 20;
 	uint32_t duration = ((uint64_t)samplesInPacket * 1000000ull) / (uint64_t)ctx->scanSpeed;
 	unsigned int msgLength = headerSize + samplesInPacket * ctx->bytesPerSample;
 	if (!ctx->timestampIsOk)
@@ -624,10 +627,10 @@ int idnPushFrame(IDNCONTEXT* context)
 
 	sampleChunkHeader->flagsDuration = htonl((frameFlags << 24) | duration);
 
-	ctx->frameCnt++;
 	ctx->frameTimestamp += duration;
 	ctx->sampleCnt -= samplesInPacket;
 	ctx->sendBufferPosition += samplesInPacket * ctx->bytesPerSample;
+	ctx->frameCnt++;
 
 	// Send the packet
 	if (idnSend(ctx, packetHeader, msgLength) != 0)

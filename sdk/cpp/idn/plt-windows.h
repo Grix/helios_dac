@@ -103,9 +103,13 @@ inline static uint64_t plt_getMonoTimeUS(void)
     LARGE_INTEGER pctNow;
     QueryPerformanceCounter(&pctNow);
 
+    if (plt_monoCtrRef.QuadPart == 0)
+        plt_monoCtrRef = pctNow;
+
+    uint64_t delta = (uint64_t)(((pctNow.QuadPart - plt_monoCtrRef.QuadPart) * 1000000) / plt_monoCtrFreq.QuadPart);
+
     // Update internal time and system time reference
-    plt_monoTimeUS += (uint64_t)(((pctNow.QuadPart - plt_monoCtrRef.QuadPart) * 1000000) / plt_monoCtrFreq.QuadPart);
-    plt_monoCtrRef = pctNow;
+    plt_monoTimeUS = delta;
     //printf("now: %d\n", plt_monoTimeUS);
 
     return plt_monoTimeUS;

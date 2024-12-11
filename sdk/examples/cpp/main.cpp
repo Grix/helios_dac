@@ -9,7 +9,7 @@ int main(void)
 	// by interpolating long vectors including blanked sections, adding points at sharp corners, etc.
 	HeliosPointHighRes** frame = new HeliosPointHighRes*[30];
 	const int numPointsPerFrame = 2000;
-	const int pointsPerSecond = 40000;
+	const int pointsPerSecond = 100000;
 	int x = 0;
 	int y = 0;
 	for (int i = 0; i < 30; i++)

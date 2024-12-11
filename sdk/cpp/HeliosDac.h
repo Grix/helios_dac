@@ -380,6 +380,7 @@ private:
 		int firmwareVersion = 0;
 		char name[32];
 		bool closed = true;
+		bool useBusyWaiting = false;
 		//uint64_t statusReadyTime; // TODO can we remove this now that we use a simple buffer?
 		//uint32_t bufferTimeMs = 50;
 		//uint8_t* queuedFrameBuffer;

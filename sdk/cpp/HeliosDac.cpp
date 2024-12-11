@@ -1118,7 +1118,7 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 	closed = true;
 	context = _context;
 	std::lock_guard<std::mutex> lock(frameLock);
-	std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	plt_usleep(5);
 
 	for (int i = 0; i < 32; i++)
 		name[i] = 0;
@@ -1131,7 +1131,6 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 	context->bufferPtr = new uint8_t[IDN_BUFFER_SIZE];
 	context->queuedBufferPtr = new uint8_t[IDN_BUFFER_SIZE];
 	context->startTime = plt_getMonoTimeUS();
-	context->averageSleepError = 2000;
 
 #if defined(_WIN32) || defined(WIN32)
 
@@ -1223,7 +1222,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 			return HELIOS_ERROR_PPS_TOO_LOW;
 
 		unsigned int samplingFactor = 7 / pps + 1;
-		if (numOfPoints * samplingFactor > GetMaxFrameSize(XYRGB_SAMPLE_SIZE))
+		if (numOfPoints * samplingFactor > GetMaxFrameSize(XYRGBI_SAMPLE_SIZE))
 			return HELIOS_ERROR_PPS_TOO_LOW;
 
 		HeliosPoint* duplicatedPoints = new HeliosPoint[numOfPoints * samplingFactor];
@@ -1244,11 +1243,11 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 
 	// If pps is too high or frame size too high, subsample frames to simulate a lower pps/size rather than failing
 	unsigned int samplingFactor = 1;
-	if (pps > GetMaxSampleRate() || numOfPoints > GetMaxFrameSize(XYRGB_SAMPLE_SIZE))
+	if (pps > GetMaxSampleRate() || numOfPoints > GetMaxFrameSize(XYRGBI_SAMPLE_SIZE))
 	{
 		samplingFactor = pps / GetMaxSampleRate() + 1;
-		if ((numOfPoints / GetMaxFrameSize(XYRGB_SAMPLE_SIZE) + 1) > samplingFactor)
-			samplingFactor = numOfPoints / GetMaxFrameSize(XYRGB_SAMPLE_SIZE) + 1;
+		if ((numOfPoints / GetMaxFrameSize(XYRGBI_SAMPLE_SIZE) + 1) > samplingFactor)
+			samplingFactor = numOfPoints / GetMaxFrameSize(XYRGBI_SAMPLE_SIZE) + 1;
 
 		pps = pps / samplingFactor;
 		numOfPoints = numOfPoints / samplingFactor;
@@ -1469,9 +1468,15 @@ int HeliosDac::HeliosDacIdnDevice::GetStatus()
 
 	if (context->frameReady)// || (plt_getMonoTimeUS() < (statusReadyTime - bufferTimeMs * 1000)))
 	{
-		//auto then = std::chrono::steady_clock::now();
-		//while (std::chrono::steady_clock::now() - then < std::chrono::microseconds(50)); // Simulate a small delay to mimic behavior of USB device, for backwards compatibility
-		plt_usleep(50); // Simulate a small delay to mimic behavior of USB device, for backwards compatibility
+		 // Simulate a small delay to mimic behavior of USB device, for backwards compatibility
+		if (!useBusyWaiting)
+			plt_usleep(50);
+		else
+		{
+			auto then = std::chrono::steady_clock::now() + std::chrono::microseconds(50);
+			while (std::chrono::steady_clock::now() < then)
+				std::this_thread::yield();
+		}
 		return false;
 	}
 
@@ -1515,25 +1520,30 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 		if (timeLeft < 0)
 			timeLeft = 0;
 
-		//if (timeLeft > 500)
-		//plt_usleep(timeLeft);
-
-		if (closed)
-			return;
-
-#ifndef NDEBUG
-		printf("IDN timing: Time now: %d, left: %d, sleep err: %d\n", now, timeLeft, context->averageSleepError);
-#endif
-		while (plt_getMonoTimeUS() < (context->frameTimestamp))
+		if (!useBusyWaiting)
 		{
-			auto then = std::chrono::steady_clock::now() + std::chrono::microseconds(10);
-			while (std::chrono::steady_clock::now() < then);
+			if (timeLeft > 0)
+				plt_usleep(timeLeft);
 		}
-		//printf("Waited %d us\n", plt_getMonoTimeUS() - now);
+		else
+		{
+			while (plt_getMonoTimeUS() < context->frameTimestamp)
+			{
+				auto then = std::chrono::steady_clock::now() + std::chrono::microseconds(50);
+				while (std::chrono::steady_clock::now() < then)
+					std::this_thread::yield();
+			}
+		}
 
 
 		uint64_t sleepError = (plt_getMonoTimeUS() - now) - timeLeft;
 		context->averageSleepError = (context->averageSleepError * NUM_SLEEP_ERROR_SAMPLES + sleepError) / (NUM_SLEEP_ERROR_SAMPLES + 1);
+		//#ifndef NDEBUG
+				printf("IDN timing: Time now: %d, left: %d, sleep err: %d\n", now, timeLeft, context->averageSleepError);
+		//#endif
+
+		if (closed)
+			return;
 
 		DoFrame();
 
