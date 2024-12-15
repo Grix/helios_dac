@@ -9,7 +9,7 @@ int main(void)
 	// by interpolating long vectors including blanked sections, adding points at sharp corners, etc.
 	HeliosPointHighRes** frame = new HeliosPointHighRes*[30];
 	const int numPointsPerFrame = 2000;
-	const int pointsPerSecond = 100000;
+	const int pointsPerSecond = 50000;
 	int x = 0;
 	int y = 0;
 	for (int i = 0; i < 30; i++)
@@ -25,8 +25,8 @@ int main(void)
 
 			frame[i][j].x = x;
 			frame[i][j].y = y;
-			frame[i][j].r = (0xD0ff * j) / numPointsPerFrame;
-			frame[i][j].g = (0xFFff * j) / numPointsPerFrame;
+			frame[i][j].r = 0xD0ff;
+			frame[i][j].g = 0xFFff;
 			frame[i][j].b = 0xD0ff;
 			//frame[i][j].user1 = 0; // Use HeliosPointExt with WriteFrameExtended() if you need more channels
 			//frame[i][j].user2 = 10;
@@ -61,8 +61,14 @@ int main(void)
 	while (1)
 	{
 		i++;
-		if (i > 20000)
-			break;
+		if (i == 200)
+		{
+			for (int j = 0; j < numDevs; j++)
+			{
+				helios.Stop(j);
+			}
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+		}
 
 		// Send each frame to the DAC.
 		for (int j = 0; j < numDevs; j++)

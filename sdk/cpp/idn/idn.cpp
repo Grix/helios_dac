@@ -6,9 +6,6 @@
 #include <thread>
 
 
-
-//static uint8_t gbl_packetBuffer[0x10000];   // Work buffer
-
 // -------------------------------------------------------------------------------------------------
 //  Tools
 // -------------------------------------------------------------------------------------------------
@@ -62,11 +59,6 @@ static int idnSend(void* context, IDNHDR_PACKET* packetHdr, unsigned packetLen)
 {
 	IDNCONTEXT* ctx = (IDNCONTEXT*)context;
 
-	/*
-		printf("\n%u\n", (plt_getMonoTimeUS() - ctx->startTime) / 1000);
-		binDump(packetHdr, packetLen);
-	*/
-
 	if (sendto(ctx->fdSocket, (const char*)packetHdr, packetLen, 0, (struct sockaddr*)&ctx->serverSockAddr, sizeof(ctx->serverSockAddr)) < 0)
 	{
 		logError("sendto() failed (error: %d)", plt_sockGetLastError());
@@ -110,64 +102,7 @@ int idnOpenFrameXYRGBI(IDNCONTEXT* context, bool forceNewConfig)
 	if (ctx->frameReady)
 		return -1;
 
-	// IDN-Hello packet header. Note: Sequence number populated on push
-	/*IDNHDR_PACKET* packetHdr = (IDNHDR_PACKET*)ctx->bufferPtr;
-	packetHdr->command = IDNCMD_RT_CNLMSG;
-	packetHdr->flags = ctx->clientGroup;
-
-	// ---------------------------------------------------------------------------------------------
-
-	// IDN-Stream channel message header. Note: Remaining fields populated on push
-	IDNHDR_CHANNEL_MESSAGE* channelMsgHdr = (IDNHDR_CHANNEL_MESSAGE*)&packetHdr[1];
-	uint16_t contentID = IDNFLG_CONTENTID_CHANNELMSG;
-	contentID |= (((ctx->serviceId - 1) & 0x3F) << 8); // channel ID
-
-	// Insert channel config header every 250 ms
-	uint64_t now = plt_getMonoTimeUS();
-	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
-	if (!forceNewConfig)
-	{
-		if (ctx->bytesPerSample != XYRGBI_SAMPLE_SIZE)
-			forceNewConfig = true;
-	}
-	if (forceNewConfig || (ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
-	{
-		if (forceNewConfig)
-			ctx->serviceDataMatch++;
-
-		// IDN-Stream channel configuration header
-		IDNHDR_CHANNEL_CONFIG* channelConfigHdr = (IDNHDR_CHANNEL_CONFIG*)sampleChunkHdr;
-		channelConfigHdr->wordCount = 4;
-		channelConfigHdr->flags = IDNFLG_CHNCFG_ROUTING | (((ctx->serviceDataMatch & 1) | 2) << 4);
-		channelConfigHdr->serviceID = ctx->serviceId;
-		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_CONTINUOUS;
-
-		// Standard IDTF-to-IDN descriptors
-		uint16_t* descriptors = (uint16_t*)&channelConfigHdr[1];
-		descriptors[0] = htons(0x4200);     // X
-		descriptors[1] = htons(0x4010);     // 16 bit precision
-		descriptors[2] = htons(0x4210);     // Y
-		descriptors[3] = htons(0x4010);     // 16 bit precision
-		descriptors[4] = htons(0x527E);     // Red, 638 nm
-		descriptors[5] = htons(0x5214);     // Green, 532 nm
-		descriptors[6] = htons(0x51CC);     // Blue, 460 nm
-		descriptors[7] = htons(0x5C10);     // Intensity, legacy signal
-
-		// Move sample chunk start and set flag in contentID field
-		sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&descriptors[8];
-		contentID |= IDNFLG_CONTENTID_CONFIG_LSTFRG;
-
-		ctx->cfgTimestamp = now;
-	}
-	channelMsgHdr->contentID = htons(contentID);
-
-	// ---------------------------------------------------------------------------------------------
-
-	// Chunk data pointer setup
-	ctx->sampleChunkHdr = sampleChunkHdr;
-	ctx->payload = (uint8_t*)&sampleChunkHdr[1];
-	ctx->sampleCnt = 0;
-	ctx->bytesPerSample = XYRGBI_SAMPLE_SIZE;*/
+	ctx->closed = false;
 
 	ctx->queuedBufferPosition = ctx->queuedBufferPtr + 100;
 	ctx->queuedFrameSampleCnt = 0;
@@ -177,8 +112,6 @@ int idnOpenFrameXYRGBI(IDNCONTEXT* context, bool forceNewConfig)
 }
 
 
-
-
 int idnPutSampleXYRGBI(IDNCONTEXT* context, int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t i)
 {
 	IDNCONTEXT* ctx = context;
@@ -186,21 +119,6 @@ int idnPutSampleXYRGBI(IDNCONTEXT* context, int16_t x, int16_t y, uint8_t r, uin
 	// Sanity check
 	if (ctx->queuedBufferPosition == (uint8_t*)0)
 		return -1;
-
-	// Make sure there is enough buffer. Note: payload and bufferPtr are (uint8_t *) - and 
-	// pointer substraction is defined as the difference of (array) elements.
-	//unsigned lenUsed = (unsigned)(ctx->payload - ctx->bufferPtr);
-	//unsigned lenNeeded = lenUsed + (XYRGBI_SAMPLE_SIZE); // Not needed, buffer is inited large enough to handle max frame size
-
-
-	// Note: With IDN, the first two points and the last two points of a frame have special 
-	// meanings, The first point is the start point and shall be invisible (not part of the frame, 
-	// not taken into account with duration calculations) and is used to move the draw cursor 
-	// only. This is because a shape of n points has n-1 connecting segments (with associated time
-	// and color). The shape is closed when last point and first point are equal and the shape is
-	// continuous when first segment and last segment are continuous. Hidden lines or bends shall 
-	// be inserted on the fly in case of differing start point and end point or discontinuity.
-
 
 	// Get pointer to next sample
 	uint8_t* p = ctx->queuedBufferPosition;
@@ -256,63 +174,8 @@ int idnOpenFrameHighResXYRGB(IDNCONTEXT* context, bool forceNewConfig)
 	if (ctx->frameReady)
 		return -1;
 
-	// IDN-Hello packet header. Note: Sequence number populated on push
-	/*IDNHDR_PACKET* packetHdr = (IDNHDR_PACKET*)ctx->queuedBufferPtr + 100;
-	packetHdr->command = IDNCMD_RT_CNLMSG;
-	packetHdr->flags = ctx->clientGroup;
+	ctx->closed = false;
 
-	// ---------------------------------------------------------------------------------------------
-
-	// IDN-Stream channel message header. Note: Remaining fields populated on push
-	IDNHDR_CHANNEL_MESSAGE* channelMsgHdr = (IDNHDR_CHANNEL_MESSAGE*)&packetHdr[1];
-	uint16_t contentID = IDNFLG_CONTENTID_CHANNELMSG;
-	contentID |= (((ctx->serviceId - 1) & 0x3F) << 8); // channel ID
-
-	// Insert channel config header every 250 ms
-	unsigned now = plt_getMonoTimeUS();
-	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
-	if (!forceNewConfig)
-	{
-		if (ctx->queuedFrameBytesPerSample != XYRGB_HIGHRES_SAMPLE_SIZE)
-			forceNewConfig = true;
-	}
-	if (forceNewConfig || (ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
-	{
-		if (forceNewConfig)
-			ctx->serviceDataMatch++;
-
-		// IDN-Stream channel configuration header
-		IDNHDR_CHANNEL_CONFIG* channelConfigHdr = (IDNHDR_CHANNEL_CONFIG*)sampleChunkHdr;
-		channelConfigHdr->wordCount = 5;
-		channelConfigHdr->flags = IDNFLG_CHNCFG_ROUTING | (((ctx->serviceDataMatch & 1) | 2) << 4);
-		channelConfigHdr->serviceID = ctx->serviceId;
-		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_CONTINUOUS;
-
-		// Standard IDTF-to-IDN descriptors
-		uint16_t* descriptors = (uint16_t*)&channelConfigHdr[1];
-		descriptors[0] = htons(0x4200);     // X
-		descriptors[1] = htons(0x4010);     // 16 bit precision
-		descriptors[2] = htons(0x4210);     // Y
-		descriptors[3] = htons(0x4010);     // 16 bit precision
-		descriptors[4] = htons(0x527E);     // Red, 638 nm
-		descriptors[5] = htons(0x4010);     // 16 bit precision
-		descriptors[6] = htons(0x5214);     // Green, 532 nm
-		descriptors[7] = htons(0x4010);     // 16 bit precision
-		descriptors[8] = htons(0x51CC);     // Blue, 460 nm
-		descriptors[9] = htons(0x4010);     // 16 bit precision
-
-		// Move sample chunk start and set flag in contentID field
-		sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&descriptors[10];
-		contentID |= IDNFLG_CONTENTID_CONFIG_LSTFRG;
-
-		ctx->cfgTimestamp = now;
-	}
-	channelMsgHdr->contentID = htons(contentID);*/
-
-	// ---------------------------------------------------------------------------------------------
-
-	// Chunk data pointer setup
-	//ctx->queuedFrameSampleChunkHdr = sampleChunkHdr;
 	ctx->queuedBufferPosition = ctx->queuedBufferPtr + 100;
 	ctx->queuedFrameSampleCnt = 0;
 	ctx->queuedFrameBytesPerSample = XYRGB_HIGHRES_SAMPLE_SIZE;
@@ -327,11 +190,6 @@ int idnPutSampleHighResXYRGB(IDNCONTEXT* context, int16_t x, int16_t y, uint16_t
 	// Sanity check
 	if (ctx->queuedBufferPosition == (uint8_t*)0)
 		return -1;
-
-	// Make sure there is enough buffer. Note: payload and bufferPtr are (uint8_t *) - and 
-	// pointer substraction is defined as the difference of (array) elements.
-	//unsigned lenUsed = (unsigned)(ctx->payload - ctx->bufferPtr);
-	//unsigned lenNeeded = lenUsed + (XYRGB_HIGHRES_SAMPLE_SIZE);  // Not needed, buffer is inited large enough to handle max frame size
 
 	// Get pointer to next sample
 	uint8_t* p = ctx->queuedBufferPosition;
@@ -400,76 +258,7 @@ int idnOpenFrameExtended(IDNCONTEXT* context, bool forceNewConfig)
 	if (ctx->frameReady)
 		return -1;
 
-	// IDN-Hello packet header. Note: Sequence number populated on push
-	/*IDNHDR_PACKET* packetHdr = (IDNHDR_PACKET*)ctx->bufferPtr;
-	packetHdr->command = IDNCMD_RT_CNLMSG;
-	packetHdr->flags = ctx->clientGroup;
-
-	// ---------------------------------------------------------------------------------------------
-
-	// IDN-Stream channel message header. Note: Remaining fields populated on push
-	IDNHDR_CHANNEL_MESSAGE* channelMsgHdr = (IDNHDR_CHANNEL_MESSAGE*)&packetHdr[1];
-	uint16_t contentID = IDNFLG_CONTENTID_CHANNELMSG;
-	contentID |= (((ctx->serviceId - 1) & 0x3F) << 8); // channel ID
-
-	// Insert channel config header every 250 ms
-	uint64_t now = plt_getMonoTimeUS();
-	IDNHDR_SAMPLE_CHUNK* sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&channelMsgHdr[1];
-	if (!forceNewConfig)
-	{
-		if (ctx->bytesPerSample != EXTENDED_SAMPLE_SIZE)
-			forceNewConfig = true;
-	}
-	if (forceNewConfig || (ctx->frameCnt == 0) || ((now - ctx->cfgTimestamp) > 250000))
-	{
-		if (forceNewConfig)
-			ctx->serviceDataMatch++;
-
-		// IDN-Stream channel configuration header
-		IDNHDR_CHANNEL_CONFIG* channelConfigHdr = (IDNHDR_CHANNEL_CONFIG*)sampleChunkHdr;
-		channelConfigHdr->wordCount = 10;
-		channelConfigHdr->flags = IDNFLG_CHNCFG_ROUTING | (((ctx->serviceDataMatch & 1) | 2) << 4);
-		channelConfigHdr->serviceID = ctx->serviceId;
-		channelConfigHdr->serviceMode = IDNVAL_SMOD_LPGRF_CONTINUOUS;
-
-		// Standard IDTF-to-IDN descriptors
-		uint16_t* descriptors = (uint16_t*)&channelConfigHdr[1];
-		descriptors[0] = htons(0x4200);     // X
-		descriptors[1] = htons(0x4010);     // 16 bit precision
-		descriptors[2] = htons(0x4210);     // Y
-		descriptors[3] = htons(0x4010);     // 16 bit precision
-		descriptors[4] = htons(0x527E);     // Red, 638 nm
-		descriptors[5] = htons(0x4010);     // 16 bit precision
-		descriptors[6] = htons(0x5214);     // Green, 532 nm
-		descriptors[7] = htons(0x4010);     // 16 bit precision
-		descriptors[8] = htons(0x51CC);     // Blue, 460 nm
-		descriptors[9] = htons(0x4010);     // 16 bit precision
-		descriptors[10] = htons(0x5C10);     // Intensity, legacy signal
-		descriptors[11] = htons(0x4010);     // 16 bit precision
-		descriptors[12] = htons(0x51BD);     // User 1 (Here configured as deep blue)
-		descriptors[13] = htons(0x4010);     // 16 bit precision
-		descriptors[14] = htons(0x5241);     // User 2 (Here configured as yellow)
-		descriptors[15] = htons(0x4010);     // 16 bit precision
-		descriptors[16] = htons(0x51E8);     // User 3 (Here configured as cyan)
-		descriptors[17] = htons(0x4010);     // 16 bit precision
-		descriptors[18] = htons(0x4201);     // User 4 (Here configured as X-prime)
-		descriptors[19] = htons(0x4010);     // 16 bit precision
-
-		// Move sample chunk start and set flag in contentID field
-		sampleChunkHdr = (IDNHDR_SAMPLE_CHUNK*)&descriptors[20];
-		contentID |= IDNFLG_CONTENTID_CONFIG_LSTFRG;
-
-		ctx->cfgTimestamp = now;
-	}
-	channelMsgHdr->contentID = htons(contentID);
-
-	// ---------------------------------------------------------------------------------------------
-
-	// Chunk data pointer setup
-	ctx->sampleChunkHdr = sampleChunkHdr;
-	ctx->payload = (uint8_t*)&sampleChunkHdr[1];
-	ctx->sampleCnt = 0;
-	ctx->bytesPerSample = EXTENDED_SAMPLE_SIZE;*/
+	ctx->closed = false;
 
 	ctx->queuedBufferPosition = ctx->queuedBufferPtr + 100;
 	ctx->queuedFrameSampleCnt = 0;
@@ -485,11 +274,6 @@ int idnPutSampleExtended(IDNCONTEXT* context, int16_t x, int16_t y, uint16_t r, 
 	// Sanity check
 	if (ctx->queuedBufferPosition == (uint8_t*)0)
 		return -1;
-
-	// Make sure there is enough buffer. Note: payload and bufferPtr are (uint8_t *) - and 
-	// pointer substraction is defined as the difference of (array) elements.
-	//unsigned lenUsed = (unsigned)(ctx->payload - ctx->bufferPtr);
-	//unsigned lenNeeded = lenUsed + (EXTENDED_SAMPLE_SIZE);  // Not needed, buffer is inited large enough to handle max frame size
 
 	// Get pointer to next sample
 	uint8_t* p = ctx->queuedBufferPosition;
@@ -550,7 +334,7 @@ int idnPushFrame(IDNCONTEXT* context)
 		}
 		else
 		{
-			if (ctx->frameCnt != 0)
+			if (ctx->frameCnt != 0 && !ctx->closed)
 				logError("[IDN] Buffer underrun. Send frames faster, or make them bigger to get more leeway."); 
 			ctx->timestampIsOk = false;
 			return -1;
@@ -605,7 +389,7 @@ int idnPushFrame(IDNCONTEXT* context)
 	packetHeader->sequence = htons(ctx->sequence++); // Set IDN-Hello sequence number (used on UDP for lost packet tracking)
 
 	unsigned int headerSize = samples - (uint8_t*)packetHeader;
-	unsigned int maxSamplesPerPacket = (MAX_IDN_MESSAGE_LEN - headerSize) / ctx->bytesPerSample;
+	unsigned int maxSamplesPerPacket = ((MAX_IDN_MESSAGE_LEN * context->packetNumFragments) - headerSize) / ctx->bytesPerSample;
 	unsigned int numPacketsNeeded = (ctx->sampleCnt / maxSamplesPerPacket) + 1;
 	unsigned int samplesInPacket = ctx->sampleCnt / numPacketsNeeded;
 	//unsigned int samplesInPacket = (MAX_IDN_MESSAGE_LEN - headerSize) / ctx->bytesPerSample;
@@ -639,24 +423,6 @@ int idnPushFrame(IDNCONTEXT* context)
 		return -1;
 	}
 
-	/*if (sleepAllowed && ctx->sampleCnt > 0)
-	{
-		// This is not entirely accurate, as all sleep functions. 
-		// If you want lower jitter and thus latency, you can implement your own busy-waiting instead.
-		uint64_t now = plt_getMonoTimeUS();
-		long timeLeft = ctx->frameTimestamp - now - ctx->averageSleepError - 500;
-		//if (timeLeft > 500)
-		plt_usleep(timeLeft);
-
-		uint64_t sleepError = (plt_getMonoTimeUS() - now) - timeLeft;
-		ctx->averageSleepError = (ctx->averageSleepError * NUM_SLEEP_ERROR_SAMPLES + sleepError) / (NUM_SLEEP_ERROR_SAMPLES + 1);
-		//ctx->averageSleepError -= ctx->averageSleepError / NUM_SLEEP_ERROR_SAMPLES;
-		//ctx->averageSleepError += sleepError / NUM_SLEEP_ERROR_SAMPLES;
-		printf("Time now: %d, target: %d, left: %d, sleep err: %d\n", now, ctx->frameTimestamp, timeLeft, ctx->averageSleepError);
-		//while (std::chrono::steady_clock::now() - then < std::chrono::microseconds(timeLeft));
-		//printf("Waited %d us\n", plt_getMonoTimeUS() - now);
-	}*/
-
 	if (ctx->sampleCnt <= 0 || (ctx->sendBufferPosition + ctx->sampleCnt * ctx->bytesPerSample) > (ctx->bufferPtr + ctx->bufferLen))
 	{
 		ctx->sendBufferPosition = (uint8_t*)0; // Frame done. Invalidate payload - cause error in case of invalid call order
@@ -666,12 +432,12 @@ int idnPushFrame(IDNCONTEXT* context)
 }
 
 
-int idnSendVoid(IDNCONTEXT* context)
+/*int idnSendVoid(IDNCONTEXT* context)
 {
 	IDNCONTEXT* ctx = context;
 
 	// IDN-Hello packet header
-	/*IDNHDR_PACKET* packetHdr = (IDNHDR_PACKET*)ctx->bufferPtr + ctx->bufferLen - 200; // todo make dedicated buffer
+	IDNHDR_PACKET* packetHdr = (IDNHDR_PACKET*)ctx->bufferPtr + ctx->bufferLen - 200; // todo make dedicated buffer
 	packetHdr->command = IDNCMD_RT_CNLMSG;
 	packetHdr->flags = ctx->clientGroup;
 	packetHdr->sequence = htons(ctx->sequence++);
@@ -694,17 +460,19 @@ int idnSendVoid(IDNCONTEXT* context)
 	// Send the packet
 	if (idnSend(context, packetHdr, ctx->payload - (uint8_t*)packetHdr))
 		return -1;
-		*/
+		
 	return 0;
-}
+}*/
 
 
 int idnSendClose(IDNCONTEXT* context)
 {
 	IDNCONTEXT* ctx = context;
-	/*
+
+	ctx->closed = true;
+	
 	// Close the channel: IDN-Hello packet header
-	IDNHDR_PACKET* packetHdr = (IDNHDR_PACKET*)ctx->bufferPtr + ctx->bufferLen - 200;
+	IDNHDR_PACKET* packetHdr = (IDNHDR_PACKET*)ctx->controlBufferPtr;
 	packetHdr->command = IDNCMD_RT_CNLMSG;
 	packetHdr->flags = ctx->clientGroup;
 	packetHdr->sequence = htons(ctx->sequence++);
@@ -722,15 +490,14 @@ int idnSendClose(IDNCONTEXT* context)
 	channelConfigHdr->serviceID = ctx->serviceId;
 	channelConfigHdr->serviceMode = 0;
 
-	// Pointer to the end of the buffer for message length and packet length calculation
-	ctx->payload = (uint8_t*)&channelConfigHdr[1];
+	uint8_t* bufferEndPosition = (uint8_t*)&channelConfigHdr[1];
 
 	// Populate message header fields
-	channelMsgHdr->totalSize = htons((unsigned short)(ctx->payload - (uint8_t*)channelMsgHdr));
+	channelMsgHdr->totalSize = htons((unsigned short)(bufferEndPosition - (uint8_t*)channelMsgHdr));
 	channelMsgHdr->timestamp = htonl((uint32_t)plt_getMonoTimeUS());
 
 	// Send the packet
-	if (idnSend(context, packetHdr, ctx->payload - (uint8_t*)packetHdr))
+	if (idnSend(context, packetHdr, bufferEndPosition - (uint8_t*)packetHdr))
 		return -1;
 
 	// ---------------------------------------------------------------------------------------------
@@ -743,7 +510,7 @@ int idnSendClose(IDNCONTEXT* context)
 	// Send the packet (gracefully close session)
 	if (idnSend(context, packetHdr, sizeof(IDNHDR_PACKET)))
 		return -1;
-		*/
+		
 	return 0;
 }
 

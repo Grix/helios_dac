@@ -75,7 +75,7 @@ typedef struct
 //  Defines
 // -------------------------------------------------------------------------------------------------
 
-#define MAX_IDN_MESSAGE_LEN             (1454*1)      // IDN-Message maximum length (1454 is MTU limit to avoid fragmentation)
+#define MAX_IDN_MESSAGE_LEN             (1454)      // IDN-Message maximum length (1454 is MTU limit to avoid fragmentation)
 
 #define XYRGBI_SAMPLE_SIZE              8
 #define XYRGB_HIGHRES_SAMPLE_SIZE       10
@@ -99,6 +99,7 @@ typedef struct
 	unsigned int bufferLen;                 // Length of work buffer
 	uint8_t* bufferPtr;                     // Pointer to work buffer
 	uint8_t* queuedBufferPtr;               // Pointer to work buffer 2, acting as a double buffer
+	uint8_t* controlBufferPtr;				// Pointer to control buffer, for transactions other than frames
 
 	uint64_t startTime;                     // System time at stream start (log reference)
 	uint64_t frameCnt;                      // Number of sent frames
@@ -106,7 +107,8 @@ typedef struct
 	uint64_t frameTimestamp;                // Timestamp of the last frame
 	uint64_t cfgTimestamp;                  // Timestamp of the last channel configuration
 	uint8_t serviceDataMatch;				// SDM flag, change when new config is written
-	uint64_t averageSleepError;			    // Compensation for too long plt_usleep() timings
+	uint64_t averageSleepError;			    // Debug info, sleep function inaccuracy statistics
+	unsigned int packetNumFragments = 1;	// Multiple of MTU size to send UDP packets with. 
 
 	// Buffer related
 	uint8_t bytesPerSample;
@@ -127,6 +129,7 @@ typedef struct
 	//IDNHDR_SAMPLE_CHUNK* queuedFrameSampleChunkHdr;
 	bool frameReady;
 	bool timestampIsOk;
+	bool closed = true;
 
 	std::string name;
 	int serviceId;

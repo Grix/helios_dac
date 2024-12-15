@@ -121,9 +121,6 @@ inline static int plt_usleep(long usec)
     if (usec < 0)
         usec = 0;
 
-    LARGE_INTEGER then;
-    then.QuadPart = -static_cast<int64_t>(usec * 10);  // '-' using relative time
-
     HANDLE timer = CreateWaitableTimer(NULL, TRUE, NULL);
     if (timer == NULL)
     {
@@ -131,7 +128,9 @@ inline static int plt_usleep(long usec)
         return 0;
     }
 
-    SetWaitableTimer(timer, &then, 0, NULL, NULL, 0);
+    LARGE_INTEGER dueTime;
+    dueTime.QuadPart = (int64_t)(-usec * 10);  // '-' using relative time
+    SetWaitableTimer(timer, &dueTime, 0, NULL, NULL, 0);
     WaitForSingleObject(timer, INFINITE);
     CloseHandle(timer);
 

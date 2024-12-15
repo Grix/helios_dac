@@ -46,6 +46,9 @@ GetStatus() for timing purposes.
 #include <chrono>
 #include <algorithm>
 #include <queue>
+#ifdef WIN32
+#pragma comment(lib, "winmm.lib")
+#endif
 
 #define HELIOS_SDK_VERSION	11
 
@@ -381,21 +384,13 @@ private:
 		char name[32];
 		bool closed = true;
 		bool useBusyWaiting = false;
-		//uint64_t statusReadyTime; // TODO can we remove this now that we use a simple buffer?
-		//uint32_t bufferTimeMs = 50;
-		//uint8_t* queuedFrameBuffer;
-		//int queuedFrameType = 0; // 0 = HeliosPoint, 1 = HeliosPointHighRes, 2 = HeliosPointExt
-		//int queuedFrameNumPoints = 0;
-		//int queuedFramePps = 1;
-		//std::queue<std::unique_ptr<QueuedFrame>> frameQueue;
-		//int frameQueueDuration = 0;
 
 		bool firstFrame = true;
 		int managementSocket = -1;
 		sockaddr_in managementSocketAddr = { 0 };
-		//bool frameReady = false;
 		std::mutex frameLock;
 		int frameResult = -1;
+		long numLateWaits = 0;
 
 	};
 
