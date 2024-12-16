@@ -64,7 +64,13 @@ HELIOS_EXPORT int OpenDevices();
 // NB: To re-scan for newly connected DACs after this function has once been called before, you must first call CloseDevices()
 HELIOS_EXPORT int OpenDevicesOnlyUsb();
 
+// Initializes drivers, opens connection to only IDN/network devices (skips USB scan).
+// Returns number of available devices.
+// NB: To re-scan for newly connected DACs after this function has once been called before, you must first call CloseDevices()
+HELIOS_EXPORT int OpenDevicesOnlyNetwork();
+
 // Gets status from the specified dac.
+// You MUST poll this function until it returns true, before every call to WriteFrame*().
 // Return 1 if ready to receive new frame, 0 if not, negative number if communcation failed
 HELIOS_EXPORT int GetStatus(unsigned int dacNum);
 
@@ -73,6 +79,7 @@ HELIOS_EXPORT int GetStatus(unsigned int dacNum);
 // WriteFrameHighResolution() uses a higher resolution point structure supported by newer DAC models. If unsure, this one is recommended.
 // WriteFrameExtended() has additional optional channels and a higher resolution point structure supported by newer DAC models.
 // It is safe to call any of these functions even for DACs that don't support higher resolution data. In that case the data will automatically be converted (though at a slight performance cost).
+// You should make frames large enough to account for transfer overheads and timing jitter. Frames should be 10 milliseconds or longer on average, generally speaking.
 // dacNum: dac number (0 to n where n+1 is the return value from OpenDevices() )
 // pps: rate of output in points per second
 // flags: (default is 0)
@@ -115,6 +122,10 @@ HELIOS_EXPORT int Stop(unsigned int dacNum);
 // Closes connection to all dacs and frees resources
 // Should be called when library is no longer needed (program exit for example)
 HELIOS_EXPORT int CloseDevices();
+
+// Returns whether a specific DAC is a USB Helios DAC (as opposed to an IDN network DAC).
+// Returns 1 if yes, 0 if no, and a negative number on error.
+HELIOS_EXPORT int GetIsUsb(unsigned int dacNum);
 
 // Returns the firmware version number.
 // For Helios USB, the firmware version is just one simple integer, which is never higher than 255.

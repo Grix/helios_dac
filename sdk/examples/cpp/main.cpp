@@ -84,12 +84,13 @@ int main(void)
 			}
 			// In this loop, timing is handled by the GetStatus polling, which only returns 1 once there is room in the DAC to send the next frame.
 			// You need to call this function in time, to not let the buffers in the DAC underrun.
+			// You should also make frames large enough to account for transfer overheads and timing jitter. Frames should be 10 milliseconds or longer on average, generally speaking.
 
 			// Here we use the HELIOS_FLAGS_DONT_BLOCK flag in WriteFrame() because this test app can connect to several DACs from the single-threaded main function.
-			// But if your app is already handling each DAC in its own thread (like it probably should), you can remove that flag.
+			// But if your app is already handling each DAC in its own thread, you can remove that flag.
 
 			// We also use the HELIOS_FLAGS_SINGLE_MODE flag, because network (IDN) DACs always play the frame only once. Therefore, it is recommended to always 
-			// use this flag, and instead implement your own frame looping system if you need to repeat a frame.
+			// use this flag to make the behavior of USB and IDN devices the same, and instead implement your own frame looping system if you need to repeat a frame.
 		}
 	}
 

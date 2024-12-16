@@ -47,6 +47,25 @@ int OpenDevicesOnlyUsb()
 	return result;
 }
 
+
+
+int OpenDevicesOnlyNetwork()
+{
+	if (inited)
+		return dacController->OpenDevicesOnlyNetwork();
+
+	dacController = new HeliosDac();
+
+	int result = dacController->OpenDevicesOnlyNetwork();
+
+	if (result <= 0)
+		delete dacController;
+	else
+		inited = true;
+
+	return result;
+}
+
 int GetStatus(unsigned int dacNum)
 {
 	if (!inited)
@@ -111,12 +130,20 @@ int SetShutter(unsigned int dacNum, bool value)
 	return dacController->SetShutter(dacNum, value);
 }
 
+int GetIsUsb(unsigned int dacNum)
+{
+	if (!inited)
+		return HELIOS_ERROR_NOT_INITIALIZED;
+
+	return dacController->GetIsUsb(dacNum);
+}
+
 int GetSupportsHigherResolutions(unsigned int dacNum)
 {
 	if (!inited)
 		return HELIOS_ERROR_NOT_INITIALIZED;
 
-	return dacController->GetSupportsHigherResolutions(dacNum) ? 1 : 0;
+	return dacController->GetSupportsHigherResolutions(dacNum);
 }
 
 int GetFirmwareVersion(unsigned int dacNum)

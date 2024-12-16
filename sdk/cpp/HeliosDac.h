@@ -224,6 +224,7 @@ public:
 	// WriteFrameHighResolution() uses a higher resolution point structure supported by newer DAC models. If unsure, this one is recommended.
 	// WriteFrameExtended() has additional optional channels and a higher resolution point structure supported by newer DAC models.
 	// It is safe to call any of these functions even for DACs that don't support higher resolution data. In that case the data will automatically be converted (though at a slight performance cost).
+	// You should make frames large enough to account for transfer overheads and timing jitter. Frames should be 10 milliseconds or longer on average, generally speaking.
 	// devNum: dac number (0 to n where n+1 is the return value from OpenDevices() ).
 	// pps: rate of output in points per second.
 	// flags: (default is 0)
@@ -242,6 +243,7 @@ public:
 	int WriteFrameExtended(unsigned int devNum, unsigned int pps, unsigned int flags, HeliosPointExt* points, unsigned int numOfPoints);
 
 	// Gets status of DAC, 1 means DAC is ready to receive frame, 0 means it is not.
+	// You MUST poll this function until it returns true, before every call to WriteFrame*().
 	int GetStatus(unsigned int devNum);
 
 	// Gets name of DAC (populates name with at most 32 characters).
@@ -299,6 +301,7 @@ private:
 		virtual int GetName(char* name) = 0;
 		virtual int SetName(char* name) = 0;
 		virtual int GetSupportsHigherResolutions() = 0;
+		virtual int GetIsUsb() = 0;
 		virtual int SetShutter(bool level) = 0;
 		virtual int Stop() = 0;
 		virtual int EraseFirmware() = 0;
@@ -318,6 +321,7 @@ private:
 		int SendFrameExtended(unsigned int pps, std::uint8_t flags, HeliosPointExt* points, unsigned int numOfPoints);
 		int GetStatus();
 		int GetSupportsHigherResolutions() { return 0; } // TODO read capabilities from DAC
+		int GetIsUsb() { return 1; }
 		int GetFirmwareVersion();
 		int GetName(char* name);
 		int SetName(char* name);
@@ -364,6 +368,7 @@ private:
 		int SendFrameExtended(unsigned int pps, std::uint8_t flags, HeliosPointExt* points, unsigned int numOfPoints);
 		int GetStatus();
 		int GetSupportsHigherResolutions() { return 1; }
+		int GetIsUsb() { return 0; }
 		int GetFirmwareVersion();
 		int GetName(char* name);
 		int SetName(char* name);
@@ -393,6 +398,9 @@ private:
 		long numLateWaits = 0;
 
 	};
+
+	int _OpenUsbDevices();
+	int _OpenIdnDevices();
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;
 	std::mutex threadLock;

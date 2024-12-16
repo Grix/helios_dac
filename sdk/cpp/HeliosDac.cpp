@@ -35,6 +35,51 @@ int HeliosDac::OpenDevices()
 
 	// TODO: Make option to keep existing DACs in their current indexes, e.g only scan for changes. Currently this function only works after all DACs have been closed.
 
+	unsigned int numDevices = _OpenUsbDevices();
+
+	numDevices += _OpenIdnDevices();
+
+	if (numDevices > 0)
+		inited = true;
+
+	return numDevices;
+}
+
+
+int HeliosDac::OpenDevicesOnlyUsb()
+{
+	if (inited)
+		return (int)deviceList.size();
+
+	// TODO: Make option to keep existing DACs in their current indexes, e.g only scan for changes. Currently this function only works after all DACs have been closed.
+
+	unsigned int numDevices = _OpenUsbDevices();
+
+	if (numDevices > 0)
+		inited = true;
+
+	return numDevices;
+}
+
+
+int HeliosDac::OpenDevicesOnlyNetwork()
+{
+	if (inited)
+		return (int)deviceList.size();
+
+	// TODO: Make option to keep existing DACs in their current indexes, e.g only scan for changes. Currently this function only works after all DACs have been closed.
+
+	unsigned int numDevices = _OpenIdnDevices();
+
+	if (numDevices > 0)
+		inited = true;
+
+	return numDevices;
+}
+
+// Internal function
+int HeliosDac::_OpenUsbDevices()
+{
 	// Scanning for USB devices
 
 	int result = libusb_init(NULL);
@@ -47,8 +92,6 @@ int HeliosDac::OpenDevices()
 	ssize_t cnt = libusb_get_device_list(NULL, &devs);
 	if (cnt < 0)
 		return (int)cnt;
-
-	std::lock_guard<std::mutex> lock(threadLock);
 
 	unsigned int numDevices = 0;
 	for (int i = 0; i < cnt; i++)
@@ -82,16 +125,23 @@ int HeliosDac::OpenDevices()
 
 	libusb_free_device_list(devs, 1);
 
+	return numDevices;
+}
 
-	// Scanning IDN (Network) devices
+// Internal function
+int HeliosDac::_OpenIdnDevices()
+{
+	// Scanning for IDN (network) devices
+
+	unsigned int numDevices = 0;
 
 	plt_sockStartup();
 	idnInited = true;
 	std::vector<IDNCONTEXT*> idnContexts;
 
-#ifndef WIN32 
+#ifndef WIN32 // Unix
 
-	unsigned msTimeout = 500;
+	unsigned msTimeout = 600;
 	IDNSL_SERVER_INFO* firstServerInfo;
 	int rcGetList = getIDNServerList(&firstServerInfo, 0, msTimeout);
 	if (rcGetList != 0)
@@ -110,7 +160,16 @@ int HeliosDac::OpenDevices()
 					int contextId = 0;
 					for (; contextId < idnContexts.size(); contextId++) // Check for duplicate entries
 					{
-						if (idnContexts[contextId]->serverSockAddr.sin_addr.s_addr == serverInfo->addressTable[i].addr.s_addr) // todo: and name / unit id?
+						bool unitIdMismatch = false;
+						for (int j = 0; j < IDNSL_UNITID_LENGTH; j++)
+						{
+							if (serverInfo->unitID[j] != idnContexts[contextId]->unitId[j])
+							{
+								unitIdMismatch = true;
+								break;
+							}
+						}
+						if (idnContexts[contextId]->serverSockAddr.sin_addr.s_addr == serverInfo->addressTable[i].addr.s_addr || !unitIdMismatch)
 							found = true;
 					}
 					if (!found)
@@ -198,71 +257,6 @@ int HeliosDac::OpenDevices()
 		deviceList.push_back(std::make_unique<HeliosDacIdnDevice>(idnContext));
 		numDevices++;
 	}
-
-	if (numDevices > 0)
-		inited = true;
-
-	return numDevices;
-}
-
-
-int HeliosDac::OpenDevicesOnlyUsb()
-{
-	if (inited)
-		return (int)deviceList.size();
-
-	// TODO: Make option to keep existing DACs in their current indexes, e.g only scan for changes. Currently this function only works after all DACs have been closed.
-
-	// Scanning for USB devices
-
-	int result = libusb_init(NULL);
-	if (result < 0)
-		return result;
-
-	libusb_set_option(NULL, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL);
-
-	libusb_device** devs;
-	ssize_t cnt = libusb_get_device_list(NULL, &devs);
-	if (cnt < 0)
-		return (int)cnt;
-
-	std::lock_guard<std::mutex> lock(threadLock);
-
-	unsigned int numDevices = 0;
-	for (int i = 0; i < cnt; i++)
-	{
-		struct libusb_device_descriptor devDesc;
-		int result = libusb_get_device_descriptor(devs[i], &devDesc);
-		if (result < 0)
-			continue;
-
-		if ((devDesc.idProduct != HELIOS_PID) || (devDesc.idVendor != HELIOS_VID))
-			continue;
-
-		libusb_device_handle* devHandle;
-		result = libusb_open(devs[i], &devHandle);
-		if (result < 0)
-			continue;
-
-		result = libusb_claim_interface(devHandle, 0);
-		if (result < 0)
-			continue;
-
-		result = libusb_set_interface_alt_setting(devHandle, 0, 1);
-		if (result < 0)
-			continue;
-
-		//successfully opened, add to device list
-		deviceList.push_back(std::make_unique<HeliosDacUsbDevice>(devHandle));
-
-		numDevices++;
-	}
-
-	libusb_free_device_list(devs, 1);
-
-
-	if (numDevices > 0)
-		inited = true;
 
 	return numDevices;
 }
@@ -465,6 +459,23 @@ int HeliosDac::GetSupportsHigherResolutions(unsigned int devNum)
 		return HELIOS_ERROR_INVALID_DEVNUM;
 
 	return dev->GetSupportsHigherResolutions();
+}
+
+int HeliosDac::GetIsUsb(unsigned int devNum)
+{
+	if (!inited)
+		return HELIOS_ERROR_NOT_INITIALIZED;
+
+	std::unique_lock<std::mutex> lock(threadLock);
+	HeliosDacDevice* dev = NULL;
+	if (devNum < deviceList.size())
+		dev = deviceList[devNum].get();
+	lock.unlock();
+
+	if (dev == NULL)
+		return HELIOS_ERROR_INVALID_DEVNUM;
+
+	return dev->GetIsUsb();
 }
 
 int HeliosDac::SetLibusbDebugLogLevel(int logLevel)
@@ -927,7 +938,7 @@ int HeliosDac::HeliosDacUsbDevice::GetName(char* dacName)
 
 	std::lock_guard<std::mutex> lock(frameLock);
 
-	for (int i = 0; (i < 2); i++) //retry command if necessary
+	for (int i = 0; i < 2; i++) //retry command if necessary
 	{
 		int actualLength = 0;
 		std::uint8_t ctrlBuffer4[2] = { 0x05, 0 };
@@ -1037,7 +1048,7 @@ int HeliosDac::HeliosDacUsbDevice::Stop()
 	std::uint8_t txBuffer[2] = { 0x01, 0 };
 	if (SendControl(txBuffer, 2) == HELIOS_SUCCESS)
 	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		plt_usleep(100);
 		return HELIOS_SUCCESS;
 	}
 	else
@@ -1537,7 +1548,7 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 		#ifdef _DEBUG
 			uint64_t sleepError = (plt_getMonoTimeUS() - now) - timeLeft;
 			context->averageSleepError = (context->averageSleepError * NUM_SLEEP_ERROR_SAMPLES + sleepError) / (NUM_SLEEP_ERROR_SAMPLES + 1);
-			printf("IDN timing: Time now: %d, left: %d, sleep err: %d\n", now, timeLeft, context->averageSleepError);
+			//printf("IDN timing: Time now: %d, left: %d, sleep err: %d\n", now, timeLeft, context->averageSleepError);
 		#endif
 
 		if (closed)
