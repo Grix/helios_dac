@@ -87,6 +87,9 @@ GetStatus() for timing purposes.
 // WriteFrame() called with pps lower than minimum allowed.
 #define HELIOS_ERROR_PPS_TOO_LOW		-6
 
+// WriteFrame() called with too few points
+#define HELIOS_ERROR_FRAME_TOO_SMALL	-7
+
 // Errors from the HeliosDacDevice class begin at -1000:
 
 // Attempted to perform an operation on a closed DAC device.
@@ -133,6 +136,7 @@ GetStatus() for timing purposes.
 #define HELIOS_FLAGS_SINGLE_MODE		(1 << 1)
 
 // WriteFrame() should not block execution while the frame is transfered to the DAC, instead the transfer is processed a separate thread.
+// NB: This flag is not applicable on network (IDN) DACs, they always schedule transfers in a separate thread, since frames are split up internally.
 #define HELIOS_FLAGS_DONT_BLOCK			(1 << 2)
 
 // For network-enabled DACs, there is no status feedback, so GetStatus() could in theory return true immediately. This flag makes it so.
@@ -383,6 +387,7 @@ private:
 		unsigned int GetMaxSampleRate() { return HELIOS_MAX_PPS_IDN; }
 		unsigned int GetMinSampleRate() { return HELIOS_MIN_PPS_IDN; }
 		unsigned int GetMaxFrameSize(unsigned int bytesPerPoint) { return ((IDN_BUFFER_SIZE - 100) / bytesPerPoint); }
+		unsigned int GetMinFrameSize() { return 20; }
 
 		IDNCONTEXT* context;
 		int firmwareVersion = 0;

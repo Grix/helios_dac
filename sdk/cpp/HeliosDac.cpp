@@ -589,7 +589,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 		if (pps == 0)
 			return HELIOS_ERROR_PPS_TOO_LOW;
 
-		unsigned int samplingFactor = 7 / pps + 1;
+		unsigned int samplingFactor = GetMinSampleRate() / pps + 1;
 		if (numOfPoints * samplingFactor > GetMaxFrameSize())
 			return HELIOS_ERROR_PPS_TOO_LOW;
 
@@ -690,7 +690,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std
 		if (pps == 0)
 			return HELIOS_ERROR_PPS_TOO_LOW;
 
-		unsigned int samplingFactor = 7 / pps + 1;
+		unsigned int samplingFactor = GetMinSampleRate() / pps + 1;
 		if (numOfPoints * samplingFactor > GetMaxFrameSize())
 			return HELIOS_ERROR_PPS_TOO_LOW;
 
@@ -794,7 +794,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameExtended(unsigned int pps, std::uint
 		if (pps == 0)
 			return HELIOS_ERROR_PPS_TOO_LOW;
 
-		unsigned int samplingFactor = 7 / pps + 1;
+		unsigned int samplingFactor = GetMinSampleRate() / pps + 1;
 		if (numOfPoints * samplingFactor > GetMaxFrameSize())
 			return HELIOS_ERROR_PPS_TOO_LOW;
 
@@ -1225,16 +1225,21 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	if (pps == 0)
 		return HELIOS_ERROR_PPS_TOO_LOW;
 
-	// If pps is too low, try to duplicate frames to simulate a higher pps rather than failing
+	// If pps is too low or frame too small, try to duplicate points to simulate a larger, slower frame rather than failing
 	bool freePoints = false;
-	if (pps < GetMinSampleRate())
+	if (pps < GetMinSampleRate() || numOfPoints < GetMinFrameSize())
 	{
 		if (pps == 0)
 			return HELIOS_ERROR_PPS_TOO_LOW;
 
-		unsigned int samplingFactor = 7 / pps + 1;
+		unsigned int samplingFactor = GetMinSampleRate() / pps + 1;
+		if ((GetMinFrameSize() / numOfPoints + 1) > samplingFactor)
+			samplingFactor = GetMinFrameSize() / numOfPoints + 1;
+
 		if (numOfPoints * samplingFactor > GetMaxFrameSize(XYRGBI_SAMPLE_SIZE))
 			return HELIOS_ERROR_PPS_TOO_LOW;
+		else if (pps * samplingFactor > GetMaxSampleRate())
+			return HELIOS_ERROR_FRAME_TOO_SMALL;
 
 		HeliosPoint* duplicatedPoints = new HeliosPoint[numOfPoints * samplingFactor];
 		freePoints = true;
@@ -1313,16 +1318,21 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 	if (pps == 0)
 		return HELIOS_ERROR_PPS_TOO_LOW;
 
-	// If pps is too low, try to duplicate frames to simulate a higher pps rather than failing
+	// If pps is too low or frame too small, try to duplicate points to simulate a larger, slower frame rather than failing
 	bool freePoints = false;
-	if (pps < GetMinSampleRate())
+	if (pps < GetMinSampleRate() || numOfPoints < GetMinFrameSize())
 	{
 		if (pps == 0)
 			return HELIOS_ERROR_PPS_TOO_LOW;
 
-		unsigned int samplingFactor = 7 / pps + 1;
+		unsigned int samplingFactor = GetMinSampleRate() / pps + 1;
+		if ((GetMinFrameSize() / numOfPoints + 1) > samplingFactor)
+			samplingFactor = GetMinFrameSize() / numOfPoints + 1;
+
 		if (numOfPoints * samplingFactor > GetMaxFrameSize(XYRGB_HIGHRES_SAMPLE_SIZE))
 			return HELIOS_ERROR_PPS_TOO_LOW;
+		else if (pps * samplingFactor > GetMaxSampleRate())
+			return HELIOS_ERROR_FRAME_TOO_SMALL;
 
 		HeliosPointHighRes* duplicatedPoints = new HeliosPointHighRes[numOfPoints * samplingFactor];
 		freePoints = true;
@@ -1393,16 +1403,21 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 	if (pps == 0)
 		return HELIOS_ERROR_PPS_TOO_LOW;
 
-	// If pps is too low, try to duplicate frames to simulate a higher pps rather than failing
+	// If pps is too low or frame too small, try to duplicate points to simulate a larger, slower frame rather than failing
 	bool freePoints = false;
-	if (pps < GetMinSampleRate())
+	if (pps < GetMinSampleRate() || numOfPoints < GetMinFrameSize())
 	{
 		if (pps == 0)
 			return HELIOS_ERROR_PPS_TOO_LOW;
 
-		unsigned int samplingFactor = 7 / pps + 1;
+		unsigned int samplingFactor = GetMinSampleRate() / pps + 1;
+		if ((GetMinFrameSize() / numOfPoints + 1) > samplingFactor)
+			samplingFactor = GetMinFrameSize() / numOfPoints + 1;
+
 		if (numOfPoints * samplingFactor > GetMaxFrameSize(EXTENDED_SAMPLE_SIZE))
 			return HELIOS_ERROR_PPS_TOO_LOW;
+		else if (pps * samplingFactor > GetMaxSampleRate())
+			return HELIOS_ERROR_FRAME_TOO_SMALL;
 
 		HeliosPointExt* duplicatedPoints = new HeliosPointExt[numOfPoints * samplingFactor];
 		freePoints = true;
@@ -1515,7 +1530,7 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 			timeLeft = 0;
 			numLateWaits++;
 
-			if (numLateWaits > 10 && context->packetNumFragments < 4)
+			if (numLateWaits > 10 && context->packetNumFragments < 6)
 			{
 				context->packetNumFragments++; // Increase max UDP packet size to have better sleep time error margins.
 				printf("IDN - NB: Increased max UDP packet size multiplier to %d to increase sleep error margin.\n", context->packetNumFragments);
@@ -1545,14 +1560,14 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 			}
 		}
 
+		if (closed)
+			return;
+
 		#ifdef _DEBUG
 			uint64_t sleepError = (plt_getMonoTimeUS() - now) - timeLeft;
 			context->averageSleepError = (context->averageSleepError * NUM_SLEEP_ERROR_SAMPLES + sleepError) / (NUM_SLEEP_ERROR_SAMPLES + 1);
 			//printf("IDN timing: Time now: %d, left: %d, sleep err: %d\n", now, timeLeft, context->averageSleepError);
 		#endif
-
-		if (closed)
-			return;
 
 		DoFrame();
 	}

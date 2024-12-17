@@ -25,14 +25,14 @@ int main(void)
 
 			frame[i][j].x = x;
 			frame[i][j].y = y;
-			frame[i][j].r = 0xD0ff;
-			frame[i][j].g = 0xFFff;
-			frame[i][j].b = 0xD0ff;
+			frame[i][j].r = 0xD0FF;
+			frame[i][j].g = 0xFFFF;
+			frame[i][j].b = 0xD0FF;
 			//frame[i][j].user1 = 0; // Use HeliosPointExt with WriteFrameExtended() if you need more channels
 			//frame[i][j].user2 = 10;
 			//frame[i][j].user3 = 20;
 			//frame[i][j].user4 = 30;
-			//frame[i][j].i = 0xFF;
+			//frame[i][j].i = 0xFFFF;
 		}
 	}
 
@@ -61,13 +61,9 @@ int main(void)
 	while (1)
 	{
 		i++;
-		if (i == 200)
+		if (i > 2000)
 		{
-			for (int j = 0; j < numDevs; j++)
-			{
-				helios.Stop(j);
-			}
-			std::this_thread::sleep_for(std::chrono::seconds(1));
+			break;
 		}
 
 		// Send each frame to the DAC.
@@ -76,18 +72,24 @@ int main(void)
 			// Wait for ready status. You must call GetStatus() until it returns 1 before each and every WriteFrame*() call that you do.
 			for (unsigned int k = 0; k < 1024; k++)
 			{ 
-				if (helios.GetStatus(j) == 1)
+				int status = helios.GetStatus(j);
+				if (status == 1)
 				{
 					helios.WriteFrameHighResolution(j, pointsPerSecond, HELIOS_FLAGS_DEFAULT | HELIOS_FLAGS_DONT_BLOCK | HELIOS_FLAGS_SINGLE_MODE, frame[i % 30], numPointsPerFrame);
 					break;
 				}
+				else if (status < 0)
+				{
+					printf("Error when polling status for device #%d: %d\n", j, status);
+					break;
+				}
 			}
 			// In this loop, timing is handled by the GetStatus polling, which only returns 1 once there is room in the DAC to send the next frame.
-			// You need to call this function in time, to not let the buffers in the DAC underrun.
+			// You need to call WriteFrame*() in time (before the previously written frame finished playing), to not let the buffers in the DAC underrun.
 			// You should also make frames large enough to account for transfer overheads and timing jitter. Frames should be 10 milliseconds or longer on average, generally speaking.
 
-			// Here we use the HELIOS_FLAGS_DONT_BLOCK flag in WriteFrame() because this test app can connect to several DACs from the single-threaded main function.
-			// But if your app is already handling each DAC in its own thread, you can remove that flag.
+			// Here we use the HELIOS_FLAGS_DONT_BLOCK flag in WriteFrame() because this test app can connect to several DACs from the single-threaded main loop.
+			// But if your app is already handling each DAC in its own thread, like it probably should, you can remove that flag.
 
 			// We also use the HELIOS_FLAGS_SINGLE_MODE flag, because network (IDN) DACs always play the frame only once. Therefore, it is recommended to always 
 			// use this flag to make the behavior of USB and IDN devices the same, and instead implement your own frame looping system if you need to repeat a frame.
