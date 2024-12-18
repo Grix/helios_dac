@@ -61,7 +61,7 @@ static int idnSend(void* context, IDNHDR_PACKET* packetHdr, unsigned packetLen)
 
 	if (sendto(ctx->fdSocket, (const char*)packetHdr, packetLen, 0, (struct sockaddr*)&ctx->serverSockAddr, sizeof(ctx->serverSockAddr)) < 0)
 	{
-		logError("sendto() failed (error: %d)", plt_sockGetLastError());
+		logError("sendto() failed (error: %d)\n", plt_sockGetLastError());
 		return -1;
 	}
 

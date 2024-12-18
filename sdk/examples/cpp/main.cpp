@@ -5,8 +5,8 @@
 int main(void)
 {
 	// Assemble test frames
-	// This is a simple line moving upward in a loop, but for real graphics you should optimize the point stream for laser scanners 
-	// by interpolating long vectors including blanked sections, adding points at sharp corners, etc.
+	// This is a simple line moving upward in a loop, but for real graphics you should optimize the point stream for laser scanners by 
+	// interpolating long vectors including blanked sections, adding points at sharp corners, etc.
 	HeliosPointHighRes** frame = new HeliosPointHighRes*[30];
 	const int numPointsPerFrame = 2000;
 	const int pointsPerSecond = 50000;

@@ -1143,24 +1143,6 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 	context->controlBufferPtr = new uint8_t[200];
 	context->startTime = plt_getMonoTimeUS();
 
-#if defined(_WIN32) || defined(WIN32)
-
-#else
-	// Initialize time reference and initialize the current time randomly
-	extern struct timespec plt_monoRef;
-	extern uint32_t plt_monoTimeUS;
-#ifdef __APPLE__
-	if (mach_clock_gettime(SYSTEM_CLOCK, &plt_monoRef) < 0)
-#else
-	if (clock_gettime(CLOCK_MONOTONIC, &plt_monoRef) < 0)
-#endif
-	{
-		logError("clock_gettime(CLOCK_MONOTONIC) errno = %d", errno);
-		return;
-	}
-	plt_monoTimeUS = (uint32_t)((plt_monoRef.tv_sec * 1000000ul) + (plt_monoRef.tv_nsec / 1000));
-#endif
-
 	// Open UDP socket
 	context->fdSocket = plt_sockOpen(AF_INET, SOCK_DGRAM, 0);
 	if (context->fdSocket < 0)
@@ -1486,7 +1468,7 @@ int HeliosDac::HeliosDacIdnDevice::GetStatus()
 
 	if (context->frameReady)// || (plt_getMonoTimeUS() < (statusReadyTime - bufferTimeMs * 1000)))
 	{
-		 // Simulate a small delay to mimic behavior of USB device, for backwards compatibility
+		// Simulate a small delay to mimic behavior of USB device, for backwards compatibility
 		if (!useBusyWaiting)
 			plt_usleep(50);
 		else
@@ -1519,8 +1501,10 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 	while (!closed)
 	{
 		// This sleep timer is not entirely accurate, as any sleep function. 
-		// If you want lower jitter and thus latency, you can set useBusyWaiting to true, but this ravages the CPU time
+		// If you want lower jitter and thus latency, you can set useBusyWaiting to true, but this ravages the CPU usage
 		uint64_t now = plt_getMonoTimeUS();
+
+		std::lock_guard<std::mutex>lock(frameLock);
 
 		if (context->frameTimestamp == 0)
 			context->frameTimestamp = now;
@@ -1537,7 +1521,7 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 				printf("IDN - NB: Increased max UDP packet size multiplier to %d to increase sleep error margin.\n", context->packetNumFragments);
 				numLateWaits = -30;
 			}
-				
+
 		}
 		else
 		{
@@ -1562,15 +1546,31 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 		}
 
 		if (closed)
-			return;
+			break;
 
-		#ifdef _DEBUG
-			uint64_t sleepError = (plt_getMonoTimeUS() - now) - timeLeft;
-			context->averageSleepError = (context->averageSleepError * NUM_SLEEP_ERROR_SAMPLES + sleepError) / (NUM_SLEEP_ERROR_SAMPLES + 1);
-			//printf("IDN timing: Time now: %d, left: %d, sleep err: %d\n", now, timeLeft, context->averageSleepError);
-		#endif
+#ifdef _DEBUG
+		uint64_t sleepError = (plt_getMonoTimeUS() - now) - timeLeft;
+		context->averageSleepError = (context->averageSleepError * NUM_SLEEP_ERROR_SAMPLES + sleepError) / (NUM_SLEEP_ERROR_SAMPLES + 1);
+		printf("IDN timing: Time now: %d, left: %d, sleep err: %d\n", now, timeLeft, context->averageSleepError);
+#endif
 
 		DoFrame();
+	}
+
+	// Device has closed, free resources
+	if (context != NULL)
+	{
+		if (context->bufferPtr)
+			delete context->bufferPtr;
+
+		// Close socket
+		if (context->fdSocket >= 0)
+		{
+			plt_sockClose(context->fdSocket);
+		}
+
+		delete context;
+		context = NULL;
 	}
 }
 
@@ -1762,21 +1762,6 @@ HeliosDac::HeliosDacIdnDevice::~HeliosDacIdnDevice()
 
 	closed = true;
 	std::lock_guard<std::mutex>lock(frameLock); // Wait until all threads have closed
-
-	if (context != NULL)
-	{
-		if (context->bufferPtr)
-			delete context->bufferPtr;
-
-		// Close socket
-		if (context->fdSocket >= 0)
-		{
-			plt_sockClose(context->fdSocket);
-		}
-
-		delete context;
-		context = NULL;
-	}
 
 	if (managementSocket >= 0)
 	{
