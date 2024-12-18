@@ -1504,8 +1504,6 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 		// If you want lower jitter and thus latency, you can set useBusyWaiting to true, but this ravages the CPU usage
 		uint64_t now = plt_getMonoTimeUS();
 
-		std::lock_guard<std::mutex>lock(frameLock);
-
 		if (context->frameTimestamp == 0)
 			context->frameTimestamp = now;
 
@@ -1549,9 +1547,11 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 			break;
 
 #ifdef _DEBUG
+		static int debugMessageCount = 0;
 		uint64_t sleepError = (plt_getMonoTimeUS() - now) - timeLeft;
 		context->averageSleepError = (context->averageSleepError * NUM_SLEEP_ERROR_SAMPLES + sleepError) / (NUM_SLEEP_ERROR_SAMPLES + 1);
-		printf("IDN timing: Time now: %d, left: %d, sleep err: %d\n", now, timeLeft, context->averageSleepError);
+		if (debugMessageCount++ % 1000 == 0)
+			printf("IDN timing: Time now: %d, left: %d, sleep err: %d\n", now, timeLeft, context->averageSleepError);
 #endif
 
 		DoFrame();
