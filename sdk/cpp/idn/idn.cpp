@@ -335,7 +335,7 @@ int idnPushFrame(IDNCONTEXT* context)
 		else
 		{
 			if (ctx->frameCnt != 0 && !ctx->closed && ctx->timestampIsOk)
-				logError("[IDN] Buffer underrun. Send frames faster, or make them bigger to get more leeway."); 
+				logError("[IDN] Buffer underrun. Send frames faster, or make them bigger to get more leeway.\n"); 
 			ctx->timestampIsOk = false;
 			return -1;
 		}

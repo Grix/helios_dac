@@ -1511,7 +1511,8 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 		if (timeLeft <= 0 && !firstFrame)
 		{
 			timeLeft = 0;
-			numLateWaits++;
+			if (context->timestampIsOk)
+				numLateWaits++;
 
 			if (numLateWaits > 10 && context->packetNumFragments < 6)
 			{
@@ -1550,7 +1551,7 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 		static int debugMessageCount = 0;
 		uint64_t sleepError = (plt_getMonoTimeUS() - now) - timeLeft;
 		context->averageSleepError = (context->averageSleepError * NUM_SLEEP_ERROR_SAMPLES + sleepError) / (NUM_SLEEP_ERROR_SAMPLES + 1);
-		if (debugMessageCount++ % 1000 == 0)
+		if (!firstFrame && ((debugMessageCount++ % 1000) == 0))
 			printf("IDN timing: Time now: %d, left: %d, sleep err: %d\n", now, timeLeft, context->averageSleepError);
 #endif
 
