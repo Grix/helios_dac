@@ -236,6 +236,8 @@ int HeliosDac::_OpenIdnDevices()
 							ctx->serverSockAddr.sin_addr.s_addr = serverInfo->addressTable[i].addr.S_un.S_addr;
 							ctx->name = std::string(serverInfo->hostName).append(" - ").append(serverInfo->serviceTable[j].serviceName);
 							ctx->serviceId = serverInfo->serviceTable[j].serviceID;
+							ctx->closed = true;
+							ctx->packetNumFragments = 1;
 							memcpy(ctx->unitId, serverInfo->unitID, IDNSL_UNITID_LENGTH);
 
 							idnContexts.push_back(ctx);
@@ -1489,7 +1491,7 @@ int HeliosDac::HeliosDacIdnDevice::GetStatus()
 			plt_usleep(50);
 		else
 		{
-			auto then = std::chrono::steady_clock::now() + std::chrono::microseconds(50);
+			auto then = std::chrono::steady_clock::now() + std::chrono::microseconds(100);
 			while (std::chrono::steady_clock::now() < then)
 				std::this_thread::yield();
 		}
@@ -1512,7 +1514,6 @@ int HeliosDac::HeliosDacIdnDevice::DoFrame()
 }
 
 // Continually running thread, when a frame is ready, it is sent to the DAC
-// Only used if HELIOS_FLAGS_DONT_BLOCK is used with WriteFrame
 void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 {
 	while (!closed)
@@ -1524,7 +1525,7 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 		if (context->frameTimestamp == 0)
 			context->frameTimestamp = now;
 
-		long long timeLeft = context->frameTimestamp - now;// -context->averageSleepError - 100;
+		long timeLeft = context->frameTimestamp - now;
 		if (timeLeft <= 0 && !firstFrame)
 		{
 			timeLeft = 0;
@@ -1554,7 +1555,7 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 		{
 			while (plt_getMonoTimeUS() < context->frameTimestamp)
 			{
-				auto then = std::chrono::steady_clock::now() + std::chrono::microseconds(50);
+				auto then = std::chrono::steady_clock::now() + std::chrono::microseconds(100);
 				while (std::chrono::steady_clock::now() < then)
 					std::this_thread::yield();
 			}
