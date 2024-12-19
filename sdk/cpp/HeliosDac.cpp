@@ -39,6 +39,8 @@ int HeliosDac::OpenDevices()
 
 	numDevices += _OpenIdnDevices();
 
+	_SortDeviceList();
+
 	if (numDevices > 0)
 		inited = true;
 
@@ -55,6 +57,8 @@ int HeliosDac::OpenDevicesOnlyUsb()
 
 	unsigned int numDevices = _OpenUsbDevices();
 
+	_SortDeviceList();
+
 	if (numDevices > 0)
 		inited = true;
 
@@ -70,6 +74,8 @@ int HeliosDac::OpenDevicesOnlyNetwork()
 	// TODO: Make option to keep existing DACs in their current indexes, e.g only scan for changes. Currently this function only works after all DACs have been closed.
 
 	unsigned int numDevices = _OpenIdnDevices();
+
+	_SortDeviceList();
 
 	if (numDevices > 0)
 		inited = true;
@@ -261,6 +267,23 @@ int HeliosDac::_OpenIdnDevices()
 	}
 
 	return numDevices;
+}
+
+void HeliosDac::_SortDeviceList()
+{
+	int listSize = deviceList.size();
+	for (int i = 0; i < listSize - 1; i++) // Bubble sort
+	{
+		for (int j = 0; j < listSize - i - 1; j++)
+		{
+			char name1[32];
+			char name2[32];
+			deviceList[j]->GetName(name1);
+			deviceList[j + 1]->GetName(name2);
+			if (strcmp(name1, name2) > 0)
+				swap(deviceList[j], deviceList[j + 1]);
+		}
+	}
 }
 
 int HeliosDac::CloseDevices()
@@ -1179,12 +1202,12 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 	}
 
 #ifdef WIN32
-	DWORD ms = 1000;
+	DWORD ms = 700;
 	setsockopt(managementSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&ms, sizeof(ms));
 #else
 	struct timeval tv;
-	tv.tv_sec = 1;
-	tv.tv_usec = 0;
+	tv.tv_sec = 0;
+	tv.tv_usec = 700000;
 	setsockopt(managementSocket, SOL_SOCKET, SO_RCVTIMEO, (const void*)&tv, sizeof(tv));
 #endif
 
@@ -1529,9 +1552,13 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 				numLateWaits = -30;
 		}
 
+		if (context->closed)
+		{
+			plt_usleep(500);
+		}
 		if (!useBusyWaiting)
 		{
-			if (timeLeft > 0)
+			if (timeLeft > 0 || !context->timestampIsOk)
 				plt_usleep(timeLeft);
 		}
 		else
@@ -1558,21 +1585,8 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 		DoFrame();
 	}
 
-	// Device has closed, free resources
-	if (context != NULL)
-	{
-		if (context->bufferPtr)
-			delete context->bufferPtr;
 
-		// Close socket
-		if (context->fdSocket >= 0)
-		{
-			plt_sockClose(context->fdSocket);
-		}
-
-		delete context;
-		context = NULL;
-	}
+	finishedClosing = true;
 }
 
 
@@ -1759,10 +1773,32 @@ int HeliosDac::HeliosDacIdnDevice::EraseFirmware()
 
 HeliosDac::HeliosDacIdnDevice::~HeliosDacIdnDevice()
 {
-	Stop();
-
 	closed = true;
 	std::lock_guard<std::mutex>lock(frameLock); // Wait until all threads have closed
+	while (!finishedClosing)
+		plt_usleep(100);
+
+	Stop();
+
+	// Device has closed, free resources
+	if (context != NULL)
+	{
+		if (context->bufferPtr)
+			delete context->bufferPtr;
+		if (context->queuedBufferPtr)
+			delete context->queuedBufferPtr;
+		if (context->controlBufferPtr)
+			delete context->controlBufferPtr;
+
+		// Close socket
+		if (context->fdSocket >= 0)
+		{
+			plt_sockClose(context->fdSocket);
+		}
+
+		delete context;
+		context = NULL;
+	}
 
 	if (managementSocket >= 0)
 	{

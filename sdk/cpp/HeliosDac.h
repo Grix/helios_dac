@@ -394,6 +394,7 @@ private:
 		char name[32];
 		bool closed = true;
 		bool useBusyWaiting = false;
+		bool finishedClosing = false;
 
 		bool firstFrame = true;
 		int managementSocket = -1;
@@ -406,6 +407,7 @@ private:
 
 	int _OpenUsbDevices();
 	int _OpenIdnDevices();
+	void _SortDeviceList();
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;
 	std::mutex threadLock;
