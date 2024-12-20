@@ -8,7 +8,7 @@ int main(void)
 	// This is a simple line moving upward in a loop, but for real graphics you should optimize the point stream for laser scanners by 
 	// interpolating long vectors including blanked sections, adding points at sharp corners, etc.
 	HeliosPointHighRes** frame = new HeliosPointHighRes*[30];
-	const int numPointsPerFrame = 2000;
+	const int numPointsPerFrame = 1000;
 	const int pointsPerSecond = 50000;
 	int x = 0;
 	int y = 0;
@@ -61,10 +61,11 @@ int main(void)
 	while (1)
 	{
 		i++;
-		if (i > 2000)
+		if (i > 2000000)
 		{
 			break;
 		}
+
 
 		// Send each frame to the DAC.
 		for (int j = 0; j < numDevs; j++)

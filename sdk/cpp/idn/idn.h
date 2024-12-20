@@ -128,8 +128,7 @@ typedef struct
 	uint8_t* queuedBufferPosition;          // Pointer to the end of the buffer
 	//IDNHDR_SAMPLE_CHUNK* queuedFrameSampleChunkHdr;
 	bool frameReady;
-	bool timestampIsOk;
-	bool closed;
+	bool isStoppedOrTimeout;
 
 	std::string name;
 	int serviceId;

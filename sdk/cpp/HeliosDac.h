@@ -396,7 +396,6 @@ private:
 		bool useBusyWaiting = false;
 		bool finishedClosing = false;
 
-		bool firstFrame = true;
 		int managementSocket = -1;
 		sockaddr_in managementSocketAddr = { 0 };
 		std::mutex frameLock;

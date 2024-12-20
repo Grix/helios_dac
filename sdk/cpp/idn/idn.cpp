@@ -102,7 +102,8 @@ int idnOpenFrameXYRGBI(IDNCONTEXT* context, bool forceNewConfig)
 	if (ctx->frameReady)
 		return -1;
 
-	ctx->closed = false;
+	if (ctx->isStoppedOrTimeout)
+		ctx->frameTimestamp = plt_getMonoTimeUS();
 
 	ctx->queuedBufferPosition = ctx->queuedBufferPtr + 100;
 	ctx->queuedFrameSampleCnt = 0;
@@ -174,7 +175,8 @@ int idnOpenFrameHighResXYRGB(IDNCONTEXT* context, bool forceNewConfig)
 	if (ctx->frameReady)
 		return -1;
 
-	ctx->closed = false;
+	if (ctx->isStoppedOrTimeout)
+		ctx->frameTimestamp = plt_getMonoTimeUS();
 
 	ctx->queuedBufferPosition = ctx->queuedBufferPtr + 100;
 	ctx->queuedFrameSampleCnt = 0;
@@ -258,7 +260,8 @@ int idnOpenFrameExtended(IDNCONTEXT* context, bool forceNewConfig)
 	if (ctx->frameReady)
 		return -1;
 
-	ctx->closed = false;
+	if (ctx->isStoppedOrTimeout)
+		ctx->frameTimestamp = plt_getMonoTimeUS();
 
 	ctx->queuedBufferPosition = ctx->queuedBufferPtr + 100;
 	ctx->queuedFrameSampleCnt = 0;
@@ -314,12 +317,12 @@ int idnPushFrame(IDNCONTEXT* context)
 {
 	IDNCONTEXT* ctx = context;
 
-	// Sanity check
 	if (ctx->sendBufferPosition == (uint8_t*)0)
 	{
+		// No frame is currently playing
 		if (ctx->frameReady)
 		{
-			//printf("Switching frame\n");
+			// New frame queued, start playing it
 			ctx->sendBufferPosition = ctx->queuedBufferPtr + 100;
 			ctx->bytesPerSample = ctx->queuedFrameBytesPerSample;
 			ctx->sampleCnt = ctx->queuedFrameSampleCnt;
@@ -334,9 +337,13 @@ int idnPushFrame(IDNCONTEXT* context)
 		}
 		else
 		{
-			if (ctx->frameCnt != 0 && !ctx->closed && ctx->timestampIsOk)
-				logError("[IDN] Buffer underrun. Send frames faster, or make them bigger to get more leeway.\n"); 
-			ctx->timestampIsOk = false;
+			// No new frame in queue, underrun. Timeout if this persists for 200 us
+			if (!ctx->isStoppedOrTimeout && (plt_getMonoTimeUS() > (ctx->frameTimestamp + ((uint64_t)ctx->sampleCnt * 1000000ull) / (uint64_t)ctx->scanSpeed + 200)))
+			{
+				ctx->isStoppedOrTimeout = true;
+				logError("[IDN] Buffer underrun. Send frames faster, or make them bigger to get more leeway.\n");
+			}
+
 			return -1;
 		}
 	}
@@ -399,9 +406,6 @@ int idnPushFrame(IDNCONTEXT* context)
 	//	samplesInPacket -= 20;
 	uint32_t duration = ((uint64_t)samplesInPacket * 1000000ull) / (uint64_t)ctx->scanSpeed;
 	unsigned int msgLength = headerSize + samplesInPacket * ctx->bytesPerSample;
-	if (!ctx->timestampIsOk)
-		ctx->frameTimestamp = now;
-	ctx->timestampIsOk = true;
 
 	channelMessageHeader->totalSize = htons(msgLength - sizeof(IDNHDR_MESSAGE));
 	channelMessageHeader->contentID = htons(contentID | IDNVAL_CNKTYPE_LPGRF_WAVE);
@@ -469,8 +473,6 @@ int idnSendClose(IDNCONTEXT* context)
 {
 	IDNCONTEXT* ctx = context;
 
-	ctx->closed = true;
-	
 	// Close the channel: IDN-Hello packet header
 	IDNHDR_PACKET* packetHdr = (IDNHDR_PACKET*)ctx->controlBufferPtr;
 	packetHdr->command = IDNCMD_RT_CNLMSG;
