@@ -1538,7 +1538,8 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 		{
 			if (timeLeft == 0)
 			{
-				numLateWaits++;
+				if (context->sendBufferPosition != (uint8_t*)0)
+					numLateWaits++;
 
 				if (numLateWaits > 10 && context->packetNumFragments < 6)
 				{
