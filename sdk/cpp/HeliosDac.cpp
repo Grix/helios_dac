@@ -1518,13 +1518,11 @@ int HeliosDac::HeliosDacIdnDevice::DoFrame()
 	return HELIOS_SUCCESS;
 }
 
-// Continually running thread, when a frame is ready, it is sent to the DAC
+// Continually running thread. Waits for a new packet to be ready, then it is sent to the DAC at the correct time.
 void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 {
 	while (!closed)
 	{
-		// This sleep timer is not entirely accurate, as any sleep function. 
-		// If you want lower jitter and thus latency, you can set useBusyWaiting to true, but this ravages the CPU usage
 		uint64_t now = plt_getMonoTimeUS();
 
 		if (context->frameTimestamp == 0)
@@ -1564,7 +1562,10 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 		else if (!useBusyWaiting)
 		{
 			if (timeLeft > 0)
-				plt_usleep(timeLeft);
+				plt_usleep(timeLeft + (rand() % 500)); 
+			// We add a bit of artificial jitter to wait period. This makes certain IDN server implementations such as StageMate have a more lenient buffer duration.
+			// To get even better latency at the expense of stability, you can remove the added random part of the delay.
+			// Or if you want the absolute lowest jitter and thus latency possible, you can set useBusyWaiting to true, but this ravages the CPU usage.
 		}
 		else
 		{
@@ -1576,9 +1577,6 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 			}
 		}
 
-		if (closed)
-			break;
-
 		if (!context->isStoppedOrTimeout)
 		{
 			#ifdef _DEBUG
@@ -1588,9 +1586,12 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 			if ((debugMessageCount++ % 1000) == 0)
 				printf("IDN timing: Time now: %d, left: %d, sleep err: %d\n", now, timeLeft, context->averageSleepError);
 			#endif
-
-			DoFrame();
 		}
+
+		if (closed)
+			break;
+
+		DoFrame();
 	}
 
 
