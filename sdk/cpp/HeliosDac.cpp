@@ -1283,7 +1283,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 		return false;
 
 	context->queuedFrameScanSpeed = pps;
-	//context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
+	//context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0; // Applies to IDN frame mode, but not wave mode.
 
 	unsigned int loopLength = numOfPoints * samplingFactor;
 	for (unsigned int i = 0; i < loopLength; i += samplingFactor)
@@ -1299,15 +1299,6 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	context->isStoppedOrTimeout = false;
 
 	return HELIOS_SUCCESS;
-	/*if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
-	{
-		context->frameReady = true;
-		return HELIOS_SUCCESS;
-	}
-	else
-	{
-		return DoFrame();
-	}*/
 }
 
 // Queues up a raw frame buffer to be sent to the DAC. Modern high-res point format.
@@ -1376,7 +1367,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 		return false;
 
 	context->queuedFrameScanSpeed = pps;
-	//context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
+	//context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0; // Applies to IDN frame mode, but not wave mode.
 
 	unsigned int loopLength = numOfPoints * samplingFactor;
 	for (unsigned int i = 0; i < loopLength; i += samplingFactor)
@@ -1461,7 +1452,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 		return false;
 
 	context->queuedFrameScanSpeed = pps;
-	//context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0;
+	//context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0; // Applies to IDN frame mode, but not wave mode.
 
 	unsigned int loopLength = numOfPoints * samplingFactor;
 	for (unsigned int i = 0; i < loopLength; i += samplingFactor)
@@ -1577,16 +1568,16 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 			}
 		}
 
+#ifdef _DEBUG
 		if (!context->isStoppedOrTimeout)
 		{
-			#ifdef _DEBUG
 			static int debugMessageCount = 0;
 			uint64_t sleepError = (plt_getMonoTimeUS() - now) - timeLeft;
 			context->averageSleepError = (context->averageSleepError * NUM_SLEEP_ERROR_SAMPLES + sleepError) / (NUM_SLEEP_ERROR_SAMPLES + 1);
 			if ((debugMessageCount++ % 1000) == 0)
 				printf("IDN timing: Time now: %d, left: %d, sleep err: %d\n", now, timeLeft, context->averageSleepError);
-			#endif
 		}
+#endif
 
 		if (closed)
 			break;

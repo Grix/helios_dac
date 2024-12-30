@@ -76,7 +76,7 @@ int main(void)
 				int status = helios.GetStatus(j);
 				if (status == 1)
 				{
-					helios.WriteFrameHighResolution(j, pointsPerSecond, HELIOS_FLAGS_DEFAULT | HELIOS_FLAGS_DONT_BLOCK | HELIOS_FLAGS_SINGLE_MODE, frame[i % 30], numPointsPerFrame);
+					helios.WriteFrameHighResolution(j, pointsPerSecond, HELIOS_FLAGS_DEFAULT, frame[i % 30], numPointsPerFrame);
 					break;
 				}
 				else if (status < 0)
@@ -88,12 +88,6 @@ int main(void)
 			// In this loop, timing is handled by the GetStatus polling, which only returns 1 once there is room in the DAC to send the next frame.
 			// You need to call WriteFrame*() in time (before the previously written frame finished playing), to not let the buffers in the DAC underrun.
 			// You should also make frames large enough to account for transfer overheads and timing jitter. Frames should be 10 milliseconds or longer on average, generally speaking.
-
-			// Here we use the HELIOS_FLAGS_DONT_BLOCK flag in WriteFrame() because this test app can connect to several DACs from the single-threaded main loop.
-			// But if your app is already handling each DAC in its own thread, like it probably should, you can remove that flag.
-
-			// We also use the HELIOS_FLAGS_SINGLE_MODE flag, because network (IDN) DACs always play the frame only once. Therefore, it is recommended to always 
-			// use this flag to make the behavior of USB and IDN devices the same, and instead implement your own frame looping system if you need to repeat a frame.
 		}
 	}
 
