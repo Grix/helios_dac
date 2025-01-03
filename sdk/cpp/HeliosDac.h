@@ -217,7 +217,7 @@ public:
 	// WriteFrameExtended() has additional optional channels and a higher resolution point structure supported by newer DAC models.
 	// 
 	// It is safe to call any of these functions even for DACs that don't support higher resolution data. In that case the data will automatically be converted (though at a slight performance cost).
-	// NB: You should make frames large enough to account for transfer overheads and timing jitter. Frames should be 10 milliseconds or longer on average, generally speaking.
+	// NB: You should make frames large enough to account for transfer overheads and timing jitter. Recommended to have frames last 10 milliseconds or longer on average, generally speaking.
 	// 
 	// devNum: dac number (0 to n where n+1 is the return value from OpenDevices() ).
 	// pps: rate of output in points per second.
@@ -257,7 +257,7 @@ public:
 	// Returns firmware version of DAC.
 	// For Helios USB, the firmware version is just one simple integer, which is never higher than 255.
 	// For Helios IDN DACs, the firmware version is an integer in this format: AABBCC, which corresponds to vAA.BB.CC. For example 10002 would be v1.0.2.
-	// For non-Helios IDN DACs, this function may not work, as firmware version getting is not a part of the IDN spec. In that case, the function may block for a second and then return a negative number.
+	// For non-Helios IDN DACs, this function may not work, as firmware version getting is not a part of the IDN spec. In that case, the function may block for around 0.5s and then return a negative number.
 	int GetFirmwareVersion(unsigned int devNum);
 
 	// Returns whether a specific DAC supports the higher resolutions color/postion data of new WriteFrameHighResolution() and WriteFrameExtended() functions. 
