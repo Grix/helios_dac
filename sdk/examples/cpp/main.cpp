@@ -1,34 +1,37 @@
-//Example program scanning a line from top to bottom on the Helios
+// Example program scanning a line from top to bottom on the Helios
 
 #include "../../cpp/HeliosDac.h"
 
 int main(void)
 {
-	//make frames
-	//this is a simple scanning line, but for real graphics you should optimize with evenly spaced points, added points in sharp corners, inserting blanking lines, etc.
+	// Assemble test frames
+	// This is a simple line moving upward in a loop, but for real graphics you should optimize the point stream for laser scanners by 
+	// interpolating long vectors including blanked sections, adding points at sharp corners, etc.
 	HeliosPointHighRes** frame = new HeliosPointHighRes*[30];
+	const int numPointsPerFrame = 1000;
+	const int pointsPerSecond = 50000;
 	int x = 0;
 	int y = 0;
 	for (int i = 0; i < 30; i++)
 	{
-		frame[i] = new HeliosPointHighRes[1000];
+		frame[i] = new HeliosPointHighRes[numPointsPerFrame];
 		y = i * 0xFFFF / 30;
-		for (int j = 0; j < 1000; j++)
+		for (int j = 0; j < numPointsPerFrame; j++)
 		{
-			if (j < 500)
-				x = j * 0xFFFF / 500;
+			if (j < (numPointsPerFrame/2))
+				x = j * 0xFFFF / (numPointsPerFrame/2);
 			else
-				x = 0xFFFF - ((j - 500) * 0xFFFF / 500);
+				x = 0xFFFF - ((j - (numPointsPerFrame / 2)) * 0xFFFF / (numPointsPerFrame / 2));
 
 			frame[i][j].x = x;
 			frame[i][j].y = y;
-			frame[i][j].r = 0xD000;
+			frame[i][j].r = 0xD0FF;
 			frame[i][j].g = 0xFFFF;
-			frame[i][j].b = 0xD000;
+			frame[i][j].b = 0xD0FF;
 			//frame[i][j].user1 = 0; // Use HeliosPointExt with WriteFrameExtended() if you need more channels
-			//frame[i][j].user2 = 0;
-			//frame[i][j].user3 = 0;
-			//frame[i][j].user4 = 0;
+			//frame[i][j].user2 = 10;
+			//frame[i][j].user3 = 20;
+			//frame[i][j].user4 = 30;
 			//frame[i][j].i = 0xFFFF;
 		}
 	}
@@ -58,19 +61,33 @@ int main(void)
 	while (1)
 	{
 		i++;
-		if (i > 150)
+		if (i > 2000000)
+		{
 			break;
+		}
 
+
+		// Send each frame to the DAC.
 		for (int j = 0; j < numDevs; j++)
 		{
 			// Wait for ready status. You must call GetStatus() until it returns 1 before each and every WriteFrame*() call that you do.
-			for (unsigned int k = 0; k < 512; k++)
-			{
-				if (helios.GetStatus(j) == 1)
+			for (unsigned int k = 0; k < 1024; k++)
+			{ 
+				int status = helios.GetStatus(j);
+				if (status == 1)
+				{
+					helios.WriteFrameHighResolution(j, pointsPerSecond, HELIOS_FLAGS_DEFAULT, frame[i % 30], numPointsPerFrame);
 					break;
+				}
+				else if (status < 0)
+				{
+					printf("Error when polling status for device #%d: %d\n", j, status);
+					break;
+				}
 			}
-			// Send the next frame to the DAC.
-			helios.WriteFrameHighResolution(j, 40000, HELIOS_FLAGS_DEFAULT, frame[i % 30], 1000);
+			// In this loop, timing is handled by the GetStatus polling, which only returns 1 once there is room in the DAC to send the next frame.
+			// You need to call WriteFrame*() in time (before the previously written frame finished playing), to not let the buffers in the DAC underrun.
+			// You should also make frames large enough to account for transfer overheads and timing jitter. Frames should be 10 milliseconds or longer on average, generally speaking.
 		}
 	}
 

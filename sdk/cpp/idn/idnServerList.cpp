@@ -234,7 +234,7 @@ static void createInterfaceNode(void* callbackArg, const char* ifName, uint32_t 
         // Allow broadcast on socket
         if (plt_sockSetBroadcast(ifNode->fdSocket) < 0)
         {
-            logError("setsockopt(broadcast) failed (error: %d) (not necessarily a problem, but one of the network interfaces is not usable)", plt_sockGetLastError());
+            logError("setsockopt(broadcast) failed (error: %d) when scanning IDN DACs (not necessarily a problem, but one of the network interfaces is not usable)", plt_sockGetLastError());
             break;
         }
 
@@ -247,7 +247,7 @@ static void createInterfaceNode(void* callbackArg, const char* ifName, uint32_t 
 
         if (bind(ifNode->fdSocket, (struct sockaddr*)&bindSockAddr, sizeof(bindSockAddr)) < 0)
         {
-            logError("bind() failed (error: %d) (not necessarily a problem, but one of the network interfaces is not usable)", plt_sockGetLastError());
+            logError("bind() failed (error: %d) when scanning IDN DACs (not necessarily a problem, but one of the network interfaces is not usable)", plt_sockGetLastError());
             break;
         }
 
@@ -1026,13 +1026,13 @@ static int runScan(SCAN_CONTEXT* scanCtx, unsigned msTimeout)
     if (scanCtx->infoRequestQueue.fdSocket > maxSocket) maxSocket = scanCtx->infoRequestQueue.fdSocket;
 
     // Remember start time
-    uint32_t usStart = plt_getMonoTimeUS();
+    uint64_t usStart = plt_getMonoTimeUS();
 
     // Send requests, receive replies
     while (1)
     {
         // Calculate time left
-        uint32_t usNow = plt_getMonoTimeUS();
+        uint64_t usNow = plt_getMonoTimeUS();
         uint32_t usElapsed = usNow - usStart;
         uint32_t usLeft = (msTimeout * 1000) - usElapsed;
         if ((int32_t)usLeft <= 0) 

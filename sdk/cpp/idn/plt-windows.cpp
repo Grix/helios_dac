@@ -41,5 +41,5 @@
 
 int plt_monoValid = 0;
 LARGE_INTEGER plt_monoCtrFreq;
-LARGE_INTEGER plt_monoCtrRef;
-uint32_t plt_monoTimeUS = 0;
+LARGE_INTEGER plt_monoCtrRef = { 0 };
+uint64_t plt_monoTimeUS = 0;

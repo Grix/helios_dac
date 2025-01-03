@@ -38,4 +38,4 @@
 
 int plt_monoValid = 0;
 struct timespec plt_monoRef = { 0 };
-uint32_t plt_monoTimeUS = 0;
+uint64_t plt_monoTimeUS = 0;
