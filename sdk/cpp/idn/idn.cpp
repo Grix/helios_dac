@@ -338,7 +338,7 @@ int idnPushFrame(IDNCONTEXT* context)
 		else
 		{
 			// No new frame in queue, underrun. Timeout if this persists for 100+ ms
-			if (!ctx->isStoppedOrTimeout && (plt_getMonoTimeUS() > (ctx->frameTimestamp + ((uint64_t)ctx->sampleCnt * 1000000ull) / (uint64_t)ctx->scanSpeed + 100000)))
+			if (!ctx->isStoppedOrTimeout && ctx->scanSpeed > 0 && (plt_getMonoTimeUS() > (ctx->frameTimestamp + ((uint64_t)ctx->sampleCnt * 1000000ull) / (uint64_t)ctx->scanSpeed + 100000)))
 			{
 				ctx->isStoppedOrTimeout = true;
 				logError("[IDN] Buffer underrun. Send frames faster, or make them bigger to get more leeway.\n");
