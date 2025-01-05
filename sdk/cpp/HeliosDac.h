@@ -387,7 +387,7 @@ private:
 		bool finishedClosing = false;
 
 		int managementSocket = -1;
-		sockaddr_in managementSocketAddr = { 0 };
+		sockaddr_in managementSocketAddr = { 0, 0, 0, 0 };
 		std::mutex frameLock;
 		int frameResult = -1;
 		long numLateWaits = 0;

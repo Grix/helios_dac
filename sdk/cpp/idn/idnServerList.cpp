@@ -240,7 +240,7 @@ static void createInterfaceNode(void* callbackArg, const char* ifName, uint32_t 
 
         // Bind to local interface (any! port)
         // Note: This bind is needed to send the broadcast on the specific (virtual) interface,
-        struct sockaddr_in bindSockAddr = { 0 };
+        struct sockaddr_in bindSockAddr = { 0, 0, 0, 0 };
         bindSockAddr.sin_family = AF_INET;
         bindSockAddr.sin_port = 0;
         bindSockAddr.sin_addr.s_addr = ifIP4Addr;

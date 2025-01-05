@@ -30,7 +30,7 @@ Unless otherwise specified, functions return a negative error code on failure.
 
 #pragma once
 
-#include "..\HeliosDac.h"
+#include "../HeliosDac.h"
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 	#define HELIOS_EXPORT extern "C" __declspec (dllexport)

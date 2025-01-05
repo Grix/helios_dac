@@ -139,9 +139,6 @@ typedef struct
 
 void logError(const char* fmt, ...);
 void logInfo(const char* fmt, ...);
-static char int2Hex(unsigned i);
-//void binDump(void* buffer, unsigned length);
-static int idnSend(void* context, IDNHDR_PACKET* packetHdr, unsigned packetLen);
 int idnOpenFrameGeneric(IDNCONTEXT* context, uint16_t* channelDescriptors, size_t numChannelDescriptors, bool forceNewConfig);
 int idnPutSampleGeneric(IDNCONTEXT* context, int8_t* sampleBuffer, size_t sampleBufferSize);
 int idnOpenFrameXYRGB(IDNCONTEXT* context, bool forceNewConfig);

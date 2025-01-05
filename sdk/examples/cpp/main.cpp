@@ -9,7 +9,7 @@ int main(void)
 	// interpolating long vectors including blanked sections, adding points at sharp corners, etc.
 	HeliosPointHighRes** frame = new HeliosPointHighRes*[30];
 	const int numPointsPerFrame = 1000;
-	const int pointsPerSecond = 50000;
+	const int pointsPerSecond = 30000;
 	int x = 0;
 	int y = 0;
 	for (int i = 0; i < 30; i++)
@@ -51,9 +51,9 @@ int main(void)
 	{
 		char name[32];
 		if (helios.GetName(j, name) == HELIOS_SUCCESS)
-			printf("- %s\n", name);
+			printf("- %s: USB?: %d, FW %d\n", name, helios.GetIsUsb(j), helios.GetFirmwareVersion(j));
 		else
-			printf("- (unknown dac)\n");
+			printf("- (unknown dac): USB?: %d, FW %d\n", helios.GetIsUsb(j), helios.GetFirmwareVersion(j));
 	}
 	printf("Outputting animation...\n");
 
@@ -61,7 +61,7 @@ int main(void)
 	while (1)
 	{
 		i++;
-		if (i > 2000000)
+		if (i > 200)
 		{
 			break;
 		}

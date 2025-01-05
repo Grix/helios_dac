@@ -163,7 +163,7 @@ int HeliosDac::_OpenIdnDevices()
 				if (serverInfo->addressTable[i].errorFlags == 0 && idnContexts.size() < 999)
 				{
 					bool found = false;
-					int contextId = 0;
+					long unsigned int contextId = 0;
 					for (; contextId < idnContexts.size(); contextId++) // Check for duplicate entries
 					{
 						bool unitIdMismatch = false;
@@ -182,7 +182,7 @@ int HeliosDac::_OpenIdnDevices()
 					{
 						for (unsigned int j = 0; j < serverInfo->serviceCount && idnContexts.size() < 999; j++)
 						{
-							IDNCONTEXT* ctx = new IDNCONTEXT{ 0 };
+							IDNCONTEXT* ctx = new IDNCONTEXT {};
 							ctx->serverSockAddr.sin_family = AF_INET;
 							ctx->serverSockAddr.sin_port = htons(IDN_PORT);
 							ctx->serverSockAddr.sin_addr.s_addr = serverInfo->addressTable[i].addr.s_addr;
@@ -236,7 +236,7 @@ int HeliosDac::_OpenIdnDevices()
 					{
 						for (unsigned int j = 0; j < serverInfo->serviceCount && idnContexts.size() < 999; j++)
 						{
-							IDNCONTEXT* context = new IDNCONTEXT{ 0 };
+							IDNCONTEXT* context = new IDNCONTEXT {};
 							context->serverSockAddr.sin_family = AF_INET;
 							context->serverSockAddr.sin_port = htons(IDN_PORT);
 							context->serverSockAddr.sin_addr.s_addr = serverInfo->addressTable[i].addr.S_un.S_addr;
@@ -259,7 +259,7 @@ int HeliosDac::_OpenIdnDevices()
 
 #endif
 
-	for (int i = 0; i < idnContexts.size(); i++)
+	for (long unsigned int i = 0; i < idnContexts.size(); i++)
 	{
 		IDNCONTEXT* idnContext = idnContexts[i];
 		deviceList.push_back(std::make_unique<HeliosDacIdnDevice>(idnContext));
@@ -645,8 +645,12 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 		pps = pps / samplingFactor;
 		numOfPoints = numOfPoints / samplingFactor;
 
-		if (pps < GetMinSampleRate())
+		if (pps < GetMinSampleRate()) 
+		{
+			if (freePoints)
+				delete[] points;
 			return HELIOS_ERROR_TOO_MANY_POINTS;
+		}
 	}
 
 	// This is a bug workaround, the mcu won't correctly receive transfers with these sizes
@@ -682,7 +686,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	frameBufferSize = bufPos;
 
 	if (freePoints)
-		delete points;
+		delete[] points;
 
 	if (!shutterIsOpen)
 		SetShutter(1);
@@ -746,8 +750,12 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std
 		pps = pps / samplingFactor;
 		numOfPoints = numOfPoints / samplingFactor;
 
-		if (pps < GetMinSampleRate())
+		if (pps < GetMinSampleRate()) 
+		{
+			if (freePoints)
+				delete[] points;
 			return HELIOS_ERROR_TOO_MANY_POINTS;
+		}
 	}
 
 
@@ -787,7 +795,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std
 	frameBufferSize = bufPos;
 
 	if (freePoints)
-		delete points;
+		delete[] points;
 
 	if (!shutterIsOpen)
 		SetShutter(1);
@@ -850,8 +858,12 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameExtended(unsigned int pps, std::uint
 		pps = pps / samplingFactor;
 		numOfPoints = numOfPoints / samplingFactor;
 
-		if (pps < GetMinSampleRate())
+		if (pps < GetMinSampleRate()) 
+		{
+			if (freePoints)
+				delete[] points;
 			return HELIOS_ERROR_TOO_MANY_POINTS;
+		}
 	}
 
 
@@ -891,7 +903,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameExtended(unsigned int pps, std::uint
 	frameBufferSize = bufPos;
 
 	if (freePoints)
-		delete points;
+		delete[] points;
 
 	if (!shutterIsOpen)
 		SetShutter(1);
@@ -970,15 +982,15 @@ int HeliosDac::HeliosDacUsbDevice::GetName(char* dacName)
 		if (SendControl(ctrlBuffer4, 2) == HELIOS_SUCCESS)
 		{
 			std::uint8_t ctrlBuffer5[32];
-			int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer5, 32, &actualLength, 32);
+			int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer5, sizeof(ctrlBuffer5), &actualLength, 32);
 
 			if (transferResult == LIBUSB_SUCCESS)
 			{
 				if (ctrlBuffer5[0] == 0x85)
 				{
-					ctrlBuffer5[31] = '\0'; // Just in case
-					memcpy(name, &ctrlBuffer5[1], 32);
-					memcpy(dacName, &ctrlBuffer5[1], 32);
+					ctrlBuffer5[sizeof(ctrlBuffer5)-1] = 0; // Just in case
+					memcpy(name, &ctrlBuffer5[1], sizeof(ctrlBuffer5)-2);
+					memcpy(dacName, &ctrlBuffer5[1], sizeof(ctrlBuffer5)-2);
 					return HELIOS_SUCCESS;
 				}
 				else
@@ -1190,7 +1202,7 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 	}
 	*/
 
-	managementSocketAddr = { 0 };
+	managementSocketAddr = { 0, 0, 0, 0 };
 
 	managementSocketAddr.sin_family = AF_INET;
 	managementSocketAddr.sin_port = htons(MANAGEMENT_PORT);
@@ -1275,8 +1287,12 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 		pps = pps / samplingFactor;
 		numOfPoints = numOfPoints / samplingFactor;
 
-		if (pps < GetMinSampleRate())
+		if (pps < GetMinSampleRate()) 
+		{
+			if (freePoints)
+				delete[] points;
 			return HELIOS_ERROR_TOO_MANY_POINTS;
+		}
 	}
 
 	if (idnOpenFrameXYRGBI(context, false))
@@ -1293,7 +1309,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	}
 
 	if (freePoints)
-		delete points;
+		delete[] points;
 
 	context->frameReady = true;
 	context->isStoppedOrTimeout = false;
@@ -1359,8 +1375,12 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 		pps = pps / samplingFactor;
 		numOfPoints = numOfPoints / samplingFactor;
 
-		if (pps < GetMinSampleRate())
+		if (pps < GetMinSampleRate()) 
+		{
+			if (freePoints)
+				delete[] points;
 			return HELIOS_ERROR_TOO_MANY_POINTS;
+		}
 	}
 
 	if (idnOpenFrameHighResXYRGB(context, false))
@@ -1377,7 +1397,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 	}
 
 	if (freePoints)
-		delete points;
+		delete[] points;
 
 	context->frameReady = true;
 	context->isStoppedOrTimeout = false;
@@ -1444,8 +1464,12 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 		pps = pps / samplingFactor;
 		numOfPoints = numOfPoints / samplingFactor;
 
-		if (pps < GetMinSampleRate())
+		if (pps < GetMinSampleRate()) 
+		{
+			if (freePoints)
+				delete[] points;
 			return HELIOS_ERROR_TOO_MANY_POINTS;
+		}
 	}
 
 	if (idnOpenFrameExtended(context, false))
@@ -1462,7 +1486,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 	}
 
 	if (freePoints)
-		delete points;
+		delete[] points;
 
 	context->frameReady = true;
 	context->isStoppedOrTimeout = false;
@@ -1665,8 +1689,12 @@ int HeliosDac::HeliosDacIdnDevice::GetName(char* dacName)
 		strcpy(idnName, context->name.c_str());
 #endif
 		if (length > 31)
-			idnName[31] = '\0';
+			length = 31;				
+		idnName[length] = 0;
+		
 		memcpy(name, idnName, length + 1);
+
+		delete[] idnName;
 	}
 	else
 	{
