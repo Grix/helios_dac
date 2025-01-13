@@ -27,7 +27,7 @@
     <ClCompile Include="..\..\cpp\idn\idnServerList.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\cpp\idn\plt-posix.c">
+    <ClCompile Include="..\..\cpp\idn\plt-posix.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\cpp\idn\plt-windows.cpp">

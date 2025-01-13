@@ -18,7 +18,7 @@
 		B672D58E2CDF96E7009B5F53 /* idn-hello.h in Headers */ = {isa = PBXBuildFile; fileRef = B672D5862CDF96E7009B5F53 /* idn-hello.h */; };
 		B672D58F2CDF96E7009B5F53 /* idnServerList.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B672D5872CDF96E7009B5F53 /* idnServerList.cpp */; };
 		B672D5902CDF96E7009B5F53 /* idn.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B672D5882CDF96E7009B5F53 /* idn.cpp */; };
-		B672D5912CDF96E7009B5F53 /* plt-posix.c in Sources */ = {isa = PBXBuildFile; fileRef = B672D5892CDF96E7009B5F53 /* plt-posix.c */; };
+		B672D5912CDF96E7009B5F53 /* plt-posix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B672D5892CDF96E7009B5F53 /* plt-posix.cpp */; };
 		B672D5922CDF96E7009B5F53 /* plt-posix.h in Headers */ = {isa = PBXBuildFile; fileRef = B672D58A2CDF96E7009B5F53 /* plt-posix.h */; };
 		B672D5932CDF96E7009B5F53 /* idnServerList.h in Headers */ = {isa = PBXBuildFile; fileRef = B672D58B2CDF96E7009B5F53 /* idnServerList.h */; };
 /* End PBXBuildFile section */
@@ -36,7 +36,7 @@
 		B672D5862CDF96E7009B5F53 /* idn-hello.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "idn-hello.h"; path = "../../../idn/idn-hello.h"; sourceTree = "<group>"; };
 		B672D5872CDF96E7009B5F53 /* idnServerList.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = idnServerList.cpp; path = ../../../idn/idnServerList.cpp; sourceTree = "<group>"; };
 		B672D5882CDF96E7009B5F53 /* idn.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = idn.cpp; path = ../../../idn/idn.cpp; sourceTree = "<group>"; };
-		B672D5892CDF96E7009B5F53 /* plt-posix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "plt-posix.c"; path = "../../../idn/plt-posix.c"; sourceTree = "<group>"; };
+		B672D5892CDF96E7009B5F53 /* plt-posix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "plt-posix.cpp"; path = "../../../idn/plt-posix.cpp"; sourceTree = "<group>"; };
 		B672D58A2CDF96E7009B5F53 /* plt-posix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "plt-posix.h"; path = "../../../idn/plt-posix.h"; sourceTree = "<group>"; };
 		B672D58B2CDF96E7009B5F53 /* idnServerList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = idnServerList.h; path = ../../../idn/idnServerList.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -67,7 +67,7 @@
 				B672D5842CDF96E7009B5F53 /* idn.h */,
 				B672D5872CDF96E7009B5F53 /* idnServerList.cpp */,
 				B672D58B2CDF96E7009B5F53 /* idnServerList.h */,
-				B672D5892CDF96E7009B5F53 /* plt-posix.c */,
+				B672D5892CDF96E7009B5F53 /* plt-posix.cpp */,
 				B672D58A2CDF96E7009B5F53 /* plt-posix.h */,
 				B672D5692CDF8E3E009B5F53 /* Products */,
 			);
@@ -165,7 +165,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B672D5912CDF96E7009B5F53 /* plt-posix.c in Sources */,
+				B672D5912CDF96E7009B5F53 /* plt-posix.cpp in Sources */,
 				B672D5772CDF8E8B009B5F53 /* HeliosDac.cpp in Sources */,
 				B672D5822CDF907B009B5F53 /* HeliosDacAPI.cpp in Sources */,
 				B672D58F2CDF96E7009B5F53 /* idnServerList.cpp in Sources */,

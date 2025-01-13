@@ -24,7 +24,7 @@ g++ -Wall -std=c++14 -fPIC -O2 -c HeliosDacAPI.cpp
 g++ -Wall -std=c++14 -fPIC -O2 -c HeliosDac.cpp
 g++ -Wall -std=c++14 -fPIC -O2 -c idn/idn.cpp
 g++ -Wall -std=c++14 -fPIC -O2 -c idn/idnServerList.cpp
-g++ -Wall -std=c++14 -fPIC -O2 -c idn/plt-posix.c
+g++ -Wall -std=c++14 -fPIC -O2 -c idn/plt-posix.cpp
 g++ -shared -o libHeliosDacAPI.so HeliosDacAPI.o HeliosDac.o plt-posix.o idn.o idnServerList.o libusb-1.0.so
 ```
 
