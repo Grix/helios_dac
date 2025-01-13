@@ -123,7 +123,7 @@
     <ClCompile Include="..\..\cpp\HeliosDac.cpp" />
     <ClCompile Include="..\..\cpp\idn\idn.cpp" />
     <ClCompile Include="..\..\cpp\idn\idnServerList.cpp" />
-    <ClCompile Include="..\..\cpp\idn\plt-posix.c" />
+    <ClCompile Include="..\..\cpp\idn\plt-posix.cpp" />
     <ClCompile Include="..\..\cpp\idn\plt-windows.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
