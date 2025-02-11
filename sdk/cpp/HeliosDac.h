@@ -116,7 +116,7 @@ Unless otherwise specified, functions return a negative error code on failure.
 // Bitmask flags used in flags parameter for WriteFrame*(). Can be OR'ed together to enable multiple flags:
 
 // Written frame should start playing immediately, even if previously submitted frames are queued up in the frame buffer.
-// NB: This flag is NOT SUPPORTED by network-enabled DACs and is thus considered deprecated.
+// NB: This flag is not supported by network-enabled DACs and is thus considered deprecated.
 #define HELIOS_FLAGS_START_IMMEDIATELY	(1 << 0)
 
 // Written frame should only be played exactly once, instead of being looped indefinitely if no more frames are written after this one.
@@ -125,11 +125,11 @@ Unless otherwise specified, functions return a negative error code on failure.
 #define HELIOS_FLAGS_SINGLE_MODE		(1 << 1)
 
 // WriteFrame() should not block execution while the frame is transfered to the DAC, instead the transfer is processed a separate thread.
-// NB: This flag is not applicable on network (IDN) DACs, they always schedule transfers in a separate thread, since frames are split up internally.
+// NB: This flag is not applicable on network (IDN) DACs, they always schedule transfers in a separate thread since frames are split up internally.
 #define HELIOS_FLAGS_DONT_BLOCK			(1 << 2)
 
 // Default flags. This results in the same behavior for USB and network DACs (network DACs do not support all the flags of the USB models).
-#define HELIOS_FLAGS_DEFAULT		(HELIOS_FLAGS_SINGLE_MODE | HELIOS_FLAGS_DONT_BLOCK)
+#define HELIOS_FLAGS_DEFAULT		(HELIOS_FLAGS_SINGLE_MODE)
 
 
 // USB properties
