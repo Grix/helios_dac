@@ -120,7 +120,7 @@ Unless otherwise specified, functions return a negative error code on failure.
 #define HELIOS_FLAGS_START_IMMEDIATELY	(1 << 0)
 
 // Written frame should only be played exactly once, instead of being looped indefinitely if no more frames are written after this one.
-// NB: This flag is not applicable on network (IDN) DACs, they always play the frame only once. Therefore, it is recommended to always 
+// NB: This flag is not yet supported on network (IDN) DACs, they always play the frame only once. Therefore, it is recommended to always 
 // use this flag, and instead implement your own frame looping system if you need to repeat the frame.
 #define HELIOS_FLAGS_SINGLE_MODE		(1 << 1)
 

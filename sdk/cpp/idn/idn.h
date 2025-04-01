@@ -55,6 +55,7 @@ typedef struct
 #endif
 
 #include <time.h>
+#include <stdarg.h>
 
 #if defined(_WIN32) || defined(WIN32)
 
