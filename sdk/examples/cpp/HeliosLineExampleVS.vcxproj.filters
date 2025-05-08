@@ -27,9 +27,6 @@
     <ClCompile Include="..\..\cpp\idn\idnServerList.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\cpp\idn\plt-posix.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\cpp\idn\plt-windows.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -51,9 +48,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\cpp\idn\idnServerList.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\cpp\idn\plt-posix.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\cpp\idn\plt-windows.h">
