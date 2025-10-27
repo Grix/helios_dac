@@ -66,12 +66,50 @@ int OpenDevicesOnlyNetwork()
 	return result;
 }
 
+HELIOS_EXPORT int ReScanDevices()
+{
+	if (inited)
+		return dacController->ReScanDevices();
+
+	dacController = new HeliosDac();
+	inited = true;
+	return dacController->ReScanDevices();
+}
+
+HELIOS_EXPORT int ReScanDevicesOnlyUsb()
+{
+	if (inited)
+		return dacController->ReScanDevicesOnlyUsb();
+
+	dacController = new HeliosDac();
+	inited = true;
+	return dacController->ReScanDevicesOnlyUsb();
+}
+
+HELIOS_EXPORT int ReScanDevicesOnlyNetwork()
+{
+	if (inited)
+		return dacController->ReScanDevicesOnlyNetwork();
+
+	dacController = new HeliosDac();
+	inited = true;
+	return dacController->ReScanDevicesOnlyNetwork();
+}
+
 int GetStatus(unsigned int dacNum)
 {
 	if (!inited)
 		return HELIOS_ERROR_NOT_INITIALIZED;
 
 	return (int)dacController->GetStatus(dacNum);
+}
+
+int GetIsClosed(unsigned int dacNum)
+{
+	if (!inited)
+		return HELIOS_ERROR_NOT_INITIALIZED;
+
+	return (int)dacController->GetIsClosed(dacNum);
 }
 
 int WriteFrame(unsigned int dacNum, int pps, std::uint8_t flags, HeliosPoint* points, int numOfPoints)

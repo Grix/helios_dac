@@ -421,12 +421,17 @@ int idnPushFrame(IDNCONTEXT* context)
 	ctx->sendBufferPosition += samplesInPacket * ctx->bytesPerSample;
 	ctx->frameCnt++;
 
-	// Send the packet
-	if (idnSend(ctx, packetHeader, msgLength) != 0)
+	//if (ctx->frameCnt % 10 != 5)
 	{
-		ctx->sendBufferPosition = (uint8_t*)0;
-		return -1;
+		// Send the packet
+		if (idnSend(ctx, packetHeader, msgLength) != 0)
+		{
+			ctx->sendBufferPosition = (uint8_t*)0;
+			return -1;
+		}
 	}
+	//else
+	//	ctx->sendBufferPosition = (uint8_t*)0;
 
 	if (ctx->sampleCnt <= 0 || (ctx->sendBufferPosition + ctx->sampleCnt * ctx->bytesPerSample) > (ctx->bufferPtr + ctx->bufferLen))
 	{

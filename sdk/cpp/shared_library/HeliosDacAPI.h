@@ -61,10 +61,23 @@ HELIOS_EXPORT int OpenDevicesOnlyUsb();
 // NB: To re-scan for newly connected DACs after this function has once been called before, you must first call CloseDevices()
 HELIOS_EXPORT int OpenDevicesOnlyNetwork();
 
+// Scans for new devices and verifies connectivity to existing devices.
+// Unlike OpenDevices*(), this can be used without first having to close existing devices. Existing device numbers will be preserved.
+// Devices that are found not to be present any more will be marked as closed (can be checked with GetIsClosed()) but will still be present in the device list.
+// Because of this, device list is not necessary sorted alphabetically like OpenDevices*() does.
+// Can be periodically called to implement hot-plugging support. But it should NOT be called at the same time as there is output to the DAC, or it can disrupt the stream.
+HELIOS_EXPORT int ReScanDevices();
+HELIOS_EXPORT int ReScanDevicesOnlyUsb();
+HELIOS_EXPORT int ReScanDevicesOnlyNetwork();
+
 // Gets status from the specified dac.
 // You MUST poll this function until it returns true, before every call to WriteFrame*().
 // Return 1 if ready to receive new frame, 0 if not, negative number if communcation failed
 HELIOS_EXPORT int GetStatus(unsigned int dacNum);
+
+// Gets whether the DAC is still connected (1) or not (0). If not, all function calls will fail. 
+// You can call ReScanDevices*() to attempt to re-establish connection if the DAC has since been reconnected.
+HELIOS_EXPORT int GetIsClosed(unsigned int dacNum);
 
 // Writes and outputs a frame to the speficied dac.
 // WriteFrame() uses the lightweight point structure designed for the original Helios DAC.

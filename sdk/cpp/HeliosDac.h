@@ -208,6 +208,15 @@ public:
 	// NB: To re-scan for newly connected DACs after this function has once been called before, you must first call CloseDevices().
 	int OpenDevicesOnlyNetwork();
 
+	// Scans for new devices and verifies connectivity to existing devices.
+	// Unlike OpenDevices*(), this can be used without first having to close existing devices. Existing device numbers will be preserved.
+	// Devices that are found not to be present any more will be marked as closed (can be checked with GetIsClosed()) but will still be present in the device list.
+	// Because of this, device list is not necessary sorted alphabetically like OpenDevices*() does.
+	// Can be periodically called to implement hot-plugging support. But it should NOT be called at the same time as there is output to the DAC, or it can disrupt the stream.
+	int ReScanDevices();
+	int ReScanDevicesOnlyUsb();
+	int ReScanDevicesOnlyNetwork();
+
 	// Closes and frees all devices.
 	int CloseDevices();
 
@@ -235,6 +244,10 @@ public:
 	int WriteFrame(unsigned int devNum, unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints);
 	int WriteFrameHighResolution(unsigned int devNum, unsigned int pps, unsigned int flags, HeliosPointHighRes* points, unsigned int numOfPoints);
 	int WriteFrameExtended(unsigned int devNum, unsigned int pps, unsigned int flags, HeliosPointExt* points, unsigned int numOfPoints);
+
+	// Gets whether the DAC is still connected (1) or not (0). If not, all function calls will fail. 
+	// You can call ReScanDevices*() to attempt to re-establish connection if the DAC has since been reconnected.
+	int GetIsClosed(unsigned int devNum);
 
 	// Gets status of DAC, 1 means DAC is ready to receive frame, 0 means it is not.
 	// You MUST poll this function until it returns true, before every call to WriteFrame*().
@@ -298,8 +311,13 @@ private:
 		virtual int GetIsUsb() = 0;
 		virtual int SetShutter(bool level) = 0;
 		virtual int Stop() = 0;
+		virtual int Close() = 0;
 		virtual int EraseFirmware() = 0;
+		bool GetIsClosed() { return closed; }
 
+	protected:
+
+		bool closed = true;
 	};
 
 	// Class for USB-connected Helios DACs, for internal use
@@ -321,7 +339,10 @@ private:
 		int SetName(char* name);
 		int SetShutter(bool level);
 		int Stop();
+		int Close();
 		int EraseFirmware();
+
+		libusb_device_handle* GetLibusbHandle();
 
 
 	private:
@@ -339,14 +360,16 @@ private:
 		std::mutex frameLock;
 		bool frameReady = false;
 		int firmwareVersion = 0;
-		char name[32];
-		bool closed = true;
+		char name[32] = { 0 };
 		std::uint8_t* frameBuffer;
 		unsigned int frameBufferSize;
 		int frameResult = -1;
 		bool shutterIsOpen = false;
 		int maxSampleRate = 0xffff;
 		int minSampleRate = 7;
+		const int errorLimitResetValue = 50;
+		int errorLimitCountdown = errorLimitResetValue;
+		bool threadingHasBeenUsed = false;
 	};
 
 	// Class for network (IDN) connected DACs such as HeliosPRO (but also work with other DACs supporting IDN), for internal use
@@ -363,11 +386,13 @@ private:
 		int GetStatus();
 		int GetSupportsHigherResolutions() { return 1; }
 		int GetIsUsb() { return 0; }
+		int GetUnitId(uint8_t* idArray);
 		int GetFirmwareVersion();
 		int GetName(char* name);
 		int SetName(char* name);
 		int SetShutter(bool level);
 		int Stop();
+		int Close();
 		int EraseFirmware();
 
 	private:
@@ -381,8 +406,7 @@ private:
 
 		IDNCONTEXT* context;
 		int firmwareVersion = 0;
-		char name[32];
-		bool closed = true;
+		char name[32] = { 0 };
 		bool useBusyWaiting = false;
 		bool finishedClosing = false;
 
@@ -394,9 +418,10 @@ private:
 
 	};
 
-	int _OpenUsbDevices();
-	int _OpenIdnDevices();
+	int _OpenUsbDevices(bool inPlace);
+	int _OpenIdnDevices(bool inPlace);
 	void _SortDeviceList();
+	void _RemoveNotFoundIdnServers(IDNSL_SERVER_INFO* firstServerInfo);
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;
 	std::mutex threadLock;

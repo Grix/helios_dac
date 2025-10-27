@@ -35,16 +35,15 @@ int HeliosDac::OpenDevices()
 
 	// TODO: Make option to keep existing DACs in their current indexes, e.g only scan for changes. Currently this function only works after all DACs have been closed.
 
-	unsigned int numDevices = _OpenUsbDevices();
-
-	numDevices += _OpenIdnDevices();
+	unsigned int numDevices = _OpenUsbDevices(false);
+	numDevices += _OpenIdnDevices(false);
 
 	_SortDeviceList();
 
 	if (numDevices > 0)
 		inited = true;
 
-	return numDevices;
+	return (int)deviceList.size();
 }
 
 
@@ -55,14 +54,14 @@ int HeliosDac::OpenDevicesOnlyUsb()
 
 	// TODO: Make option to keep existing DACs in their current indexes, e.g only scan for changes. Currently this function only works after all DACs have been closed.
 
-	unsigned int numDevices = _OpenUsbDevices();
+	unsigned int numDevices = _OpenUsbDevices(false);
 
 	_SortDeviceList();
 
 	if (numDevices > 0)
 		inited = true;
 
-	return numDevices;
+	return (int)deviceList.size();
 }
 
 
@@ -73,26 +72,73 @@ int HeliosDac::OpenDevicesOnlyNetwork()
 
 	// TODO: Make option to keep existing DACs in their current indexes, e.g only scan for changes. Currently this function only works after all DACs have been closed.
 
-	unsigned int numDevices = _OpenIdnDevices();
+	unsigned int numDevices = _OpenIdnDevices(false);
 
 	_SortDeviceList();
 
 	if (numDevices > 0)
 		inited = true;
 
-	return numDevices;
+	return (int)deviceList.size();
 }
 
-// Internal function
-int HeliosDac::_OpenUsbDevices()
+int HeliosDac::ReScanDevices()
+{
+	_OpenUsbDevices(true);
+	_OpenIdnDevices(true);
+
+	inited = true;
+
+	return (int)deviceList.size();
+}
+
+int HeliosDac::ReScanDevicesOnlyUsb()
+{
+	_OpenUsbDevices(true);
+
+	inited = true;
+
+	return (int)deviceList.size();
+}
+
+int HeliosDac::ReScanDevicesOnlyNetwork()
+{
+	_OpenIdnDevices(true);
+
+	inited = true;
+
+	return (int)deviceList.size();
+}
+
+// Internal function. inPlace = Whether to keep the current opened devices in their device number slots and only scan for changes.
+int HeliosDac::_OpenUsbDevices(bool inPlace)
 {
 	// Scanning for USB devices
 
-	int result = libusb_init(NULL);
-	if (result < 0)
-		return result;
+	if (!inPlace || !inited)
+	{
+		int result = libusb_init(NULL);
+		if (result < 0)
+			return result;
 
-	libusb_set_option(NULL, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL);
+		libusb_set_option(NULL, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL);
+	}
+
+	if (inPlace && inited)
+	{
+		// Verify connection of existing devices, close them if they cannot be reached
+		for (int i = 0; i < deviceList.size(); i++)
+		{
+			if (!deviceList[i]->GetIsUsb() || deviceList[i]->GetIsClosed())
+				continue;
+
+			char dummy[32];
+			if (deviceList[i]->GetStatus() < 0 && deviceList[i]->GetStatus() < 0)
+			{
+				deviceList[i]->Close();
+			}
+		}
+	}
 
 	libusb_device** devs;
 	ssize_t cnt = libusb_get_device_list(NULL, &devs);
@@ -110,6 +156,52 @@ int HeliosDac::_OpenUsbDevices()
 		if ((devDesc.idProduct != HELIOS_PID) || (devDesc.idVendor != HELIOS_VID))
 			continue;
 
+		if (inPlace)
+		{
+			// Check if this is the same as an already opened device
+			bool found = false;
+			for (int j = 0; j < deviceList.size(); j++)
+			{
+				if (!deviceList[j]->GetIsUsb())
+					continue;
+				if (!deviceList[j]->GetIsClosed())
+				{
+					libusb_device_handle* handle = ((HeliosDacUsbDevice*)(deviceList[j].get()))->GetLibusbHandle();
+					if (handle == NULL)
+						continue;
+					uint8_t newPortNumbers[7], existingPortNumbers[7];
+					int existingPortNumberDepth = libusb_get_port_numbers(libusb_get_device(handle), existingPortNumbers, 16);
+					int newPortNumberDepth = libusb_get_port_numbers(devs[i], newPortNumbers, 16);
+					if (existingPortNumberDepth < 0)
+						continue;
+					if (newPortNumberDepth < 0)
+						continue;
+					bool match = true;
+					if (existingPortNumberDepth == newPortNumberDepth)
+					{
+						for (int k = 0; k < existingPortNumberDepth; k++)
+						{
+							if (newPortNumbers[k] != existingPortNumbers[k])
+							{
+								match = false;
+								break;
+							}
+						}
+					}
+					if (match)
+					{
+						found = true;
+						break;
+					}
+				}
+				if (found)
+					break;
+			}
+
+			if (found)
+				continue; // This Helios is already opened, no need to do anything
+		}
+
 		libusb_device_handle* devHandle;
 		result = libusb_open(devs[i], &devHandle);
 		if (result < 0)
@@ -123,10 +215,51 @@ int HeliosDac::_OpenUsbDevices()
 		if (result < 0)
 			continue;
 
-		//successfully opened, add to device list
-		deviceList.push_back(std::make_unique<HeliosDacUsbDevice>(devHandle));
+		// Successfully opened, add to device list
 
-		numDevices++;
+		std::unique_ptr<HeliosDacDevice> device = std::make_unique<HeliosDacUsbDevice>(devHandle);
+
+		if (inPlace)
+		{
+			// Check if this is an already known device that was previously closed, if so insert it back to its previous device number
+			bool found = false;
+			for (int j = 0; j < deviceList.size(); j++)
+			{
+				if (!deviceList[j]->GetIsUsb())
+					continue;
+				if (!deviceList[j]->GetIsClosed())
+					continue;
+				char newName[32] = { 0 }, existingName[32] = { 0 };
+				device->GetName(newName);
+				deviceList[j]->GetName(existingName);
+				if (strncmp(newName, existingName, 32) == 0)
+				{
+					logInfo("Found previous USB Helios DAC that was reconnected: %s\n", newName);
+
+					deviceList[j] = std::move(device);
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+			{
+				//char name[32] = { 0 };
+				//device->GetName(name);
+				logInfo("Found new USB Helios DAC during rescan\n");
+
+				deviceList.push_back(std::move(device));
+				numDevices++;
+			}
+		}
+		else
+		{
+			//char name[32] = { 0 };
+			//device->GetName(name);
+			logInfo("Found new USB Helios DAC\n");
+
+			deviceList.push_back(std::move(device));
+			numDevices++;
+		}
 	}
 
 	libusb_free_device_list(devs, 1);
@@ -134,8 +267,33 @@ int HeliosDac::_OpenUsbDevices()
 	return numDevices;
 }
 
-// Internal function
-int HeliosDac::_OpenIdnDevices()
+// Internal helper function
+void HeliosDac::_RemoveNotFoundIdnServers(IDNSL_SERVER_INFO* firstServerInfo)
+{
+	for (int j = 0; j < deviceList.size(); j++)
+	{
+		if (deviceList[j]->GetIsClosed() || deviceList[j]->GetIsUsb())
+			continue;
+
+		uint8_t id[IDNSL_UNITID_LENGTH];
+		((HeliosDacIdnDevice*)deviceList[j].get())->GetUnitId(id);
+
+		bool found = false;
+		for (IDNSL_SERVER_INFO* serverInfo = firstServerInfo; serverInfo != 0; serverInfo = serverInfo->next)
+		{
+			if (memcmp(id, serverInfo->unitID, IDNSL_UNITID_LENGTH) == 0)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			deviceList[j]->Close();
+	}
+}
+
+// Internal function. inPlace = Whether to keep the current opened devices in their device number slots and only scan for changes.
+int HeliosDac::_OpenIdnDevices(bool inPlace)
 {
 	// Scanning for IDN (network) devices
 
@@ -145,8 +303,8 @@ int HeliosDac::_OpenIdnDevices()
 	idnInited = true;
 	std::vector<IDNCONTEXT*> idnContexts;
 
-#ifndef WIN32 // Unix
-
+#ifndef WIN32 
+	// Unix
 	unsigned msTimeout = 600;
 	IDNSL_SERVER_INFO* firstServerInfo;
 	int rcGetList = getIDNServerList(&firstServerInfo, 0, msTimeout);
@@ -156,6 +314,12 @@ int HeliosDac::_OpenIdnDevices()
 	}
 	else
 	{
+		if (inPlace && inited)
+		{
+			// Verify connection of existing devices, close them if they cannot be reached
+			_RemoveNotFoundIdnServers(firstServerInfo);
+		}
+
 		for (IDNSL_SERVER_INFO* serverInfo = firstServerInfo; serverInfo != 0; serverInfo = serverInfo->next)
 		{
 			for (unsigned int i = 0; i < serverInfo->addressCount; i++)
@@ -163,18 +327,10 @@ int HeliosDac::_OpenIdnDevices()
 				if (serverInfo->addressTable[i].errorFlags == 0 && idnContexts.size() < 999)
 				{
 					bool found = false;
-					long unsigned int contextId = 0;
-					for (; contextId < idnContexts.size(); contextId++) // Check for duplicate entries
+					for (long unsigned int contextId = 0; contextId < idnContexts.size(); contextId++) // Check for duplicate entries
 					{
-						bool unitIdMismatch = false;
-						for (int j = 0; j < IDNSL_UNITID_LENGTH; j++)
-						{
-							if (serverInfo->unitID[j] != idnContexts[contextId]->unitId[j])
-							{
-								unitIdMismatch = true;
-								break;
-							}
-						}
+						bool unitIdMismatch = memcmp(serverInfo->unitID, idnContexts[contextId]->unitId, IDNSL_UNITID_LENGTH) != 0;
+
 						if (idnContexts[contextId]->serverSockAddr.sin_addr.s_addr == serverInfo->addressTable[i].addr.s_addr || !unitIdMismatch)
 							found = true;
 					}
@@ -182,14 +338,14 @@ int HeliosDac::_OpenIdnDevices()
 					{
 						for (unsigned int j = 0; j < serverInfo->serviceCount && idnContexts.size() < 999; j++)
 						{
-							IDNCONTEXT* ctx = new IDNCONTEXT {};
-							ctx->serverSockAddr.sin_family = AF_INET;
-							ctx->serverSockAddr.sin_port = htons(IDN_PORT);
-							ctx->serverSockAddr.sin_addr.s_addr = serverInfo->addressTable[i].addr.s_addr;
-							ctx->name = std::string(serverInfo->hostName).append(" - ").append(serverInfo->serviceTable[j].serviceName);
-							ctx->serviceId = serverInfo->serviceTable[j].serviceID;
+							IDNCONTEXT* context = new IDNCONTEXT {};
+							context->serverSockAddr.sin_family = AF_INET;
+							context->serverSockAddr.sin_port = htons(IDN_PORT);
+							context->serverSockAddr.sin_addr.s_addr = serverInfo->addressTable[i].addr.s_addr;
+							context->name = std::string(serverInfo->hostName).append(" - ").append(serverInfo->serviceTable[j].serviceName);
+							context->serviceId = serverInfo->serviceTable[j].serviceID;
 
-							idnContexts.push_back(ctx);
+							idnContexts.push_back(context);
 						}
 
 					}
@@ -200,6 +356,7 @@ int HeliosDac::_OpenIdnDevices()
 		freeIDNServerList(firstServerInfo);  // Server list is dynamically allocated and must be freed
 	}
 #else
+	// Windows
 	timeBeginPeriod(2);
 	unsigned msTimeout = 600;
 	IDNSL_SERVER_INFO* firstServerInfo;
@@ -210,6 +367,12 @@ int HeliosDac::_OpenIdnDevices()
 	}
 	else
 	{
+		if (inPlace && inited)
+		{
+			// Verify connection of existing devices, close them if they cannot be reached
+			_RemoveNotFoundIdnServers(firstServerInfo);
+		}
+
 		for (IDNSL_SERVER_INFO* serverInfo = firstServerInfo; serverInfo != 0; serverInfo = serverInfo->next)
 		{
 			for (unsigned int i = 0; i < serverInfo->addressCount; i++)
@@ -217,18 +380,10 @@ int HeliosDac::_OpenIdnDevices()
 				if (serverInfo->addressTable[i].errorFlags == 0 && idnContexts.size() < 999)
 				{
 					bool found = false;
-					int contextId = 0;
-					for (; contextId < idnContexts.size(); contextId++) // Check for duplicate entries
+					for (int contextId = 0; contextId < idnContexts.size(); contextId++) // Check for duplicate entries
 					{
-						bool unitIdMismatch = false;
-						for (int j = 0; j < IDNSL_UNITID_LENGTH; j++)
-						{
-							if (serverInfo->unitID[j] != idnContexts[contextId]->unitId[j])
-							{
-								unitIdMismatch = true;
-								break;
-							}
-						}
+						bool unitIdMismatch = memcmp(serverInfo->unitID, idnContexts[contextId]->unitId, IDNSL_UNITID_LENGTH) != 0;
+
 						if (idnContexts[contextId]->serverSockAddr.sin_addr.S_un.S_addr == serverInfo->addressTable[i].addr.S_un.S_addr || !unitIdMismatch)
 							found = true;
 					}
@@ -262,8 +417,40 @@ int HeliosDac::_OpenIdnDevices()
 	for (long unsigned int i = 0; i < idnContexts.size(); i++)
 	{
 		IDNCONTEXT* idnContext = idnContexts[i];
-		deviceList.push_back(std::make_unique<HeliosDacIdnDevice>(idnContext));
-		numDevices++;
+
+		if (inPlace)
+		{
+			// Check if this is an already known device that was previously closed, if so insert it back to its previous device number
+			bool found = false;
+			for (int j = 0; j < deviceList.size(); j++)
+			{
+				if (deviceList[j]->GetIsUsb() || !deviceList[j]->GetIsClosed())
+					continue;
+				
+				uint8_t id[IDNSL_UNITID_LENGTH];
+				((HeliosDacIdnDevice*)deviceList[j].get())->GetUnitId(id);
+
+				if (memcmp(id, idnContext->unitId, IDNSL_UNITID_LENGTH) == 0)
+				{
+					logInfo("Found previous IDN DAC that was reconnected: %s\n", idnContext->name);
+					deviceList[j] = std::make_unique<HeliosDacIdnDevice>(idnContext);
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+			{
+				logInfo("Found new IDN DAC during rescan: %s\n", idnContext->name);
+				deviceList.push_back(std::make_unique<HeliosDacIdnDevice>(idnContext));
+				numDevices++;
+			}
+		}
+		else
+		{
+			logInfo("Found new IDN DAC: %s\n", idnContext->name);
+			deviceList.push_back(std::make_unique<HeliosDacIdnDevice>(idnContext));
+			numDevices++;
+		}
 	}
 
 	return numDevices;
@@ -296,6 +483,8 @@ int HeliosDac::CloseDevices()
 	deviceList.clear(); // Various destructors will clean all devices
 
 	libusb_exit(NULL);
+
+	printf("Freed USB Helios library\n");
 
 	return HELIOS_SUCCESS;
 }
@@ -358,6 +547,22 @@ int HeliosDac::WriteFrameExtended(unsigned int devNum, unsigned int pps, unsigne
 		return HELIOS_ERROR_INVALID_DEVNUM;
 
 	return dev->SendFrameExtended(pps, flags, points, numOfPoints);
+}
+
+int HeliosDac::GetIsClosed(unsigned int devNum)
+{
+	if (!inited)
+		return HELIOS_ERROR_NOT_INITIALIZED;
+
+	std::unique_lock<std::mutex> lock(threadLock);
+	HeliosDacDevice* dev = NULL;
+	if (devNum < deviceList.size())
+		dev = deviceList[devNum].get();
+	lock.unlock();
+	if (dev == NULL)
+		return HELIOS_ERROR_INVALID_DEVNUM;
+
+	return dev->GetIsClosed();
 }
 
 int HeliosDac::GetStatus(unsigned int devNum)
@@ -601,7 +806,7 @@ HeliosDac::HeliosDacUsbDevice::HeliosDacUsbDevice(libusb_device_handle* handle)
 // Returns 1 if success
 int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints)
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	if (frameReady)
@@ -693,6 +898,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 
 	if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
 	{
+		threadingHasBeenUsed = true;
 		frameReady = true;
 		return HELIOS_SUCCESS;
 	}
@@ -706,7 +912,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 // Returns 1 if success
 int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std::uint8_t flags, HeliosPointHighRes* points, unsigned int numOfPoints)
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	if (frameReady)
@@ -802,6 +1008,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std
 
 	if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
 	{
+		threadingHasBeenUsed = true;
 		frameReady = true;
 		return HELIOS_SUCCESS;
 	}
@@ -814,7 +1021,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std
 // Returns 1 if success
 int HeliosDac::HeliosDacUsbDevice::SendFrameExtended(unsigned int pps, std::uint8_t flags, HeliosPointExt* points, unsigned int numOfPoints)
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	if (frameReady)
@@ -910,6 +1117,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameExtended(unsigned int pps, std::uint
 
 	if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
 	{
+		threadingHasBeenUsed = true;
 		frameReady = true;
 		return HELIOS_SUCCESS;
 	}
@@ -922,11 +1130,18 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameExtended(unsigned int pps, std::uint
 // Sends frame to DAC
 int HeliosDac::HeliosDacUsbDevice::DoFrame()
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	int actualLength = 0;
+
+	//auto then = std::chrono::high_resolution_clock::now();
+
 	int transferResult = libusb_bulk_transfer(usbHandle, EP_BULK_OUT, frameBuffer, frameBufferSize, &actualLength, 8 + (frameBufferSize >> 5));
+
+	//auto now = std::chrono::high_resolution_clock::now();
+	//auto time = std::chrono::duration_cast<std::chrono::milliseconds>(now - then);
+	//printf("%d : Sent bulk frame, %d, time %d\n", std::chrono::duration_cast<std::chrono::milliseconds>(then.time_since_epoch()), transferResult, time.count());
 
 	if (transferResult == LIBUSB_SUCCESS)
 		return HELIOS_SUCCESS;
@@ -938,13 +1153,16 @@ int HeliosDac::HeliosDacUsbDevice::DoFrame()
 // Only used if HELIOS_FLAGS_DONT_BLOCK is used with WriteFrame
 void HeliosDac::HeliosDacUsbDevice::BackgroundFrameHandler()
 {
-	while (!closed)
+	while (!GetIsClosed())
 	{
-		// Wait until frame is ready to be sent
-		while ((!frameReady) && (!closed))
-			plt_usleep(100);
+		while (!threadingHasBeenUsed)
+			plt_usleep(50000);
 
-		if (closed)
+		// Wait until frame is ready to be sent
+		while ((!frameReady) && (!GetIsClosed()))
+			plt_usleep(1000);
+
+		if (GetIsClosed())
 			return;
 
 		DoFrame();
@@ -957,7 +1175,7 @@ void HeliosDac::HeliosDacUsbDevice::BackgroundFrameHandler()
 //Gets firmware version of DAC
 int HeliosDac::HeliosDacUsbDevice::GetFirmwareVersion()
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	return firmwareVersion;
@@ -966,8 +1184,9 @@ int HeliosDac::HeliosDacUsbDevice::GetFirmwareVersion()
 //Gets name of DAC
 int HeliosDac::HeliosDacUsbDevice::GetName(char* dacName)
 {
-	if (closed)
+	if (GetIsClosed())
 	{
+		memcpy(dacName, name, 32);
 		return HELIOS_ERROR_DEVICE_CLOSED;
 	}
 
@@ -1012,15 +1231,17 @@ int HeliosDac::HeliosDacUsbDevice::GetName(char* dacName)
 	return errorCode;
 }
 
-//Gets status of DAC, 1 means DAC is ready to receive frame, 0 means it's not
+// Gets status of DAC, 1 means DAC is ready to receive frame, 0 means it's not
 int HeliosDac::HeliosDacUsbDevice::GetStatus()
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	int errorCode;
 
-	std::lock_guard<std::mutex> lock(frameLock);
+	std::lock_guard<std::mutex> lock(frameLock); 
+	
+	//auto then = std::chrono::high_resolution_clock::now();
 
 	int actualLength = 0;
 	std::uint8_t ctrlBuffer[2] = { 0x03, 0 };
@@ -1028,6 +1249,12 @@ int HeliosDac::HeliosDacUsbDevice::GetStatus()
 	{
 		std::uint8_t ctrlBuffer2[32];
 		int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer2, 32, &actualLength, 16);
+
+		//auto now = std::chrono::high_resolution_clock::now();
+		//auto time = std::chrono::duration_cast<std::chrono::milliseconds>(now - then);
+		//printf("%d : Sent status req, %d, time %d, status %d\n", std::chrono::duration_cast<std::chrono::milliseconds>(then.time_since_epoch()), transferResult, time.count(), ctrlBuffer2[1]);
+
+			
 		if (transferResult == LIBUSB_SUCCESS)
 		{
 			if (ctrlBuffer2[0] == 0x83) //STATUS ID
@@ -1045,11 +1272,23 @@ int HeliosDac::HeliosDacUsbDevice::GetStatus()
 		else
 		{
 			errorCode = HELIOS_ERROR_LIBUSB_BASE + transferResult;
+			errorLimitCountdown--;
+			if (errorLimitCountdown <= 0)
+			{
+				printf("Closing Helios DAC: too many errors.\n");
+				closed = true;
+			}
 		}
 	}
 	else
 	{
 		errorCode = HELIOS_ERROR_DEVICE_SEND_CONTROL;
+		errorLimitCountdown--;
+		if (errorLimitCountdown <= 0)
+		{
+			printf("Closing Helios DAC: too many errors.\n");
+			closed = true;
+		}
 	}
 
 	return errorCode;
@@ -1059,7 +1298,7 @@ int HeliosDac::HeliosDacUsbDevice::GetStatus()
 //Value 1 = shutter open, value 0 = shutter closed
 int HeliosDac::HeliosDacUsbDevice::SetShutter(bool level)
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	std::lock_guard<std::mutex> lock(frameLock);
@@ -1077,7 +1316,7 @@ int HeliosDac::HeliosDacUsbDevice::SetShutter(bool level)
 //Stops output of DAC
 int HeliosDac::HeliosDacUsbDevice::Stop()
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	std::lock_guard<std::mutex> lock(frameLock);
@@ -1092,10 +1331,18 @@ int HeliosDac::HeliosDacUsbDevice::Stop()
 		return HELIOS_ERROR_DEVICE_SEND_CONTROL;
 }
 
+int HeliosDac::HeliosDacUsbDevice::Close()
+{
+	Stop();
+	logInfo("Closing Helios USB DAC.\n");
+	closed = true;
+	return HELIOS_SUCCESS;
+}
+
 //Sets persistent name of DAC
 int HeliosDac::HeliosDacUsbDevice::SetName(char* name)
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	std::lock_guard<std::mutex> lock(frameLock);
@@ -1112,7 +1359,7 @@ int HeliosDac::HeliosDacUsbDevice::SetName(char* name)
 //Erases the firmware of the DAC, allowing it to be updated
 int HeliosDac::HeliosDacUsbDevice::EraseFirmware()
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	std::lock_guard<std::mutex> lock(frameLock);
@@ -1127,6 +1374,14 @@ int HeliosDac::HeliosDacUsbDevice::EraseFirmware()
 		return HELIOS_ERROR_DEVICE_SEND_CONTROL;
 }
 
+libusb_device_handle* HeliosDac::HeliosDacUsbDevice::GetLibusbHandle()
+{
+	if (GetIsClosed())
+		return NULL;
+
+	return usbHandle;
+}
+
 //sends a raw control signal (implemented as interrupt transfer) to a dac device
 //returns 1 if successful
 int HeliosDac::HeliosDacUsbDevice::SendControl(std::uint8_t* bufferAddress, unsigned int length)
@@ -1136,6 +1391,8 @@ int HeliosDac::HeliosDacUsbDevice::SendControl(std::uint8_t* bufferAddress, unsi
 
 	if (length > 32)
 		return HELIOS_ERROR_DEVICE_SIGNAL_TOO_LONG;
+
+	//auto then = std::chrono::high_resolution_clock::now();
 
 	int actualLength = 0;
 	int transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_OUT, bufferAddress, length, &actualLength, 16);
@@ -1233,7 +1490,7 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 // Returns 1 if success
 int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints)
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	std::lock_guard<std::mutex>lock(frameLock);
@@ -1321,7 +1578,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 // Returns 1 if success
 int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std::uint8_t flags, HeliosPointHighRes* points, unsigned int numOfPoints)
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	std::lock_guard<std::mutex>lock(frameLock);
@@ -1410,7 +1667,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 // Returns 1 if success
 int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint8_t flags, HeliosPointExt* points, unsigned int numOfPoints)
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	std::lock_guard<std::mutex>lock(frameLock);
@@ -1499,7 +1756,7 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 // Gets status of DAC, 1 means DAC is ready to receive frame, 0 means it's not
 int HeliosDac::HeliosDacIdnDevice::GetStatus()
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	std::lock_guard<std::mutex>lock(frameLock);
@@ -1524,7 +1781,7 @@ int HeliosDac::HeliosDacIdnDevice::GetStatus()
 // Sends wave packet to DAC. Needs to be called periodically with good timing, as close to, but not earlier than, context->frameTimestamp.
 int HeliosDac::HeliosDacIdnDevice::DoFrame()
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	if (idnPushFrame(context) != 0)
@@ -1536,7 +1793,7 @@ int HeliosDac::HeliosDacIdnDevice::DoFrame()
 // Continually running thread. Waits for a new packet to be ready, then it is sent to the DAC at the correct time.
 void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 {
-	while (!closed)
+	while (!GetIsClosed())
 	{
 		uint64_t now = plt_getMonoTimeUS();
 
@@ -1603,7 +1860,7 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 		}
 #endif
 
-		if (closed)
+		if (GetIsClosed())
 			break;
 
 		DoFrame();
@@ -1614,10 +1871,16 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 }
 
 
+int HeliosDac::HeliosDacIdnDevice::GetUnitId(uint8_t* idArray16Byte)
+{
+	memcpy(idArray16Byte, context->unitId, 16);
+	return HELIOS_SUCCESS;
+}
+
 // Gets firmware version of DAC
 int HeliosDac::HeliosDacIdnDevice::GetFirmwareVersion()
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	if (firmwareVersion > 0)
@@ -1675,7 +1938,7 @@ int HeliosDac::HeliosDacIdnDevice::GetFirmwareVersion()
 // Gets name of DAC (populates name with max 32 bytes).
 int HeliosDac::HeliosDacIdnDevice::GetName(char* dacName)
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	size_t length = context->name.length();
@@ -1721,7 +1984,7 @@ int HeliosDac::HeliosDacIdnDevice::SetShutter(bool level)
 // Stops output of DAC
 int HeliosDac::HeliosDacIdnDevice::Stop()
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	std::lock_guard<std::mutex>lock(frameLock);
@@ -1751,7 +2014,7 @@ int HeliosDac::HeliosDacIdnDevice::Stop()
 // Sets persistent name of DAC
 int HeliosDac::HeliosDacIdnDevice::SetName(char* name)
 {
-	if (closed)
+	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
 	char buffer[35] = { (char)0xE5, (char)0x3 };
@@ -1791,6 +2054,14 @@ int HeliosDac::HeliosDacIdnDevice::SetName(char* name)
 	}
 
 	return HELIOS_ERROR_NOT_SUPPORTED;
+}
+
+int HeliosDac::HeliosDacIdnDevice::Close()
+{
+	Stop();
+	logInfo("Closing IDN DAC.\n");
+	closed = true;
+	return HELIOS_SUCCESS;
 }
 
 // Erases the firmware of the DAC, allowing it to be updated

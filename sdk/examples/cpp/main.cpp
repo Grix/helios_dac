@@ -1,21 +1,35 @@
-// Example program scanning a line from top to bottom on the Helios
+// Example program scanning a line from top to bottom on each Helios that is connected.
+// Also periodically rescans for new connected devices.
 
 #include "../../cpp/HeliosDac.h"
+#include <thread>
+#include <mutex>
+
+int numDevices = 0;
+bool stopThreads = false;
+HeliosDac helios;
+std::mutex deviceDetectionMutex;
+
+void deviceDetectionHandler(void);
 
 int main(void)
 {
 	// Assemble test frames
 	// This is a simple line moving upward in a loop, but for real graphics you should optimize the point stream for laser scanners by 
 	// interpolating long vectors including blanked sections, adding points at sharp corners, etc.
-	HeliosPointHighRes** frame = new HeliosPointHighRes*[30];
-	const int numPointsPerFrame = 1000;
-	const int pointsPerSecond = 30000;
+	const int numFramesInLoop = 20;
+	const int numPointsPerFrame = 500;
+	const int pointsPerSecond = 20000;
+	HeliosPointHighRes** frame = new HeliosPointHighRes*[numFramesInLoop];
 	int x = 0;
 	int y = 0;
-	for (int i = 0; i < 30; i++)
+
+	std::uint16_t xToggle = 1;
+
+	for (int i = 0; i < numFramesInLoop; i++)
 	{
 		frame[i] = new HeliosPointHighRes[numPointsPerFrame];
-		y = i * 0xFFFF / 30;
+		y = i * 0xFFFF / numFramesInLoop;
 		for (int j = 0; j < numPointsPerFrame; j++)
 		{
 			if (j < (numPointsPerFrame/2))
@@ -23,7 +37,7 @@ int main(void)
 			else
 				x = 0xFFFF - ((j - (numPointsPerFrame / 2)) * 0xFFFF / (numPointsPerFrame / 2));
 
-			frame[i][j].x = x;
+			frame[i][j].x = x;		// xToggle * 0xFFFF; xToggle = (xToggle == 1 ? 0 : 1); // for debug
 			frame[i][j].y = y;
 			frame[i][j].r = 0xD0FF;
 			frame[i][j].g = 0xFFFF;
@@ -38,45 +52,57 @@ int main(void)
 
 	// Connect to DACs and output frames
 	// First scan for connected devices and open the connection(s).
-	HeliosDac helios;
-	int numDevs = helios.OpenDevices();
+	numDevices = helios.OpenDevices();
 
-	if (numDevs <= 0)
+	// Simple hot-plugging implementation. Optional, you could simply manually scan once using OpenDevices() instead.
+	std::thread deviceDetectionThread(deviceDetectionHandler); 
+	deviceDetectionThread.detach();
+
+	// Print some info about connected DACs
+	if (numDevices <= 0)
 	{
-		printf("No DACs found.\n");
-		return 0;
+		printf("No DACs found (but we are scanning again every 5 seconds..)\n");
 	}
-	printf("Found %d DACs:\n", numDevs);
-	for (int j = 0; j < numDevs; j++)
+	printf("Found %d DACs:\n", numDevices);
+	for (int j = 0; j < numDevices; j++)
 	{
 		char name[32];
 		if (helios.GetName(j, name) == HELIOS_SUCCESS)
-			printf("- %s: USB?: %d, FW %d\n", name, helios.GetIsUsb(j), helios.GetFirmwareVersion(j));
+			printf("- %s: type: %s, FW: %d\n", name, helios.GetIsUsb(j) ? "USB" : "IDN/Network", helios.GetFirmwareVersion(j));
 		else
 			printf("- (unknown dac): USB?: %d, FW %d\n", helios.GetIsUsb(j), helios.GetFirmwareVersion(j));
 	}
 	printf("Outputting animation...\n");
 
+	// Output animation to the DAC(s) in a loop.
 	int i = 0;
 	while (1)
 	{
+		bool anyDeviceOpened = false;
+
 		i++;
-		if (i > 200)
+		if (i % 8000 == 1000)
 		{
-			break;
+			//Sleep(3000); // Just for testing purposes, simulates a buffer underrun which should turn lasers off for a few seconds.
 		}
 
+		std::lock_guard<std::mutex> lock(deviceDetectionMutex);
 
-		// Send each frame to the DAC.
-		for (int j = 0; j < numDevs; j++)
+		// Send each frame to the DACs.
+		for (int j = 0; j < numDevices; j++)
 		{
+			if (helios.GetIsClosed(j))
+				continue;
+
+			anyDeviceOpened = true;
+
 			// Wait for ready status. You must call GetStatus() until it returns 1 before each and every WriteFrame*() call that you do.
 			for (unsigned int k = 0; k < 1024; k++)
 			{ 
 				int status = helios.GetStatus(j);
 				if (status == 1)
 				{
-					helios.WriteFrameHighResolution(j, pointsPerSecond, HELIOS_FLAGS_DEFAULT, frame[i % 30], numPointsPerFrame);
+					helios.WriteFrameHighResolution(j, pointsPerSecond, HELIOS_FLAGS_DEFAULT, frame[i % numFramesInLoop], numPointsPerFrame);
 					break;
 				}
 				else if (status < 0)
@@ -89,10 +115,31 @@ int main(void)
 			// You need to call WriteFrame*() in time (before the previously written frame finished playing), to not let the buffers in the DAC underrun.
 			// You should also make frames large enough to account for transfer overheads and timing jitter. Frames should be 10 milliseconds or longer on average, generally speaking.
 		}
+
+		if (!anyDeviceOpened)
+			std::this_thread::sleep_for(std::chrono::milliseconds(100)); // To avoid loading the CPU 100% if there is no connected devices that we can wait for.
 	}
 
 	// Freeing connection when we're done
+	stopThreads = true;
 	helios.CloseDevices();
 
 	return 0;
+}
+
+
+
+// Simple hot-plugging implementation. Optional, you could simply manually scan once using OpenDevices() instead.
+void deviceDetectionHandler(void)
+{
+	while (!stopThreads)
+	{
+		std::this_thread::sleep_for(std::chrono::seconds(5));
+
+		// To avoid rescanning at the same time as output in this example. This can cause a small gap in output.
+		// In your app you should simply not try to poll for device changes while output is turned on.
+		std::lock_guard<std::mutex> lock(deviceDetectionMutex);
+
+		numDevices = helios.ReScanDevices();
+	}
 }
