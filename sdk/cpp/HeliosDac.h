@@ -422,6 +422,7 @@ private:
 	int _OpenIdnDevices(bool inPlace);
 	void _SortDeviceList();
 	void _RemoveNotFoundIdnServers(IDNSL_SERVER_INFO* firstServerInfo);
+	bool _GetIdnServerExists(IDNSL_SERVER_INFO* firstServerInfo);
 
 	std::vector<std::unique_ptr<HeliosDacDevice>> deviceList;
 	std::mutex threadLock;

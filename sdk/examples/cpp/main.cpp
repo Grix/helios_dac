@@ -81,7 +81,7 @@ int main(void)
 		bool anyDeviceOpened = false;
 
 		i++;
-		if (i % 8000 == 1000)
+		if (i % 3000 == 1000)
 		{
 			Sleep(3000); // Just for testing purposes, simulates a buffer underrun which should turn lasers off for a few seconds.
 		}
@@ -117,6 +117,9 @@ int main(void)
 			// In this loop, timing is handled by the GetStatus polling, which only returns 1 once there is room in the DAC to send the next frame.
 			// You need to call WriteFrame*() in time (before the previously written frame finished playing), to not let the buffers in the DAC underrun.
 			// You should also make frames large enough to account for transfer overheads and timing jitter. Frames should be 10 milliseconds or longer on average, generally speaking.
+			
+			// NB: In a real app, each DAC should have its own thread to avoid having them wait on each other. 
+			// This simple single-threaded example will not work properly with multiple DACs for that reason.
 		}
 	}
 

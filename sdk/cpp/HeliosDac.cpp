@@ -292,6 +292,26 @@ void HeliosDac::_RemoveNotFoundIdnServers(IDNSL_SERVER_INFO* firstServerInfo)
 	}
 }
 
+// Internal helper function, returns true if device with this unit ID already exists in device list
+bool HeliosDac::_GetIdnServerExists(IDNSL_SERVER_INFO* serverInfo)
+{
+	for (int j = 0; j < deviceList.size(); j++)
+	{
+		if (deviceList[j]->GetIsUsb() || deviceList[j]->GetIsClosed())
+			continue;
+
+		uint8_t id[IDNSL_UNITID_LENGTH];
+		((HeliosDacIdnDevice*)deviceList[j].get())->GetUnitId(id);
+		bool unitIdMismatch = memcmp(serverInfo->unitID, id, IDNSL_UNITID_LENGTH) != 0;
+		if (!unitIdMismatch)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 // Internal function. inPlace = Whether to keep the current opened devices in their device number slots and only scan for changes.
 int HeliosDac::_OpenIdnDevices(bool inPlace)
 {
@@ -327,11 +347,17 @@ int HeliosDac::_OpenIdnDevices(bool inPlace)
 				if (serverInfo->addressTable[i].errorFlags == 0 && idnContexts.size() < 999)
 				{
 					bool found = false;
-					for (long unsigned int contextId = 0; contextId < idnContexts.size(); contextId++) // Check for duplicate entries
+					// Check for duplicate entries from scan
+					for (long unsigned int contextId = 0; contextId < idnContexts.size(); contextId++)
 					{
 						bool unitIdMismatch = memcmp(serverInfo->unitID, idnContexts[contextId]->unitId, IDNSL_UNITID_LENGTH) != 0;
 
 						if (idnContexts[contextId]->serverSockAddr.sin_addr.s_addr == serverInfo->addressTable[i].addr.s_addr || !unitIdMismatch)
+							found = true;
+					}
+					if (inPlace && !found)
+					{
+						if (_GetIdnServerExists(serverInfo))
 							found = true;
 					}
 					if (!found)
@@ -380,11 +406,20 @@ int HeliosDac::_OpenIdnDevices(bool inPlace)
 				if (serverInfo->addressTable[i].errorFlags == 0 && idnContexts.size() < 999)
 				{
 					bool found = false;
-					for (int contextId = 0; contextId < idnContexts.size(); contextId++) // Check for duplicate entries
+					// Check for duplicate entries from scan
+					for (int contextId = 0; contextId < idnContexts.size(); contextId++)
 					{
 						bool unitIdMismatch = memcmp(serverInfo->unitID, idnContexts[contextId]->unitId, IDNSL_UNITID_LENGTH) != 0;
 
 						if (idnContexts[contextId]->serverSockAddr.sin_addr.S_un.S_addr == serverInfo->addressTable[i].addr.S_un.S_addr || !unitIdMismatch)
+						{
+							found = true;
+							break;
+						}
+					}
+					if (inPlace && !found)
+					{
+						if (_GetIdnServerExists(serverInfo))
 							found = true;
 					}
 					if (!found)
@@ -440,14 +475,14 @@ int HeliosDac::_OpenIdnDevices(bool inPlace)
 			}
 			if (!found)
 			{
-				logInfo("Found new IDN DAC during rescan: %s\n", idnContext->name);
+				logInfo("Found new IDN DAC during rescan.\n");
 				deviceList.push_back(std::make_unique<HeliosDacIdnDevice>(idnContext));
 				numDevices++;
 			}
 		}
 		else
 		{
-			logInfo("Found new IDN DAC: %s\n", idnContext->name);
+			logInfo("Found new IDN DAC.\n");
 			deviceList.push_back(std::make_unique<HeliosDacIdnDevice>(idnContext));
 			numDevices++;
 		}
