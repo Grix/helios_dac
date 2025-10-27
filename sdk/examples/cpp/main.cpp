@@ -18,7 +18,7 @@ int main(void)
 	// This is a simple line moving upward in a loop, but for real graphics you should optimize the point stream for laser scanners by 
 	// interpolating long vectors including blanked sections, adding points at sharp corners, etc.
 	const int numFramesInLoop = 20;
-	const int numPointsPerFrame = 500;
+	const int numPointsPerFrame = 700;
 	const int pointsPerSecond = 20000;
 	HeliosPointHighRes** frame = new HeliosPointHighRes*[numFramesInLoop];
 	int x = 0;
@@ -83,8 +83,11 @@ int main(void)
 		i++;
 		if (i % 8000 == 1000)
 		{
-			//Sleep(3000); // Just for testing purposes, simulates a buffer underrun which should turn lasers off for a few seconds.
+			Sleep(3000); // Just for testing purposes, simulates a buffer underrun which should turn lasers off for a few seconds.
 		}
+
+		if (!anyDeviceOpened)
+			std::this_thread::sleep_for(std::chrono::milliseconds(100)); // To avoid loading the CPU 100% if there is no connected devices that we can wait for.
 
 		std::lock_guard<std::mutex> lock(deviceDetectionMutex);
 
@@ -115,9 +118,6 @@ int main(void)
 			// You need to call WriteFrame*() in time (before the previously written frame finished playing), to not let the buffers in the DAC underrun.
 			// You should also make frames large enough to account for transfer overheads and timing jitter. Frames should be 10 milliseconds or longer on average, generally speaking.
 		}
-
-		if (!anyDeviceOpened)
-			std::this_thread::sleep_for(std::chrono::milliseconds(100)); // To avoid loading the CPU 100% if there is no connected devices that we can wait for.
 	}
 
 	// Freeing connection when we're done
