@@ -19,7 +19,7 @@ BASIC USAGE:
 1.	Call OpenDevices() to scan and open devices, returns number of available devices.
 2.	To send a new frame, first call GetStatus(). The status should be polled until it returns ready. It can and sometimes will fail to return ready on the first try.
 3.  When GetStatus() has returned ready (1), then you can call one of the WriteFrame*() functions with image data, to output a frame.
-4.  Repeat steps 2-3 continuously while you have data to output.
+4.  Repeat steps 2-3 continuously while you have data to output. If you output to multiple DACs at once, each should have their own thread.
 5.  To stop output, use Stop(). To restart output you must send a new frame as described above.
 6.	When the DAC(s) are no longer needed, free the connections using CloseDevices().
 
@@ -46,19 +46,21 @@ HeliosPointHighRes** ezAudDacFrameBuffer = 0;
 
 // Unless otherwise specified, functions return a negative error code on failure and 1 on success.
 
-// Initializes drivers, opens connection to all devices.
-// Returns number of available devices.
-// NB: To re-scan for newly connected DACs after this function has once been called before, you must first call CloseDevices()
+// Initializes drivers, opens connection to all devices. Returns number of available devices.
+// NB: This does not preserve existing devices. To use this function a second time you should first call CloseDevices() so it scans from scratch.
+// An alternative for re-scanning while preserving existing connections is RescanDevices*().
 HELIOS_EXPORT int OpenDevices();
 
 // Initializes drivers, opens connection to only USB devices (skips IDN/network scan).
 // Returns number of available devices.
-// NB: To re-scan for newly connected DACs after this function has once been called before, you must first call CloseDevices()
+// NB: This does not preserve existing devices. To use this function a second time you should first call CloseDevices() so it scans from scratch.
+// An alternative for re-scanning while preserving existing connections is RescanDevices*().
 HELIOS_EXPORT int OpenDevicesOnlyUsb();
 
 // Initializes drivers, opens connection to only IDN/network devices (skips USB scan).
 // Returns number of available devices.
-// NB: To re-scan for newly connected DACs after this function has once been called before, you must first call CloseDevices()
+// NB: This does not preserve existing devices. To use this function a second time you should first call CloseDevices() so it scans from scratch.
+// An alternative for re-scanning while preserving existing connections is RescanDevices*().
 HELIOS_EXPORT int OpenDevicesOnlyNetwork();
 
 // Scans for new devices and verifies connectivity to existing devices.
@@ -75,7 +77,7 @@ HELIOS_EXPORT int ReScanDevicesOnlyNetwork();
 // Return 1 if ready to receive new frame, 0 if not, negative number if communcation failed
 HELIOS_EXPORT int GetStatus(unsigned int dacNum);
 
-// Gets whether the DAC is still connected (1) or not (0). If not, all function calls will fail. 
+// Gets whether the DAC is still connected (0) or not (1). If not, all function calls will fail. 
 // You can call ReScanDevices*() to attempt to re-establish connection if the DAC has since been reconnected.
 HELIOS_EXPORT int GetIsClosed(unsigned int dacNum);
 

@@ -52,8 +52,6 @@ int HeliosDac::OpenDevicesOnlyUsb()
 	if (inited)
 		return (int)deviceList.size();
 
-	// TODO: Make option to keep existing DACs in their current indexes, e.g only scan for changes. Currently this function only works after all DACs have been closed.
-
 	unsigned int numDevices = _OpenUsbDevices(false);
 
 	_SortDeviceList();
@@ -69,8 +67,6 @@ int HeliosDac::OpenDevicesOnlyNetwork()
 {
 	if (inited)
 		return (int)deviceList.size();
-
-	// TODO: Make option to keep existing DACs in their current indexes, e.g only scan for changes. Currently this function only works after all DACs have been closed.
 
 	unsigned int numDevices = _OpenIdnDevices(false);
 
@@ -132,8 +128,10 @@ int HeliosDac::_OpenUsbDevices(bool inPlace)
 			if (!deviceList[i]->GetIsUsb() || deviceList[i]->GetIsClosed())
 				continue;
 
-			char dummy[32];
-			if (deviceList[i]->GetStatus() < 0 && deviceList[i]->GetStatus() < 0)
+			if (deviceList[i]->GetDidSendFrameRecently())
+				continue;
+
+			if (deviceList[i]->GetStatus() < 0)
 			{
 				deviceList[i]->Close();
 			}
@@ -928,6 +926,8 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	if (freePoints)
 		delete[] points;
 
+	lastSendTime = plt_getMonoTimeUS();
+
 	if (!shutterIsOpen)
 		SetShutter(1);
 
@@ -1038,6 +1038,8 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std
 	if (freePoints)
 		delete[] points;
 
+	lastSendTime = plt_getMonoTimeUS();
+
 	if (!shutterIsOpen)
 		SetShutter(1);
 
@@ -1146,6 +1148,8 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameExtended(unsigned int pps, std::uint
 
 	if (freePoints)
 		delete[] points;
+
+	lastSendTime = plt_getMonoTimeUS();
 
 	if (!shutterIsOpen)
 		SetShutter(1);
@@ -1407,6 +1411,13 @@ int HeliosDac::HeliosDacUsbDevice::EraseFirmware()
 	}
 	else
 		return HELIOS_ERROR_DEVICE_SEND_CONTROL;
+}
+
+bool HeliosDac::HeliosDacUsbDevice::GetDidSendFrameRecently()
+{
+	if (GetIsClosed())
+		return false;
+	return plt_getMonoTimeUS() - lastSendTime < 500000; // less than 500 ms since last frame send
 }
 
 libusb_device_handle* HeliosDac::HeliosDacUsbDevice::GetLibusbHandle()
@@ -2103,6 +2114,13 @@ int HeliosDac::HeliosDacIdnDevice::Close()
 int HeliosDac::HeliosDacIdnDevice::EraseFirmware()
 {
 	return HELIOS_ERROR_NOT_SUPPORTED;
+}
+
+bool HeliosDac::HeliosDacIdnDevice::GetDidSendFrameRecently()
+{
+	if (GetIsClosed())
+		return false;
+	return plt_getMonoTimeUS() - context->frameTimestamp < 500000; // 500 ms since last frame send
 }
 
 HeliosDac::HeliosDacIdnDevice::~HeliosDacIdnDevice()
