@@ -319,7 +319,17 @@ int HeliosDac::_OpenIdnDevices(bool inPlace)
 
 	unsigned int numDevices = 0;
 
-	plt_sockStartup();
+	if (!idnInited)
+	{
+		plt_sockStartup();
+
+		// Validate monotonic time reference
+		if (plt_validateMonoTime() != 0)
+		{
+			logError("Monotonic time init failed");
+			return 0;
+		}
+	}
 	idnInited = true;
 	std::vector<IDNCONTEXT*> idnContexts;
 

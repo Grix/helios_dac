@@ -1158,13 +1158,6 @@ int getIDNServerList(IDNSL_SERVER_INFO** ppFirstServerInfo, uint8_t clientGroup,
     if (clientGroup > 15) 
         return -1;
 
-    // Validate monotonic time reference
-    if (plt_validateMonoTime() != 0)
-    {
-        logError("Monotonic time init failed");
-        return -1;
-    }
-
     // Allocate a context to keep variables for this scan. Note: Contains receive packet buffer
     SCAN_CONTEXT* scanCtx = (SCAN_CONTEXT*)calloc(1, sizeof(SCAN_CONTEXT));
     if (scanCtx == (SCAN_CONTEXT*)0)
