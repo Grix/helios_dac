@@ -4,7 +4,7 @@
 
 echo Attempting to upload new firmware.
 
-ping -n 3 127.0.0.1 > NUL
+ping -n 1 127.0.0.1 > NUL
 
 bossac.exe -u -w -v -b lasdac_mainfirmware.bin
 

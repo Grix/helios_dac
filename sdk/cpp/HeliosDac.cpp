@@ -111,7 +111,7 @@ int HeliosDac::_OpenUsbDevices(bool inPlace)
 {
 	// Scanning for USB devices
 
-	if (!inPlace || !inited)
+	if (!inPlace || !usbInited)
 	{
 		int result = libusb_init(NULL);
 		if (result < 0)
@@ -119,6 +119,8 @@ int HeliosDac::_OpenUsbDevices(bool inPlace)
 
 		libusb_set_option(NULL, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL);
 	}
+
+	usbInited = true;
 
 	if (inPlace && inited)
 	{

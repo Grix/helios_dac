@@ -434,4 +434,5 @@ private:
 	std::mutex threadLock;
 	bool inited = false;
 	bool idnInited = false;
+	bool usbInited = false;
 };
