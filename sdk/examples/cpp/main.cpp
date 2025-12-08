@@ -18,8 +18,8 @@ int main(void)
 	// This is a simple line moving upward in a loop, but for real graphics you should optimize the point stream for laser scanners by 
 	// interpolating long vectors including blanked sections, adding points at sharp corners, etc.
 	const int numFramesInLoop = 20;
-	const int numPointsPerFrame = 700;
-	const int pointsPerSecond = 20000;
+	const int numPointsPerFrame = 1500;
+	const int pointsPerSecond = 40000;
 	HeliosPointHighRes** frame = new HeliosPointHighRes*[numFramesInLoop];
 	int x = 0;
 	int y = 0;
@@ -75,11 +75,10 @@ int main(void)
 	printf("Outputting animation...\n");
 
 	// Output animation to the DAC(s) in a loop.
+	bool anyDeviceOpened = false;
 	int i = 0;
 	while (1)
 	{
-		bool anyDeviceOpened = false;
-
 		i++;
 		if (i % 3000 == 1000)
 		{
@@ -88,8 +87,6 @@ int main(void)
 
 		if (!anyDeviceOpened)
 			std::this_thread::sleep_for(std::chrono::milliseconds(100)); // To avoid loading the CPU 100% if there is no connected devices that we can wait for.
-
-		std::lock_guard<std::mutex> lock(deviceDetectionMutex);
 
 		// Send each frame to the DACs.
 		for (int j = 0; j < numDevices; j++)
@@ -137,11 +134,10 @@ void deviceDetectionHandler(void)
 {
 	while (!stopThreads)
 	{
-		std::this_thread::sleep_for(std::chrono::seconds(5));
+		std::this_thread::sleep_for(std::chrono::seconds(10));
 
-		// To avoid rescanning at the same time as output in this example. This can cause a small gap in output.
-		// In your app you should simply not try to poll for device changes while output is turned on.
-		std::lock_guard<std::mutex> lock(deviceDetectionMutex);
+		// NB: In your app you should try to avoiding polling for device changes while output is turned on,
+		// as the scanning process could potentially disrupt output for a few milliseconds.
 
 		numDevices = helios.ReScanDevices();
 	}

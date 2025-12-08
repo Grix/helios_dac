@@ -303,3 +303,6 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+/hardware/Kicad_PCB_helios/Helios-backups
+hardware/Kicad_PCB_helios/fp-info-cache
+/hardware/Kicad_PCB_helios/rescue-backup

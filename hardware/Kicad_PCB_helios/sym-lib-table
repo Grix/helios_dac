@@ -1,0 +1,6 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "Helios-rescue")(type "Legacy")(uri "${KIPRJMOD}/Helios-rescue.lib")(options "")(descr ""))
+  (lib (name "Personal-library")(type "Legacy")(uri "${KIPRJMOD}/library/Personal library.lib")(options "")(descr ""))
+  (lib (name "CRV1")(type "KiCad")(uri "${KIPRJMOD}/library/CRV1.kicad_sym")(options "")(descr ""))
+)

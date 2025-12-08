@@ -421,7 +421,7 @@ int idnPushFrame(IDNCONTEXT* context)
 	ctx->sendBufferPosition += samplesInPacket * ctx->bytesPerSample;
 	ctx->frameCnt++;
 
-	//if (ctx->frameCnt % 10 != 5)
+	//if (ctx->frameCnt % 27 != 5) // packet loss simulation for testing
 	{
 		// Send the packet
 		if (idnSend(ctx, packetHeader, msgLength) != 0)
