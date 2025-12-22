@@ -33,8 +33,6 @@ int HeliosDac::OpenDevices()
 	if (inited)
 		return (int)deviceList.size();
 
-	// TODO: Make option to keep existing DACs in their current indexes, e.g only scan for changes. Currently this function only works after all DACs have been closed.
-
 	unsigned int numDevices = _OpenUsbDevices(false);
 	numDevices += _OpenIdnDevices(false);
 
@@ -51,6 +49,13 @@ int HeliosDac::OpenDevicesOnlyUsb()
 {
 	if (inited)
 		return (int)deviceList.size();
+
+	// Validate monotonic time reference. Done in IDN but must be done here if not using IDN
+	if (plt_validateMonoTime() != 0)
+	{
+		logError("Monotonic time init failed");
+		return 0;
+	}
 
 	unsigned int numDevices = _OpenUsbDevices(false);
 
@@ -90,6 +95,16 @@ int HeliosDac::ReScanDevices()
 
 int HeliosDac::ReScanDevicesOnlyUsb()
 {
+	if (!inited)
+	{
+		// Validate monotonic time reference. Done in IDN but must be done here if not using IDN
+		if (plt_validateMonoTime() != 0)
+		{
+			logError("Monotonic time init failed");
+			return 0;
+		}
+	}
+
 	_OpenUsbDevices(true);
 
 	inited = true;
