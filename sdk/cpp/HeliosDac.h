@@ -120,8 +120,9 @@ Unless otherwise specified, functions return a negative error code on failure.
 #define HELIOS_FLAGS_START_IMMEDIATELY	(1 << 0)
 
 // Written frame should only be played exactly once, instead of being looped indefinitely if no more frames are written after this one.
-// NB: This flag is not yet supported on network (IDN) DACs, they always play the frame only once. Therefore, it is recommended to always 
-// use this flag, and instead implement your own frame looping system if you need to repeat the frame.
+// If a new frame has not arrived before the currently playing one is done, the laser will turn off.
+// NB: This flag is not yet supported on network (IDN) DACs, they always play the frame only once. However, network DACs such as the 
+// HeliosPRO usually have a longer buffer, so an underrun is less likely to happen.
 #define HELIOS_FLAGS_SINGLE_MODE		(1 << 1)
 
 // WriteFrame() should not block execution while the frame is transfered to the DAC, instead the transfer is processed a separate thread.
@@ -228,7 +229,9 @@ public:
 	// WriteFrameExtended() has additional optional channels and a higher resolution point structure supported by newer DAC models.
 	// 
 	// It is safe to call any of these functions even for DACs that don't support higher resolution data. In that case the data will automatically be converted (though at a slight performance cost).
-	// NB: You should make frames large enough to account for transfer overheads and timing jitter. Recommended to have frames last 10 milliseconds or longer on average, generally speaking.
+	//
+	// NB: You should also make frames large enough to account for transfer overheads and timing jitter. 
+	// Frames should be 10 milliseconds long at an absolute minimum, but 20-40ms is recommended, generally speaking.
 	// 
 	// devNum: dac number (0 to n where n+1 is the return value from OpenDevices() ).
 	// pps: rate of output in points per second.
