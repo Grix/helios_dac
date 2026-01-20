@@ -24,3 +24,7 @@ received (but the flag HELIOS_FLAG_SINGLE_MODE will make it stop playback instea
 The GetStatus() function actually checks whether or not the buffer on the DAC is empty or full. If it is full, the DAC
 cannot receive a new frame until the currently playing frame finishes, freeing up the buffer.
 
+
+----
+
+Did you know that the Helios DAC SDK won first place in the 2025 [ILDA Fenning Award for Technical Achievement (IDN Standards category)](https://www.ilda.com/awards.htm)?
