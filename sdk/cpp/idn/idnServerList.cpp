@@ -229,7 +229,7 @@ static void createInterfaceNode(void* callbackArg, const char* ifName, uint32_t 
         ifNode->ipMask = ifIP4Mask;
 
         // Remember interface name
-        snprintf(ifNode->ifName, sizeof(ifNode->ifName), ifName ? ifName : "<?>");
+		snprintf(ifNode->ifName, sizeof(ifNode->ifName), "%s", ifName ? ifName : "<?>");
 
         // Allow broadcast on socket
         if (plt_sockSetBroadcast(ifNode->fdSocket) < 0)
@@ -1296,4 +1296,3 @@ void freeIDNServerList(IDNSL_SERVER_INFO* firstServerInfo)
         free(serverInfo);
     }
 }
-

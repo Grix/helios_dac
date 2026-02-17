@@ -82,7 +82,7 @@ int main(void)
 		i++;
 		if (i % 3000 == 1000)
 		{
-			Sleep(3000); // Just for testing purposes, simulates a buffer underrun which should turn lasers off for a few seconds.
+			std::this_thread::sleep_for(std::chrono::milliseconds(3000)); // Just for testing purposes, simulates a buffer underrun which should turn lasers off for a few seconds.
 		}
 
 		if (!anyDeviceOpened)
