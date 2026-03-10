@@ -1884,19 +1884,13 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 				if (context->sendBufferPosition != (uint8_t*)0)
 					numLateWaits++;
 
-#if defined(__APPLE__)
-				// macOS networks can drop oversized UDP datagrams; keep packets MTU-safe.
-				context->packetNumFragments = 1;
-				numLateWaits = -30;
-#else
+
 				if (numLateWaits > 10 && context->packetNumFragments < 6)
 				{
 					context->packetNumFragments++; // Increase max UDP packet size to have better sleep time error margins.
 					printf("IDN - NB: Increased max UDP packet size multiplier to %d to increase sleep error margin.\n", context->packetNumFragments);
 					numLateWaits = -30;
 				}
-#endif
-
 			}
 			else
 			{
