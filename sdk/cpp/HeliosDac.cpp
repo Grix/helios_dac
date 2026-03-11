@@ -395,6 +395,9 @@ int HeliosDac::_OpenIdnDevices(bool inPlace)
 							context->serverSockAddr.sin_addr.s_addr = serverInfo->addressTable[i].addr.s_addr;
 							context->name = std::string(serverInfo->hostName).append(" - ").append(serverInfo->serviceTable[j].serviceName);
 							context->serviceId = serverInfo->serviceTable[j].serviceID;
+							context->isStoppedOrTimeout = true;
+							context->packetNumFragments = 1;
+							memcpy(context->unitId, serverInfo->unitID, IDNSL_UNITID_LENGTH);
 
 							idnContexts.push_back(context);
 						}
