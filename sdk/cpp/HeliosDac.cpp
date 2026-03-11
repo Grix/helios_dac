@@ -395,6 +395,9 @@ int HeliosDac::_OpenIdnDevices(bool inPlace)
 							context->serverSockAddr.sin_addr.s_addr = serverInfo->addressTable[i].addr.s_addr;
 							context->name = std::string(serverInfo->hostName).append(" - ").append(serverInfo->serviceTable[j].serviceName);
 							context->serviceId = serverInfo->serviceTable[j].serviceID;
+							context->isStoppedOrTimeout = true;
+							context->packetNumFragments = 1;
+							memcpy(context->unitId, serverInfo->unitID, IDNSL_UNITID_LENGTH);
 
 							idnContexts.push_back(context);
 						}
@@ -492,7 +495,7 @@ int HeliosDac::_OpenIdnDevices(bool inPlace)
 
 				if (memcmp(id, idnContext->unitId, IDNSL_UNITID_LENGTH) == 0)
 				{
-					logInfo("Found previous IDN DAC that was reconnected: %s\n", idnContext->name);
+					logInfo("Found previous IDN DAC that was reconnected: %s\n", idnContext->name.c_str());
 					deviceList[j] = std::make_unique<HeliosDacIdnDevice>(idnContext);
 					found = true;
 					break;
@@ -1884,13 +1887,13 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 				if (context->sendBufferPosition != (uint8_t*)0)
 					numLateWaits++;
 
+
 				if (numLateWaits > 10 && context->packetNumFragments < 6)
 				{
 					context->packetNumFragments++; // Increase max UDP packet size to have better sleep time error margins.
 					printf("IDN - NB: Increased max UDP packet size multiplier to %d to increase sleep error margin.\n", context->packetNumFragments);
 					numLateWaits = -30;
 				}
-
 			}
 			else
 			{
