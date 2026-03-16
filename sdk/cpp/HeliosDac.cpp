@@ -861,8 +861,7 @@ HeliosDac::HeliosDacUsbDevice::HeliosDacUsbDevice(libusb_device_handle* handle)
 
 	closed = false;
 
-	std::thread frameHandlerThread(&HeliosDac::HeliosDacUsbDevice::BackgroundFrameHandler, this);
-	frameHandlerThread.detach();
+	frameHandlerThread = std::thread(&HeliosDac::HeliosDacUsbDevice::BackgroundFrameHandler, this);
 }
 
 // Sends a raw frame buffer (implemented as bulk transfer) to a dac device
@@ -872,7 +871,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
-	if (frameReady)
+	if (frameReady.load(std::memory_order_acquire))
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
 	// If pps is too low, try to duplicate frames to simulate a higher pps rather than failing
@@ -963,8 +962,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrame(unsigned int pps, std::uint8_t flag
 
 	if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
 	{
-		threadingHasBeenUsed = true;
-		frameReady = true;
+		frameReady.store(true, std::memory_order_release);
 		return HELIOS_SUCCESS;
 	}
 	else
@@ -980,7 +978,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std
 	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
-	if (frameReady)
+	if (frameReady.load(std::memory_order_acquire))
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
 	// If pps is too low, try to duplicate frames to simulate a higher pps rather than failing
@@ -1075,8 +1073,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameHighResolution(unsigned int pps, std
 
 	if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
 	{
-		threadingHasBeenUsed = true;
-		frameReady = true;
+		frameReady.store(true, std::memory_order_release);
 		return HELIOS_SUCCESS;
 	}
 	else
@@ -1091,7 +1088,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameExtended(unsigned int pps, std::uint
 	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
-	if (frameReady)
+	if (frameReady.load(std::memory_order_acquire))
 		return HELIOS_ERROR_DEVICE_FRAME_READY;
 
 	// If pps is too low, try to duplicate frames to simulate a higher pps rather than failing
@@ -1186,8 +1183,7 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameExtended(unsigned int pps, std::uint
 
 	if ((flags & HELIOS_FLAGS_DONT_BLOCK) != 0)
 	{
-		threadingHasBeenUsed = true;
-		frameReady = true;
+		frameReady.store(true, std::memory_order_release);
 		return HELIOS_SUCCESS;
 	}
 	else
@@ -1199,6 +1195,10 @@ int HeliosDac::HeliosDacUsbDevice::SendFrameExtended(unsigned int pps, std::uint
 // Sends frame to DAC
 int HeliosDac::HeliosDacUsbDevice::DoFrame()
 {
+	if (GetIsClosed())
+		return HELIOS_ERROR_DEVICE_CLOSED;
+
+	std::lock_guard<std::mutex> lock(frameLock);
 	if (GetIsClosed())
 		return HELIOS_ERROR_DEVICE_CLOSED;
 
@@ -1224,11 +1224,8 @@ void HeliosDac::HeliosDacUsbDevice::BackgroundFrameHandler()
 {
 	while (!GetIsClosed())
 	{
-		while (!threadingHasBeenUsed)
-			plt_usleep(50000);
-
 		// Wait until frame is ready to be sent
-		while ((!frameReady) && (!GetIsClosed()))
+		while ((!frameReady.load(std::memory_order_acquire)) && (!GetIsClosed()))
 			plt_usleep(1000);
 
 		if (GetIsClosed())
@@ -1236,7 +1233,7 @@ void HeliosDac::HeliosDacUsbDevice::BackgroundFrameHandler()
 
 		DoFrame();
 
-		frameReady = false;
+		frameReady.store(false, std::memory_order_release);
 	}
 }
 
@@ -1402,9 +1399,14 @@ int HeliosDac::HeliosDacUsbDevice::Stop()
 
 int HeliosDac::HeliosDacUsbDevice::Close()
 {
+	if (GetIsClosed())
+		return HELIOS_SUCCESS;
+
 	Stop();
 	logInfo("Closing Helios USB DAC.\n");
-	closed = true;
+	closed.store(true, std::memory_order_release);
+	// Wake the background thread if it is waiting for frame-ready.
+	frameReady.store(true, std::memory_order_release);
 	return HELIOS_SUCCESS;
 }
 
@@ -1481,11 +1483,19 @@ int HeliosDac::HeliosDacUsbDevice::SendControl(std::uint8_t* bufferAddress, unsi
 
 HeliosDac::HeliosDacUsbDevice::~HeliosDacUsbDevice()
 {
-	closed = true;
-	std::lock_guard<std::mutex>lock(frameLock); //wait until all threads have closed
+	Close();
 
-	libusb_close(usbHandle);
-	delete frameBuffer;
+	if (frameHandlerThread.joinable())
+		frameHandlerThread.join();
+
+	std::lock_guard<std::mutex> lock(frameLock);
+	if (usbHandle != NULL)
+	{
+		libusb_close(usbHandle);
+		usbHandle = NULL;
+	}
+	delete[] frameBuffer;
+	frameBuffer = NULL;
 }
 
 
