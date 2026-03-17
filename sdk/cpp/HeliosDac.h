@@ -32,6 +32,7 @@ Unless otherwise specified, functions return a negative error code on failure.
 #include <cstring>
 #include <cstdint>
 #include <thread>
+#include <atomic>
 #include <mutex>
 #include <vector>
 #include <memory>
@@ -300,9 +301,7 @@ private:
 	// Base class for individual DAC, for internal use
 	class HeliosDacDevice
 	{
-
 	public:
-
 		virtual ~HeliosDacDevice() {}
 
 		virtual int SendFrame(unsigned int pps, std::uint8_t flags, HeliosPoint* points, unsigned int numOfPoints) = 0;
@@ -319,18 +318,16 @@ private:
 		virtual int Close() = 0;
 		virtual int EraseFirmware() = 0;
 		virtual bool GetDidSendFrameRecently() = 0;
-		bool GetIsClosed() { return closed; }
+		bool GetIsClosed() { return closed.load(std::memory_order_acquire); }
 
 	protected:
-
-		bool closed = true;
+		std::atomic<bool> closed{true};
 	};
 
 	// Class for USB-connected Helios DACs, for internal use
 	class HeliosDacUsbDevice : public HeliosDacDevice
 	{
 	public:
-
 		HeliosDacUsbDevice(libusb_device_handle*);
 		~HeliosDacUsbDevice();
 
@@ -351,9 +348,7 @@ private:
 
 		libusb_device_handle* GetLibusbHandle();
 
-
 	private:
-
 		int DoFrame();
 		void BackgroundFrameHandler();
 		int SendControl(std::uint8_t* buffer, unsigned int bufferSize);
@@ -365,7 +360,8 @@ private:
 		struct libusb_transfer* interruptTransfer = NULL;
 		struct libusb_device_handle* usbHandle;
 		std::mutex frameLock;
-		bool frameReady = false;
+		std::thread frameHandlerThread;
+		std::atomic<bool> frameReady{false};
 		int firmwareVersion = 0;
 		char name[32] = { 0 };
 		std::uint8_t* frameBuffer;
@@ -376,7 +372,6 @@ private:
 		int minSampleRate = 7;
 		const int errorLimitResetValue = 50;
 		int errorLimitCountdown = errorLimitResetValue;
-		bool threadingHasBeenUsed = false;
 		uint64_t lastSendTime = 0;
 	};
 
