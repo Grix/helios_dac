@@ -10,12 +10,12 @@ Standard: C++14
 git repo: https://github.com/Grix/helios_dac.git
 
 BASIC USAGE:
-1.	Call OpenDevices() to open devices, returns number of available devices.
-2.	To send a frame to the DAC, first call GetStatus(). If the function returns ready (1), 
-	then you can call WriteFrame\*(). The status should be polled until it returns ready. 
-	It can fail to return ready on the first try.
-3.  To stop output, use Stop(). To restart output you must send a new frame as described above.
-4.	When the DAC is no longer needed, destroy the instance (destructors will free everything and close the connection)
+1.	Call OpenDevices() to scan and open devices, returns number of available devices.
+2.	To send a new frame, first call GetStatus(). The status should be polled until it returns ready. It can fail to return ready on the first try.
+3.  When GetStatus() has returned ready (1), then you can call one of the WriteFrame\*() functions with image data, to output a frame.
+4.  Repeat steps 2-3 continuously while you have data to output. If you output to multiple DACs at once, each should have their own thread.
+5.  To stop output, use Stop(). To restart output you must send a new frame as described above.
+6.	When the DAC(s) are no longer needed, free the connections using CloseDevices().
 
 The DAC is double-buffered. When it receives its first frame, it starts outputting it. When a second frame is sent to 
 the DAC while the first frame is being played, the second frame is stored in the DACs memory until the first frame 
