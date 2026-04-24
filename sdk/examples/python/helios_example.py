@@ -38,8 +38,6 @@ def load_library():
         lib_path = ".\\HeliosLaserDAC.dll"
     elif system == "Linux":
         lib_path = "./libHeliosDacAPI.so"
-    elif system == "Darwin":  # macOS
-        lib_path = "./libHeliosDacAPI.dylib"
     else:
         raise OSError(f"Unsupported platform: {system}")
     
