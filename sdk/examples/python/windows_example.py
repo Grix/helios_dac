@@ -16,7 +16,7 @@ class HeliosPoint(ctypes.Structure):
                 ('i', ctypes.c_uint8)]
 
 #Load and initialize library
-HeliosLib = ctypes.cdll.LoadLibrary(".\HeliosLaserDAC.dll")
+HeliosLib = ctypes.cdll.LoadLibrary(".\\HeliosLaserDAC.dll")
 numDevices = HeliosLib.OpenDevices()
 print("Found ", numDevices, "Helios DACs")
 
@@ -29,7 +29,7 @@ for i in range(30):
     y = round(i * 0xFFF / 30)
     frames[i] = frameType()
     for j in range(1000):
-        if (j < 500):
+        if j < 500:
             x = round(j * 0xFFF / 500)
         else:
             x = round(0xFFF - ((j - 500) * 0xFFF / 500))
