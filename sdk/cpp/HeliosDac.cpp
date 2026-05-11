@@ -185,8 +185,8 @@ int HeliosDac::_OpenUsbDevices(bool inPlace)
 					if (handle == NULL)
 						continue;
 					uint8_t newPortNumbers[7], existingPortNumbers[7];
-					int existingPortNumberDepth = libusb_get_port_numbers(libusb_get_device(handle), existingPortNumbers, 16);
-					int newPortNumberDepth = libusb_get_port_numbers(devs[i], newPortNumbers, 16);
+					int existingPortNumberDepth = libusb_get_port_numbers(libusb_get_device(handle), existingPortNumbers, 7);
+					int newPortNumberDepth = libusb_get_port_numbers(devs[i], newPortNumbers, 7);
 					if (existingPortNumberDepth < 0)
 						continue;
 					if (newPortNumberDepth < 0)
@@ -203,6 +203,9 @@ int HeliosDac::_OpenUsbDevices(bool inPlace)
 							}
 						}
 					}
+					else
+						match = false;
+
 					if (match)
 					{
 						found = true;
@@ -804,7 +807,7 @@ int HeliosDac::EraseFirmware(unsigned int devNum)
 
 HeliosDac::HeliosDacUsbDevice::HeliosDacUsbDevice(libusb_device_handle* handle)
 {
-	closed = true;
+	closed.store(true);
 	usbHandle = handle;
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	std::lock_guard<std::mutex>lock(frameLock);
@@ -859,7 +862,7 @@ HeliosDac::HeliosDacUsbDevice::HeliosDacUsbDevice(libusb_device_handle* handle)
 	frameBuffer = new std::uint8_t[HELIOS_MAX_POINTS * 7 + 5];
 	frameBufferSize = 0;
 
-	closed = false;
+	closed.store(false);
 
 	frameHandlerThread = std::thread(&HeliosDac::HeliosDacUsbDevice::BackgroundFrameHandler, this);
 }
@@ -1342,7 +1345,7 @@ int HeliosDac::HeliosDacUsbDevice::GetStatus()
 			if (errorLimitCountdown <= 0)
 			{
 				printf("Closing Helios DAC: too many errors.\n");
-				closed = true;
+				closed.store(true);
 			}
 		}
 	}
@@ -1353,7 +1356,7 @@ int HeliosDac::HeliosDacUsbDevice::GetStatus()
 		if (errorLimitCountdown <= 0)
 		{
 			printf("Closing Helios DAC: too many errors.\n");
-			closed = true;
+			closed.store(true);
 		}
 	}
 
@@ -1438,7 +1441,7 @@ int HeliosDac::HeliosDacUsbDevice::EraseFirmware()
 	std::uint8_t txBuffer[2] = { 0xDE, 0 };
 	if (SendControl(txBuffer, 2) == HELIOS_SUCCESS)
 	{
-		closed = true;
+		closed.store(true);
 		return HELIOS_SUCCESS;
 	}
 	else
@@ -1507,7 +1510,7 @@ HeliosDac::HeliosDacUsbDevice::~HeliosDacUsbDevice()
 
 HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 {
-	closed = true;
+	closed.store(true);
 	context = _context;
 	std::lock_guard<std::mutex> lock(frameLock);
 	plt_usleep(5);
@@ -1566,10 +1569,9 @@ HeliosDac::HeliosDacIdnDevice::HeliosDacIdnDevice(IDNCONTEXT* _context)
 	setsockopt(managementSocket, SOL_SOCKET, SO_RCVTIMEO, (const void*)&tv, sizeof(tv));
 #endif
 
-	closed = false;
+	closed.store(false);
 
-	std::thread frameHandlerThread(&HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler, this);
-	frameHandlerThread.detach();
+	frameHandlerThread = std::thread(&HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler, this);
 }
 
 // Queues up a raw frame buffer to be sent to the DAC. Legacy low-res point format.
@@ -1952,8 +1954,6 @@ void HeliosDac::HeliosDacIdnDevice::BackgroundFrameHandler()
 		DoFrame();
 	}
 
-
-	finishedClosing = true;
 }
 
 
@@ -2146,7 +2146,7 @@ int HeliosDac::HeliosDacIdnDevice::Close()
 {
 	Stop();
 	logInfo("Closing IDN DAC.\n");
-	closed = true;
+	closed.store(true);
 	return HELIOS_SUCCESS;
 }
 
@@ -2165,12 +2165,10 @@ bool HeliosDac::HeliosDacIdnDevice::GetDidSendFrameRecently()
 
 HeliosDac::HeliosDacIdnDevice::~HeliosDacIdnDevice()
 {
-	closed = true;
+	closed.store(true);
 	std::lock_guard<std::mutex>lock(frameLock); // Wait until all threads have closed
-	while (!finishedClosing)
-		plt_usleep(100);
-
-	Stop();
+	if (frameHandlerThread.joinable())
+		frameHandlerThread.join();
 
 	// Device has closed, free resources
 	if (context != NULL)

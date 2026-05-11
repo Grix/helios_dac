@@ -412,11 +412,12 @@ private:
 		int firmwareVersion = 0;
 		char name[32] = { 0 };
 		bool useBusyWaiting = false;
-		bool finishedClosing = false;
 
 		int managementSocket = -1;
 		sockaddr_in managementSocketAddr = { 0, 0, 0, 0 };
+		std::thread frameHandlerThread;
 		std::mutex frameLock;
+		std::mutex bufferLock;
 		int frameResult = -1;
 		long numLateWaits = 0;
 
