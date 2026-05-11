@@ -33,7 +33,7 @@ int HeliosDac::OpenDevices()
 	if (inited)
 		return (int)deviceList.size();
 
-	unsigned int numDevices = _OpenUsbDevices(false);
+	int numDevices = _OpenUsbDevices(false);
 	numDevices += _OpenIdnDevices(false);
 
 	_SortDeviceList();
@@ -57,7 +57,7 @@ int HeliosDac::OpenDevicesOnlyUsb()
 		return 0;
 	}
 
-	unsigned int numDevices = _OpenUsbDevices(false);
+	int numDevices = _OpenUsbDevices(false);
 
 	_SortDeviceList();
 
@@ -73,7 +73,7 @@ int HeliosDac::OpenDevicesOnlyNetwork()
 	if (inited)
 		return (int)deviceList.size();
 
-	unsigned int numDevices = _OpenIdnDevices(false);
+	int numDevices = _OpenIdnDevices(false);
 
 	_SortDeviceList();
 
@@ -548,7 +548,11 @@ int HeliosDac::CloseDevices()
 	inited = false;
 	deviceList.clear(); // Various destructors will clean all devices
 
-	libusb_exit(NULL);
+	if (usbInited)
+	{
+		libusb_exit(NULL);
+		usbInited = false;
+	}
 
 	printf("Freed USB Helios library\n");
 
@@ -833,7 +837,7 @@ HeliosDac::HeliosDacUsbDevice::HeliosDacUsbDevice(libusb_device_handle* handle)
 			{
 				std::uint8_t ctrlBuffer2[32];
 				transferResult = libusb_interrupt_transfer(usbHandle, EP_INT_IN, ctrlBuffer2, 32, &actualLength, 32);
-				if (transferResult == LIBUSB_SUCCESS)
+				if (transferResult == LIBUSB_SUCCESS && actualLength >= 5)
 				{
 					if (ctrlBuffer2[0] == 0x84)
 					{
@@ -1276,9 +1280,10 @@ int HeliosDac::HeliosDacUsbDevice::GetName(char* dacName)
 			{
 				if (ctrlBuffer5[0] == 0x85)
 				{
-					ctrlBuffer5[sizeof(ctrlBuffer5)-1] = 0; // Just in case
-					memcpy(name, &ctrlBuffer5[1], sizeof(ctrlBuffer5)-2);
-					memcpy(dacName, &ctrlBuffer5[1], sizeof(ctrlBuffer5)-2);
+					memset(dacName, 0, 32);
+					memcpy(dacName, &ctrlBuffer5[1], 32);
+					dacName[31] = '\0'; // Just in case
+					memcpy(name, dacName, 32);
 					return HELIOS_SUCCESS;
 				}
 				else
@@ -1641,7 +1646,11 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	}
 
 	if (idnOpenFrameXYRGBI(context, false))
-		return false;
+	{
+		if (freePoints)
+			delete[] points;
+		return HELIOS_ERROR_DEVICE_FRAME_READY;
+	}
 
 	context->queuedFrameScanSpeed = pps;
 	//context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0; // Applies to IDN frame mode, but not wave mode.
@@ -1650,7 +1659,11 @@ int HeliosDac::HeliosDacIdnDevice::SendFrame(unsigned int pps, std::uint8_t flag
 	for (unsigned int i = 0; i < loopLength; i += samplingFactor)
 	{
 		if (idnPutSampleXYRGBI(context, (points[i].x << 4) - 0x8000, (points[i].y << 4) - 0x8000, points[i].r, points[i].g, points[i].b, points[i].i))
-			return false;
+		{
+			if (freePoints)
+				delete[] points;
+			return HELIOS_ERROR_DEVICE_RESULT;
+		}
 	}
 
 	if (freePoints)
@@ -1729,7 +1742,11 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 	}
 
 	if (idnOpenFrameHighResXYRGB(context, false))
-		return false;
+	{
+		if (freePoints)
+			delete[] points;
+		return HELIOS_ERROR_DEVICE_FRAME_READY;
+	}
 
 	context->queuedFrameScanSpeed = pps;
 	//context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0; // Applies to IDN frame mode, but not wave mode.
@@ -1738,7 +1755,11 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameHighResolution(unsigned int pps, std
 	for (unsigned int i = 0; i < loopLength; i += samplingFactor)
 	{
 		if (idnPutSampleHighResXYRGB(context, points[i].x - 0x8000, points[i].y - 0x8000, points[i].r, points[i].g, points[i].b))
-			return false;
+		{
+			if (freePoints)
+				delete[] points;
+			return HELIOS_ERROR_DEVICE_RESULT;
+		}
 	}
 
 	if (freePoints)
@@ -1818,7 +1839,11 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 	}
 
 	if (idnOpenFrameExtended(context, false))
-		return false;
+	{
+		if (freePoints)
+			delete[] points;
+		return HELIOS_ERROR_DEVICE_FRAME_READY;
+	}
 
 	context->queuedFrameScanSpeed = pps;
 	//context->jitterFreeFlag = (flags & HELIOS_FLAGS_SINGLE_MODE) != 0; // Applies to IDN frame mode, but not wave mode.
@@ -1827,7 +1852,11 @@ int HeliosDac::HeliosDacIdnDevice::SendFrameExtended(unsigned int pps, std::uint
 	for (unsigned int i = 0; i < loopLength; i += samplingFactor)
 	{
 		if (idnPutSampleExtended(context, (int16_t)(points[i].x - 0x8000), (int16_t)(points[i].y - 0x8000), points[i].r, points[i].g, points[i].b, points[i].i, points[i].user1, points[i].user2, points[i].user3, points[i].user4))
-			return false;
+		{
+			if (freePoints)
+				delete[] points;
+			return HELIOS_ERROR_DEVICE_RESULT;
+		}
 	}
 
 	if (freePoints)
@@ -2107,7 +2136,7 @@ int HeliosDac::HeliosDacIdnDevice::SetName(char* name)
 #ifdef WIN32
 	strcpy_s(buffer + 2, 33, name);
 #else
-	strcpy(buffer + 2, name);
+	strncpy(buffer + 2, name, 33);
 #endif
 	buffer[22] = '\0'; // Safety
 	int sentBytes = 0;
@@ -2174,11 +2203,11 @@ HeliosDac::HeliosDacIdnDevice::~HeliosDacIdnDevice()
 	if (context != NULL)
 	{
 		if (context->bufferPtr)
-			delete context->bufferPtr;
+			delete[] context->bufferPtr;
 		if (context->queuedBufferPtr)
-			delete context->queuedBufferPtr;
+			delete[] context->queuedBufferPtr;
 		if (context->controlBufferPtr)
-			delete context->controlBufferPtr;
+			delete[] context->controlBufferPtr;
 
 		// Close socket
 		if (context->fdSocket >= 0)

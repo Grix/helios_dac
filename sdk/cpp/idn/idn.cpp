@@ -15,6 +15,7 @@ void logError(const char* fmt, ...)
 	va_list arg_ptr;
 	va_start(arg_ptr, fmt);
 	vprintf(fmt, arg_ptr);
+	va_end(arg_ptr);
 
 	return; // skip
 
@@ -35,6 +36,7 @@ void logInfo(const char* fmt, ...)
 	va_list arg_ptr;
 	va_start(arg_ptr, fmt);
 	vprintf(fmt, arg_ptr);
+	va_end(arg_ptr);
 #endif
 
 	return; // skip
