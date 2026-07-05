@@ -43,7 +43,7 @@ Unless otherwise specified, functions return a negative error code on failure.
 #pragma comment(lib, "winmm.lib")
 #endif
 
-#define HELIOS_SDK_VERSION	11
+#define HELIOS_SDK_VERSION	12
 
 // Frame limits
 // For original USB model

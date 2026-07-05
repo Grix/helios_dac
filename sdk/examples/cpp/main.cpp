@@ -17,9 +17,9 @@ int main(void)
 	// Assemble test frames
 	// This is a simple line moving upward in a loop, but for real graphics you should optimize the point stream for laser scanners by 
 	// interpolating long vectors including blanked sections, adding points at sharp corners, etc.
-	const int numFramesInLoop = 20;
-	const int numPointsPerFrame = 1500;
-	const int pointsPerSecond = 40000;
+	const int numFramesInLoop = 60;
+	const int numPointsPerFrame = 500;
+	const int pointsPerSecond = 30000;
 	HeliosPointHighRes** frame = new HeliosPointHighRes*[numFramesInLoop];
 	int x = 0;
 	int y = 0;
@@ -80,10 +80,11 @@ int main(void)
 	while (1)
 	{
 		i++;
-		if (i % 3000 == 1000)
+
+		/*if (i % 3000 == 1000)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(3000)); // Just for testing purposes, simulates a buffer underrun which should turn lasers off for a few seconds.
-		}
+		}*/
 
 		if (!anyDeviceOpened)
 			std::this_thread::sleep_for(std::chrono::milliseconds(100)); // To avoid loading the CPU 100% if there is no connected devices that we can wait for.
