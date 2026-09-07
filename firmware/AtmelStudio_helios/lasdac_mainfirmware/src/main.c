@@ -17,6 +17,8 @@ Required Atmel Software Framework modules:
 
 #include "main.h"
 
+uint8_t usbSerial[USB_DEVICE_GET_SERIAL_NAME_LENGTH+1];
+
 //ENTRY
 int main (void)
 {
@@ -35,10 +37,11 @@ int main (void)
 	irq_initialize_vectors();
 	cpu_irq_enable();
 	sleepmgr_init();
+	flash_init(FLASH_ACCESS_MODE_128, 4);
+	assign_default_name();
 	udc_start();
 	wdt_setup();
 	timer_init();
-	flash_init(FLASH_ACCESS_MODE_128, 4);
 	
 	//set systick higher priority to avoid jitter in playback when processing USB transfers
 	NVIC_SetPriority(UDP_IRQn, 2);
@@ -51,8 +54,6 @@ int main (void)
 	stop_weak();
 	
 	sleepmgr_lock_mode(SLEEPMGR_WAIT_FAST);
-	
-	assign_default_name();
 	
 	//waiting for interrupts..
 	while (1)
@@ -416,14 +417,14 @@ void wdt_setup() //setup watchdog to trigger a reset at WDT_PERIOD ms inactivity
 	wdt_init(WDT, wdt_mode, timeout_value, timeout_value);
 }
 
-void assign_default_name() //on first ever boot, assign default name and store to flash
+void assign_default_name() //on first ever boot, assign default name and store to flash. Also read serial number
 {
 	uint32_t flash[16];
 	flash_read_user_signature(&flash[0], 16);
+	uint32_t unique[4];
+	flash_read_unique_id(&unique[0], 4);
 	if (flash[0] == 0xFFFFFFFF) //factory value
 	{
-		uint32_t unique[4];
-		flash_read_unique_id(&unique[0], 4);
 		char name[16];
 		sprintf(&name[0], "Helios %ld", unique[3]);
 		int i;
@@ -436,6 +437,8 @@ void assign_default_name() //on first ever boot, assign default name and store t
 		flash_erase_user_signature();
 		flash_write_user_signature((void*)&flash[0], 16);
 	}
+	snprintf(&usbSerial[0], USB_DEVICE_GET_SERIAL_NAME_LENGTH, "%08lX", unique[3]);
+	usbSerial[USB_DEVICE_GET_SERIAL_NAME_LENGTH] = 0;
 }
 
 inline void update_status() //ready to receive new frame

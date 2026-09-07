@@ -63,10 +63,14 @@
 #define  USB_DEVICE_ATTR                  (USB_CONFIG_ATTR_BUS_POWERED)
 
 
+
 //! USB Device string definitions (Optional)
  #define  USB_DEVICE_MANUFACTURE_NAME      "Gitle Mikkelsen"
  #define  USB_DEVICE_PRODUCT_NAME          "Helios Laser DAC"
- //#define  USB_DEVICE_SERIAL_NAME           "00001"
+#define  USB_DEVICE_GET_SERIAL_NAME_POINTER usbSerial
+#define  USB_DEVICE_GET_SERIAL_NAME_LENGTH  8
+extern uint8_t usbSerial[];
+#define  USB_DEVICE_SERIAL_NAME           "1"
 
 //sleep manager
 //#define UDD_NO_SLEEP_MGR
